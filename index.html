@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СНТ "Звездочка" - Личный кабинет</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .login-section, .user-section, .admin-section {
+            padding: 30px;
+            display: none;
+        }
+
+        .section-active {
+            display: block;
+        }
+
+        .auth-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: var(--light);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        button {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        button.secondary {
+            background: var(--success);
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.warning {
+            background: var(--warning);
+        }
+
+        .tab-container {
+            display: flex;
+            background: var(--light);
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--dark);
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .tab-active {
+            color: var(--secondary);
+            border-bottom: 3px solid var(--secondary);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .meter-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-paid {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .status-unpaid {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .notification {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .notification.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .notification.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .admin-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--secondary);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            padding: 8px 20px;
+            background: var(--danger);
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .tab-container {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1 0 auto;
+                text-align: center;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>СНТ "Звездочка"</h1>
+            <div class="subtitle">Личный кабинет для передачи показаний и оплаты взносов</div>
+            <div class="user-info" id="userInfo"></div>
+            <button class="logout-btn" id="logoutBtn" onclick="logout()">Выйти</button>
+        </div>
+
+        <!-- Секция входа -->
+        <div class="login-section section-active" id="loginSection">
+            <div class="auth-form">
+                <h2 style="text-align: center; margin-bottom: 30px; color: var(--primary);">Вход в личный кабинет</h2>
+                
+                <div class="form-group">
+                    <label for="loginType">Тип входа:</label>
+                    <select id="loginType" onchange="toggleLoginType()">
+                        <option value="user">Участник СНТ</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Логин:</label>
+                    <input type="text" id="username" placeholder="Введите ваш логин">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" placeholder="Введите ваш пароль">
+                </div>
+
+                <button onclick="login()">Войти</button>
+
+                <div class="notification error" id="loginError"></div>
+            </div>
+        </div>
+
+        <!-- Секция пользователя -->
+        <div class="user-section" id="userSection">
+            <div class="tab-container">
+                <div class="tab tab-active" onclick="switchTab('dashboard')">Общая информация</div>
+                <div class="tab" onclick="switchTab('meter')">Показания счетчиков</div>
+                <div class="tab" onclick="switchTab('fees')">Членские взносы</div>
+                <div class="tab" onclick="switchTab('history')">История платежей</div>
+            </div>
+
+            <!-- Вкладка: Общая информация -->
+            <div class="tab-content section-active" id="tabDashboard">
+                <div class="dashboard">
+                    <div class="stat-card">
+                        <h4>Задолженность по электроэнергии</h4>
+                        <div class="amount" id="electricityDebt">0 ₽</div>
+                        <p>Текущий месяц</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h4>Задолженность по взносам</h4>
+                        <div class="amount" id="feesDebt">0 ₽</div>
+                        <p>Общая сумма</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h4>Последние показания</h4>
+                        <div class="amount" id="lastReading">0 кВт·ч</div>
+                        <p id="lastReadingDate">Дата: --</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Информация об участке</h3>
+                    <p><strong>Участок №:</strong> <span id="plotNumber">-</span></p>
+                    <p><strong>ФИО:</strong> <span id="userFullName">-</span></p>
+                    <p><strong>Телефон:</strong> <span id="userPhone">-</span></p>
+                    <p><strong>Адрес:</strong> <span id="userAddress">-</span></p>
+                </div>
+
+                <div class="card">
+                    <h3>Тарифы на электроэнергию</h3>
+                    <p><strong>До 100 кВт·ч:</strong> <span id="tariff1">6.1</span> ₽/кВт·ч</p>
+                    <p><strong>Свыше 100 кВт·ч:</strong> <span id="tariff2">7.3</span> ₽/кВт·ч</p>
+                    <p><strong>Общественное потребление:</strong> <span id="tariff3">0.36</span> ₽/кВт·ч</p>
+                    <p><em>Расчет за месяц: (первые 100 кВт·ч × тариф1) + (остальное × тариф2) + (общее потребление × тариф3)</em></p>
+                </div>
+            </div>
+
+            <!-- Вкладка: Показания счетчиков -->
+            <div class="tab-content" id="tabMeter">
+                <div class="card">
+                    <h3>Передать показания счетчика</h3>
+                    <div class="meter-form">
+                        <div>
+                            <label for="meterNumber">Номер счетчика:</label>
+                            <select id="meterNumber">
+                                <option value="1">Счетчик №1 (Основной)</option>
+                                <option value="2">Счетчик №2 (Дополнительный)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meterReading">Текущие показания (кВт·ч):</label>
+                            <input type="number" id="meterReading" min="0" step="0.01">
+                        </div>
+                        <div>
+                            <label for="readingDate">Дата показаний:</label>
+                            <input type="date" id="readingDate">
+                        </div>
+                        <div style="align-self: end;">
+                            <button onclick="submitMeterReading()" class="secondary">Передать показания</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>История показаний</h3>
+                    <div id="meterHistory">
+                        <p style="text-align: center; color: #666;">Загрузка данных...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Членские взносы -->
+            <div class="tab-content" id="tabFees">
+                <div class="card">
+                    <h3>Текущие начисления</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Тип взноса</th>
+                                <th>Сумма</th>
+                                <th>Срок оплаты</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feesTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>Оплата взносов</h3>
+                    <div class="form-group">
+                        <label>Выберите тип взноса для оплаты:</label>
+                        <select id="feeTypeSelect">
+                            <option value="salary">1. Зарплата</option>
+                            <option value="maintenance">2. Содержание</option>
+                            <option value="other">3. Прочее</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Сумма к оплате:</label>
+                        <input type="number" id="paymentAmount" readonly>
+                    </div>
+                    <button onclick="processPayment()" class="secondary">Сформировать квитанцию</button>
+                </div>
+            </div>
+
+            <!-- Вкладка: История платежей -->
+            <div class="tab-content" id="tabHistory">
+                <div class="card">
+                    <h3>История платежей и показаний</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Тип</th>
+                                <th>Сумма/Показания</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentHistory">
+                            <tr>
+                                <td colspan="4" style="text-align: center;">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция администратора -->
+        <div class="admin-section" id="adminSection">
+            <div class="tab-container">
+                <div class="tab tab-active" onclick="switchAdminTab('users')">Управление пользователями</div>
+                <div class="tab" onclick="switchAdminTab('tariffs')">Тарифы</div>
+                <div class="tab" onclick="switchAdminTab('batch')">Пакетные операции</div>
+                <div class="tab" onclick="switchAdminTab('reports')">Отчеты</div>
+            </div>
+
+            <!-- Вкладка: Управление пользователями -->
+            <div class="admin-tab-content section-active" id="adminTabUsers">
+                <div class="admin-controls">
+                    <button onclick="showAddUserModal()" class="secondary">Добавить пользователя</button>
+                    <button onclick="exportUsers()" class="warning">Экспорт пользователей</button>
+                    <input type="text" id="searchUsers" placeholder="Поиск пользователей..." oninput="searchUsers()">
+                </div>
+
+                <div class="card">
+                    <h3>Список пользователей (200 участников)</h3>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ФИО</th>
+                                    <th>Участок</th>
+                                    <th>Логин</th>
+                                    <th>Телефон</th>
+                                    <th>Баланс</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersList">
+                                <tr>
+                                    <td colspan="7" style="text-align: center;">Загрузка данных...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Тарифы -->
+            <div class="admin-tab-content" id="adminTabTariffs">
+                <div class="card">
+                    <h3>Настройка тарифов</h3>
+                    <div class="form-group">
+                        <label for="adminTariff1">Тариф 1 (до 100 кВт·ч):</label>
+                        <input type="number" id="adminTariff1" step="0.01" value="6.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminTariff2">Тариф 2 (свыше 100 кВт·ч):</label>
+                        <input type="number" id="adminTariff2" step="0.01" value="7.3">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminTariff3">Тариф 3 (общественное потребление):</label>
+                        <input type="number" id="adminTariff3" step="0.01" value="0.36">
+                    </div>
+                    <button onclick="updateTariffs()" class="secondary">Сохранить тарифы</button>
+                </div>
+            </div>
+
+            <!-- Вкладка: Пакетные операции -->
+            <div class="admin-tab-content" id="adminTabBatch">
+                <div class="card">
+                    <h3>Пакетная загрузка показаний</h3>
+                    <div class="file-upload" onclick="document.getElementById('batchFile').click()">
+                        <p>Перетащите файл CSV или нажмите для выбора</p>
+                        <p><small>Формат: user_id, meter_number, reading, date</small></p>
+                        <input type="file" id="batchFile" accept=".csv" style="display: none;" onchange="handleBatchUpload(this)">
+                    </div>
+                    <button onclick="downloadTemplate()" class="warning">Скачать шаблон CSV</button>
+                </div>
+
+                <div class="card">
+                    <h3>Пакетное начисление взносов</h3>
+                    <div class="form-group">
+                        <label>Тип взноса:</label>
+                        <select id="batchFeeType">
+                            <option value="salary">Зарплата</option>
+                            <option value="maintenance">Содержание</option>
+                            <option value="other">Прочее</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Сумма:</label>
+                        <input type="number" id="batchFeeAmount" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Месяц начисления:</label>
+                        <input type="month" id="batchFeeMonth">
+                    </div>
+                    <button onclick="batchAddFees()" class="secondary">Начислить всем</button>
+                </div>
+            </div>
+
+            <!-- Вкладка: Отчеты -->
+            <div class="admin-tab-content" id="adminTabReports">
+                <div class="card">
+                    <h3>Генерация отчетов</h3>
+                    <div class="admin-controls">
+                        <select id="reportType">
+                            <option value="electricity">Отчет по электроэнергии</option>
+                            <option value="fees">Отчет по взносам</option>
+                            <option value="debt">Отчет по задолженностям</option>
+                        </select>
+                        <input type="month" id="reportMonth" value="2024-01">
+                        <button onclick="generateReport()" class="secondary">Сформировать отчет</button>
+                        <button onclick="exportReport()" class="warning">Экспорт в Excel</button>
+                    </div>
+                    
+                    <div id="reportResult" style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; display: none;">
+                        <h4>Результаты отчета</h4>
+                        <div id="reportContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div id="addUserModal" style="background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; display: none;">
+            <h3 style="margin-bottom: 20px;">Добавить пользователя</h3>
+            <div class="form-group">
+                <label>ФИО:</label>
+                <input type="text" id="newUserName">
+            </div>
+            <div class="form-group">
+                <label>Номер участка:</label>
+                <input type="number" id="newUserPlot">
+            </div>
+            <div class="form-group">
+                <label>Логин:</label>
+                <input type="text" id="newUserLogin">
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" id="newUserPassword">
+            </div>
+            <div class="form-group">
+                <label>Телефон:</label>
+                <input type="tel" id="newUserPhone">
+            </div>
+            <div class="form-group">
+                <label>Адрес:</label>
+                <input type="text" id="newUserAddress">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="saveNewUser()" class="secondary">Сохранить</button>
+                <button onclick="closeModal()" class="danger">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification success" id="successNotification"></div>
+    <div class="notification error" id="errorNotification"></div>
+
+    <!-- Подключаем библиотеку Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Подключаем auth.js с ключами (этот файл создается отдельно) -->
+    <script src="auth.js"></script>
+    
+    <script>
+        // Глобальные переменные
+        let currentUser = null;
+        let currentAdmin = null;
+        let tariffs = { tariff1: 6.1, tariff2: 7.3, tariff3: 0.36 };
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('readingDate').valueAsDate = new Date();
+            document.getElementById('batchFeeMonth').value = new Date().toISOString().slice(0, 7);
+            document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
+            
+            // Проверяем, есть ли сохраненная сессия
+            checkSavedSession();
+        });
+
+        // Проверка сохраненной сессии
+        async function checkSavedSession() {
+            const savedUser = localStorage.getItem('snt_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                if (user.role === 'admin') {
+                    await adminLogin(user);
+                } else {
+                    await userLogin(user);
+                }
+            }
+        }
+
+        // Функция входа
+        async function login() {
+            const loginType = document.getElementById('loginType').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showError('Введите логин и пароль');
+                return;
+            }
+
+            if (loginType === 'admin') {
+                // Вход для администратора
+                const { data, error } = await supabase
+                    .from('admins')
+                    .select('*')
+                    .eq('login', username)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !data) {
+                    showError('Неверный логин или пароль администратора');
+                    return;
+                }
+
+                currentAdmin = data;
+                localStorage.setItem('snt_user', JSON.stringify({...data, role: 'admin'}));
+                showAdminSection();
+            } else {
+                // Вход для пользователя
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('login', username)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !data) {
+                    showError('Неверный логин или пароль');
+                    return;
+                }
+
+                currentUser = data;
+                localStorage.setItem('snt_user', JSON.stringify({...data, role: 'user'}));
+                showUserSection();
+                loadUserData();
+            }
+
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        // Вход пользователя (из сохраненной сессии)
+        async function userLogin(userData) {
+            currentUser = userData;
+            showUserSection();
+            loadUserData();
+        }
+
+        // Вход администратора (из сохраненной сессии)
+        async function adminLogin(adminData) {
+            currentAdmin = adminData;
+            showAdminSection();
+            loadAdminData();
+        }
+
+        // Показать секцию пользователя
+        function showUserSection() {
+            document.getElementById('loginSection').classList.remove('section-active');
+            document.getElementById('adminSection').classList.remove('section-active');
+            document.getElementById('userSection').classList.add('section-active');
+            document.getElementById('userInfo').textContent = `Участок №${currentUser.plot_number}, ${currentUser.full_name}`;
+        }
+
+        // Показать секцию администратора
+        function showAdminSection() {
+            document.getElementById('loginSection').classList.remove('section-active');
+            document.getElementById('userSection').classList.remove('section-active');
+            document.getElementById('adminSection').classList.add('section-active');
+            document.getElementById('userInfo').textContent = `Администратор: ${currentAdmin.name}`;
+        }
+
+        // Переключение вкладок пользователя
+        function switchTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('section-active');
+            });
+            
+            // Убрать активный класс со всех вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('tab-active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('section-active');
+            
+            // Активировать соответствующую кнопку вкладки
+            event.target.classList.add('tab-active');
+            
+            // Загрузить данные для вкладки
+            if (tabName === 'meter') {
+                loadMeterHistory();
+            } else if (tabName === 'fees') {
+                loadFeesData();
+            } else if (tabName === 'history') {
+                loadPaymentHistory();
+            }
+        }
+
+        // Переключение вкладок администратора
+        function switchAdminTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.admin-tab-content').forEach(tab => {
+                tab.classList.remove('section-active');
+            });
+            
+            // Убрать активный класс со всех вкладок
+            document.querySelectorAll('.admin-section .tab').forEach(tab => {
+                tab.classList.remove('tab-active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(`adminTab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('section-active');
+            
+            // Активировать соответствующую кнопку вкладки
+            event.target.classList.add('tab-active');
+            
+            // Загрузить данные для вкладки
+            if (tabName === 'users') {
+                loadUsersList();
+            } else if (tabName === 'tariffs') {
+                loadTariffs();
+            }
+        }
+
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            // Загружаем информацию об участке
+            document.getElementById('plotNumber').textContent = currentUser.plot_number;
+            document.getElementById('userFullName').textContent = currentUser.full_name;
+            document.getElementById('userPhone').textContent = currentUser.phone;
+            document.getElementById('userAddress').textContent = currentUser.address;
+
+            // Загружаем тарифы
+            const { data: tariffData } = await supabase
+                .from('tariffs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (tariffData) {
+                tariffs = tariffData;
+                document.getElementById('tariff1').textContent = tariffData.tariff1;
+                document.getElementById('tariff2').textContent = tariffData.tariff2;
+                document.getElementById('tariff3').textContent = tariffData.tariff3;
+            }
+
+            // Загружаем задолженности
+            await loadDebts();
+            await loadLastReading();
+        }
+
+        // Загрузка задолженностей
+        async function loadDebts() {
+            const { data: electricityData } = await supabase
+                .from('electricity_bills')
+                .select('amount')
+                .eq('user_id', currentUser.id)
+                .eq('status', 'unpaid')
+                .single();
+
+            const { data: feesData } = await supabase
+                .from('fees')
+                .select('amount')
+                .eq('user_id', currentUser.id)
+                .eq('status', 'unpaid');
+
+            let electricityDebt = electricityData ? electricityData.amount : 0;
+            let feesDebt = feesData ? feesData.reduce((sum, fee) => sum + fee.amount, 0) : 0;
+
+            document.getElementById('electricityDebt').textContent = electricityDebt.toFixed(2) + ' ₽';
+            document.getElementById('feesDebt').textContent = feesDebt.toFixed(2) + ' ₽';
+        }
+
+        // Загрузка последних показаний
+        async function loadLastReading() {
+            const { data } = await supabase
+                .from('meter_readings')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('reading_date', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (data) {
+                document.getElementById('lastReading').textContent = data.reading + ' кВт·ч';
+                document.getElementById('lastReadingDate').textContent = 
+                    'Дата: ' + new Date(data.reading_date).toLocaleDateString('ru-RU');
+            }
+        }
+
+        // Загрузка истории показаний
+        async function loadMeterHistory() {
+            const { data } = await supabase
+                .from('meter_readings')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('reading_date', { ascending: false })
+                .limit(10);
+
+            const container = document.getElementById('meterHistory');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">Нет данных о показаниях</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Дата</th><th>Счетчик</th><th>Показания</th><th>Расход</th></tr></thead><tbody>';
+            
+            data.forEach((reading, index) => {
+                const prevReading = index < data.length - 1 ? data[index + 1].reading : 0;
+                const consumption = reading.reading - prevReading;
+                
+                html += `
+                    <tr>
+                        <td>${new Date(reading.reading_date).toLocaleDateString('ru-RU')}</td>
+                        <td>Счетчик №${reading.meter_number}</td>
+                        <td>${reading.reading} кВт·ч</td>
+                        <td>${consumption > 0 ? consumption.toFixed(2) + ' кВт·ч' : '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Отправка показаний счетчика
+        async function submitMeterReading() {
+            const meterNumber = document.getElementById('meterNumber').value;
+            const reading = parseFloat(document.getElementById('meterReading').value);
+            const readingDate = document.getElementById('readingDate').value;
+
+            if (!reading || reading < 0) {
+                showError('Введите корректные показания');
+                return;
+            }
+
+            if (!readingDate) {
+                showError('Выберите дату показаний');
+                return;
+            }
+
+            // Получаем предыдущие показания
+            const { data: prevData } = await supabase
+                .from('meter_readings')
+                .select('reading')
+                .eq('user_id', currentUser.id)
+                .eq('meter_number', meterNumber)
+                .order('reading_date', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (prevData && reading < prevData.reading) {
+                showError('Текущие показания не могут быть меньше предыдущих');
+                return;
+            }
+
+            // Сохраняем показания
+            const { error } = await supabase
+                .from('meter_readings')
+                .insert([
+                    {
+                        user_id: currentUser.id,
+                        meter_number: meterNumber,
+                        reading: reading,
+                        reading_date: readingDate
+                    }
+                ]);
+
+            if (error) {
+                showError('Ошибка при сохранении показаний');
+                return;
+            }
+
+            // Рассчитываем и сохраняем счет
+            await calculateAndSaveBill(reading, prevData ? prevData.reading : 0);
+
+            showSuccess('Показания успешно переданы');
+            document.getElementById('meterReading').value = '';
+            loadMeterHistory();
+            loadDebts();
+            loadLastReading();
+        }
+
+        // Расчет и сохранение счета
+        async function calculateAndSaveBill(currentReading, previousReading) {
+            const consumption = currentReading - previousReading;
+            
+            // Расчет по сложному тарифу
+            let amount = 0;
+            if (consumption > 0) {
+                const first100 = Math.min(consumption, 100);
+                const above100 = Math.max(consumption - 100, 0);
+                
+                amount = (first100 * tariffs.tariff1) + 
+                        (above100 * tariffs.tariff2) + 
+                        (consumption * tariffs.tariff3);
+            }
+
+            // Сохраняем счет
+            const { error } = await supabase
+                .from('electricity_bills')
+                .insert([
+                    {
+                        user_id: currentUser.id,
+                        period: new Date().toISOString().slice(0, 7),
+                        consumption: consumption,
+                        amount: amount,
+                        status: 'unpaid'
+                    }
+                ]);
+
+            if (error) {
+                console.error('Ошибка при сохранении счета:', error);
+            }
+        }
+
+        // Загрузка данных о взносах
+        async function loadFeesData() {
+            const { data } = await supabase
+                .from('fees')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('due_date', { ascending: true });
+
+            const table = document.getElementById('feesTable');
+            if (!data || data.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" style="text-align: center;">Нет начисленных взносов</td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(fee => {
+                const feeTypeNames = {
+                    'salary': 'Зарплата',
+                    'maintenance': 'Содержание',
+                    'other': 'Прочее'
+                };
+                
+                html += `
+                    <tr>
+                        <td>${feeTypeNames[fee.fee_type] || fee.fee_type}</td>
+                        <td>${fee.amount.toFixed(2)} ₽</td>
+                        <td>${new Date(fee.due_date).toLocaleDateString('ru-RU')}</td>
+                        <td><span class="status-${fee.status}">${fee.status === 'paid' ? 'Оплачено' : 'Не оплачено'}</span></td>
+                        <td>
+                            ${fee.status === 'unpaid' ? 
+                                `<button onclick="payFee('${fee.id}')" style="padding: 5px 10px; font-size: 14px;">Оплатить</button>` : 
+                                '—'
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+
+            table.innerHTML = html;
+
+            // Обновляем сумму для оплаты при выборе типа взноса
+            updatePaymentAmount();
+        }
+
+        // Обновление суммы для оплаты
+        function updatePaymentAmount() {
+            const feeType = document.getElementById('feeTypeSelect').value;
+            const { data } = supabase
+                .from('fees')
+                .select('amount')
+                .eq('user_id', currentUser.id)
+                .eq('fee_type', feeType)
+                .eq('status', 'unpaid')
+                .single()
+                .then(({ data }) => {
+                    document.getElementById('paymentAmount').value = data ? data.amount.toFixed(2) : '0.00';
+                });
+        }
+
+        // Оплата взноса
+        async function payFee(feeId) {
+            const { error } = await supabase
+                .from('fees')
+                .update({ status: 'paid', payment_date: new Date().toISOString() })
+                .eq('id', feeId);
+
+            if (error) {
+                showError('Ошибка при оплате');
+                return;
+            }
+
+            showSuccess('Взнос успешно оплачен');
+            loadFeesData();
+            loadDebts();
+            loadPaymentHistory();
+        }
+
+        // Обработка платежа
+        async function processPayment() {
+            const feeType = document.getElementById('feeTypeSelect').value;
+            const amount = document.getElementById('paymentAmount').value;
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showError('Нет суммы для оплаты');
+                return;
+            }
+
+            // Находим неоплаченный взнос этого типа
+            const { data: feeData } = await supabase
+                .from('fees')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('fee_type', feeType)
+                .eq('status', 'unpaid')
+                .single();
+
+            if (!feeData) {
+                showError('Нет неоплаченных взносов этого типа');
+                return;
+            }
+
+            // Помечаем как оплаченный
+            await payFee(feeData.id);
+        }
+
+        // Загрузка истории платежей
+        async function loadPaymentHistory() {
+            // Получаем платежи за электроэнергию
+            const { data: electricityPayments } = await supabase
+                .from('electricity_bills')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            // Получаем платежи по взносам
+            const { data: feePayments } = await supabase
+                .from('fees')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('status', 'paid')
+                .order('payment_date', { ascending: false })
+                .limit(20);
+
+            const table = document.getElementById('paymentHistory');
+            
+            if ((!electricityPayments || electricityPayments.length === 0) && 
+                (!feePayments || feePayments.length === 0)) {
+                table.innerHTML = '<tr><td colspan="4" style="text-align: center;">Нет данных о платежах</td></tr>';
+                return;
+            }
+
+            let allPayments = [];
+            
+            // Добавляем платежи за электроэнергию
+            if (electricityPayments) {
+                electricityPayments.forEach(payment => {
+                    allPayments.push({
+                        date: payment.payment_date || payment.created_at,
+                        type: 'Электроэнергия',
+                        amount: payment.amount,
+                        status: payment.status
+                    });
+                });
+            }
+            
+            // Добавляем платежи по взносам
+            if (feePayments) {
+                feePayments.forEach(payment => {
+                    const feeTypeNames = {
+                        'salary': 'Зарплата',
+                        'maintenance': 'Содержание',
+                        'other': 'Прочее'
+                    };
+                    
+                    allPayments.push({
+                        date: payment.payment_date,
+                        type: feeTypeNames[payment.fee_type] || payment.fee_type,
+                        amount: payment.amount,
+                        status: payment.status
+                    });
+                });
+            }
+            
+            // Сортируем по дате
+            allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            let html = '';
+            allPayments.forEach(payment => {
+                html += `
+                    <tr>
+                        <td>${new Date(payment.date).toLocaleDateString('ru-RU')}</td>
+                        <td>${payment.type}</td>
+                        <td>${payment.amount.toFixed(2)} ₽</td>
+                        <td><span class="status-${payment.status}">${payment.status === 'paid' ? 'Оплачено' : 'Не оплачено'}</span></td>
+                    </tr>
+                `;
+            });
+
+            table.innerHTML = html;
+        }
+
+        // АДМИНИСТРАТОРСКИЕ ФУНКЦИИ
+
+        // Загрузка списка пользователей
+        async function loadUsersList() {
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .order('plot_number');
+
+            const table = document.getElementById('usersList');
+            if (!data || data.length === 0) {
+                table.innerHTML = '<tr><td colspan="7" style="text-align: center;">Нет зарегистрированных пользователей</td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(user => {
+                // Рассчитываем баланс (упрощенно)
+                const balance = user.balance || 0;
+                
+                html += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.full_name}</td>
+                        <td>${user.plot_number}</td>
+                        <td>${user.login}</td>
+                        <td>${user.phone}</td>
+                        <td>${balance.toFixed(2)} ₽</td>
+                        <td>
+                            <button onclick="editUser('${user.id}')" style="padding: 5px 10px; font-size: 14px; margin-right: 5px;">Редакт.</button>
+                            <button onclick="deleteUser('${user.id}')" class="danger" style="padding: 5px 10px; font-size: 14px;">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            table.innerHTML = html;
+        }
+
+        // Загрузка тарифов
+        async function loadTariffs() {
+            const { data } = await supabase
+                .from('tariffs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (data) {
+                document.getElementById('adminTariff1').value = data.tariff1;
+                document.getElementById('adminTariff2').value = data.tariff2;
+                document.getElementById('adminTariff3').value = data.tariff3;
+            }
+        }
+
+        // Обновление тарифов
+        async function updateTariffs() {
+            const tariff1 = parseFloat(document.getElementById('adminTariff1').value);
+            const tariff2 = parseFloat(document.getElementById('adminTariff2').value);
+            const tariff3 = parseFloat(document.getElementById('adminTariff3').value);
+
+            if (isNaN(tariff1) || isNaN(tariff2) || isNaN(tariff3)) {
+                showError('Введите корректные значения тарифов');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('tariffs')
+                .insert([
+                    {
+                        tariff1: tariff1,
+                        tariff2: tariff2,
+                        tariff3: tariff3,
+                        admin_id: currentAdmin.id
+                    }
+                ]);
+
+            if (error) {
+                showError('Ошибка при обновлении тарифов');
+                return;
+            }
+
+            showSuccess('Тарифы успешно обновлены');
+        }
+
+        // Поиск пользователей
+        async function searchUsers() {
+            const searchTerm = document.getElementById('searchUsers').value.toLowerCase();
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .order('plot_number');
+
+            if (!data) return;
+
+            const filtered = data.filter(user => 
+                user.full_name.toLowerCase().includes(searchTerm) ||
+                user.plot_number.toString().includes(searchTerm) ||
+                user.login.toLowerCase().includes(searchTerm) ||
+                user.phone.includes(searchTerm)
+            );
+
+            const table = document.getElementById('usersList');
+            let html = '';
+            filtered.forEach(user => {
+                const balance = user.balance || 0;
+                
+                html += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.full_name}</td>
+                        <td>${user.plot_number}</td>
+                        <td>${user.login}</td>
+                        <td>${user.phone}</td>
+                        <td>${balance.toFixed(2)} ₽</td>
+                        <td>
+                            <button onclick="editUser('${user.id}')" style="padding: 5px 10px; font-size: 14px; margin-right: 5px;">Редакт.</button>
+                            <button onclick="deleteUser('${user.id}')" class="danger" style="padding: 5px 10px; font-size: 14px;">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            table.innerHTML = html || '<tr><td colspan="7" style="text-align: center;">Пользователи не найдены</td></tr>';
+        }
+
+        // Показать модальное окно добавления пользователя
+        function showAddUserModal() {
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.getElementById('addUserModal').style.display = 'block';
+        }
+
+        // Закрыть модальное окно
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+            document.getElementById('addUserModal').style.display = 'none';
+            // Очистить поля
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserPlot').value = '';
+            document.getElementById('newUserLogin').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserPhone').value = '';
+            document.getElementById('newUserAddress').value = '';
+        }
+
+        // Сохранение нового пользователя
+        async function saveNewUser() {
+            const newUser = {
+                full_name: document.getElementById('newUserName').value.trim(),
+                plot_number: parseInt(document.getElementById('newUserPlot').value),
+                login: document.getElementById('newUserLogin').value.trim(),
+                password: document.getElementById('newUserPassword').value,
+                phone: document.getElementById('newUserPhone').value.trim(),
+                address: document.getElementById('newUserAddress').value.trim(),
+                created_at: new Date().toISOString()
+            };
+
+            // Проверка обязательных полей
+            if (!newUser.full_name || !newUser.plot_number || !newUser.login || !newUser.password) {
+                showError('Заполните все обязательные поля');
+                return;
+            }
+
+            // Проверка уникальности логина
+            const { data: existingUser } = await supabase
+                .from('users')
+                .select('id')
+                .eq('login', newUser.login)
+                .single();
+
+            if (existingUser) {
+                showError('Пользователь с таким логином уже существует');
+                return;
+            }
+
+            // Сохранение пользователя
+            const { error } = await supabase
+                .from('users')
+                .insert([newUser]);
+
+            if (error) {
+                showError('Ошибка при сохранении пользователя: ' + error.message);
+                return;
+            }
+
+            showSuccess('Пользователь успешно добавлен');
+            closeModal();
+            loadUsersList();
+        }
+
+        // Редактирование пользователя
+        async function editUser(userId) {
+            const { data: user } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (!user) return;
+
+            // Заполняем форму редактирования (упрощенно - используем ту же форму добавления)
+            document.getElementById('newUserName').value = user.full_name;
+            document.getElementById('newUserPlot').value = user.plot_number;
+            document.getElementById('newUserLogin').value = user.login;
+            document.getElementById('newUserPassword').value = ''; // Очищаем пароль
+            document.getElementById('newUserPhone').value = user.phone;
+            document.getElementById('newUserAddress').value = user.address;
+            
+            // Меняем заголовок и обработчик
+            document.querySelector('#addUserModal h3').textContent = 'Редактировать пользователя';
+            
+            // Временно меняем обработчик сохранения
+            const saveBtn = document.querySelector('#addUserModal button.secondary');
+            const originalOnclick = saveBtn.onclick;
+            saveBtn.onclick = async function() {
+                const updatedUser = {
+                    full_name: document.getElementById('newUserName').value.trim(),
+                    plot_number: parseInt(document.getElementById('newUserPlot').value),
+                    login: document.getElementById('newUserLogin').value.trim(),
+                    phone: document.getElementById('newUserPhone').value.trim(),
+                    address: document.getElementById('newUserAddress').value.trim()
+                };
+
+                // Если введен новый пароль, обновляем его
+                const newPassword = document.getElementById('newUserPassword').value;
+                if (newPassword) {
+                    updatedUser.password = newPassword;
+                }
+
+                const { error } = await supabase
+                    .from('users')
+                    .update(updatedUser)
+                    .eq('id', userId);
+
+                if (error) {
+                    showError('Ошибка при обновлении пользователя');
+                    return;
+                }
+
+                showSuccess('Пользователь успешно обновлен');
+                closeModal();
+                loadUsersList();
+                
+                // Восстанавливаем оригинальный обработчик
+                saveBtn.onclick = originalOnclick;
+                document.querySelector('#addUserModal h3').textContent = 'Добавить пользователя';
+            };
+
+            showAddUserModal();
+        }
+
+        // Удаление пользователя
+        async function deleteUser(userId) {
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', userId);
+
+            if (error) {
+                showError('Ошибка при удалении пользователя');
+                return;
+            }
+
+            showSuccess('Пользователь успешно удален');
+            loadUsersList();
+        }
+
+        // Экспорт пользователей
+        async function exportUsers() {
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .order('plot_number');
+
+            if (!data) return;
+
+            // Создаем CSV содержимое
+            let csv = 'ID,ФИО,Участок,Логин,Телефон,Адрес,Баланс\n';
+            data.forEach(user => {
+                const balance = user.balance || 0;
+                csv += `${user.id},"${user.full_name}",${user.plot_number},${user.login},"${user.phone}","${user.address}",${balance.toFixed(2)}\n`;
+            });
+
+            // Создаем и скачиваем файл
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `users_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Загрузка пакетного файла
+        async function handleBatchUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                let successCount = 0;
+                let errorCount = 0;
+
+                // Пропускаем заголовок
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const [userId, meterNumber, reading, date] = line.split(',');
+
+                    try {
+                        const { error } = await supabase
+                            .from('meter_readings')
+                            .insert([
+                                {
+                                    user_id: parseInt(userId.trim()),
+                                    meter_number: parseInt(meterNumber.trim()),
+                                    reading: parseFloat(reading.trim()),
+                                    reading_date: date.trim()
+                                }
+                            ]);
+
+                        if (error) throw error;
+                        successCount++;
+                    } catch (err) {
+                        console.error('Ошибка при импорте строки', i, ':', err);
+                        errorCount++;
+                    }
+                }
+
+                showSuccess(`Импорт завершен. Успешно: ${successCount}, Ошибок: ${errorCount}`);
+                input.value = '';
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Скачивание шаблона CSV
+        function downloadTemplate() {
+            const template = 'user_id,meter_number,reading,date\n1,1,1500.5,2024-01-15\n1,2,2300.0,2024-01-15\n2,1,1800.0,2024-01-15';
+            
+            const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'template_meter_readings.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Пакетное начисление взносов
+        async function batchAddFees() {
+            const feeType = document.getElementById('batchFeeType').value;
+            const amount = parseFloat(document.getElementById('batchFeeAmount').value);
+            const month = document.getElementById('batchFeeMonth').value;
+
+            if (!amount || amount <= 0) {
+                showError('Введите корректную сумму');
+                return;
+            }
+
+            if (!month) {
+                showError('Выберите месяц начисления');
+                return;
+            }
+
+            // Получаем всех пользователей
+            const { data: users } = await supabase
+                .from('users')
+                .select('id');
+
+            if (!users) {
+                showError('Нет пользователей для начисления');
+                return;
+            }
+
+            const feeTypeNames = {
+                'salary': 'Зарплата',
+                'maintenance': 'Содержание',
+                'other': 'Прочее'
+            };
+
+            // Создаем взносы для всех пользователей
+            const fees = users.map(user => ({
+                user_id: user.id,
+                fee_type: feeType,
+                amount: amount,
+                description: `${feeTypeNames[feeType]} за ${month}`,
+                due_date: `${month}-28`, // Срок оплаты - 28 число
+                status: 'unpaid',
+                created_at: new Date().toISOString()
+            }));
+
+            // Вставляем пачкой (разбиваем на части по 50 записей для надежности)
+            const batchSize = 50;
+            let successCount = 0;
+
+            for (let i = 0; i < fees.length; i += batchSize) {
+                const batch = fees.slice(i, i + batchSize);
+                const { error } = await supabase
+                    .from('fees')
+                    .insert(batch);
+
+                if (error) {
+                    console.error('Ошибка при начислении взносов:', error);
+                    showError(`Частичная ошибка при начислении. Успешно: ${successCount}`);
+                    return;
+                }
+
+                successCount += batch.length;
+            }
+
+            showSuccess(`Взносы успешно начислены для ${successCount} пользователей`);
+        }
+
+        // Генерация отчета
+        async function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const month = document.getElementById('reportMonth').value;
+
+            let reportContent = '';
+
+            if (reportType === 'electricity') {
+                // Отчет по электроэнергии
+                const { data } = await supabase
+                    .from('electricity_bills')
+                    .select(`
+                        *,
+                        users!inner(full_name, plot_number)
+                    `)
+                    .eq('period', month)
+                    .order('users(plot_number)');
+
+                if (!data || data.length === 0) {
+                    reportContent = '<p>Нет данных за выбранный период</p>';
+                } else {
+                    reportContent = `
+                        <h4>Отчет по электроэнергии за ${month}</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Участок</th>
+                                    <th>ФИО</th>
+                                    <th>Расход (кВт·ч)</th>
+                                    <th>Сумма (₽)</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.map(item => `
+                                    <tr>
+                                        <td>${item.users.plot_number}</td>
+                                        <td>${item.users.full_name}</td>
+                                        <td>${item.consumption ? item.consumption.toFixed(2) : '0.00'}</td>
+                                        <td>${item.amount.toFixed(2)}</td>
+                                        <td>${item.status === 'paid' ? 'Оплачено' : 'Не оплачено'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } else if (reportType === 'fees') {
+                // Отчет по взносам
+                const { data } = await supabase
+                    .from('fees')
+                    .select(`
+                        *,
+                        users!inner(full_name, plot_number)
+                    `)
+                    .eq('due_date', `${month}-28`)
+                    .order('users(plot_number)');
+
+                if (!data || data.length === 0) {
+                    reportContent = '<p>Нет данных за выбранный период</p>';
+                } else {
+                    const feeTypeNames = {
+                        'salary': 'Зарплата',
+                        'maintenance': 'Содержание',
+                        'other': 'Прочее'
+                    };
+
+                    reportContent = `
+                        <h4>Отчет по взносам за ${month}</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Участок</th>
+                                    <th>ФИО</th>
+                                    <th>Тип взноса</th>
+                                    <th>Сумма (₽)</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.map(item => `
+                                    <tr>
+                                        <td>${item.users.plot_number}</td>
+                                        <td>${item.users.full_name}</td>
+                                        <td>${feeTypeNames[item.fee_type] || item.fee_type}</td>
+                                        <td>${item.amount.toFixed(2)}</td>
+                                        <td>${item.status === 'paid' ? 'Оплачено' : 'Не оплачено'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } else if (reportType === 'debt') {
+                // Отчет по задолженностям
+                const { data: electricityDebts } = await supabase
+                    .from('electricity_bills')
+                    .select(`
+                        amount,
+                        users!inner(full_name, plot_number)
+                    `)
+                    .eq('status', 'unpaid');
+
+                const { data: feeDebts } = await supabase
+                    .from('fees')
+                    .select(`
+                        amount,
+                        users!inner(full_name, plot_number)
+                    `)
+                    .eq('status', 'unpaid');
+
+                // Объединяем задолженности по пользователям
+                const debts = {};
+                
+                if (electricityDebts) {
+                    electricityDebts.forEach(item => {
+                        const userId = item.users.id;
+                        if (!debts[userId]) {
+                            debts[userId] = {
+                                user: item.users,
+                                electricity: 0,
+                                fees: 0,
+                                total: 0
+                            };
+                        }
+                        debts[userId].electricity += item.amount;
+                        debts[userId].total += item.amount;
+                    });
+                }
+
+                if (feeDebts) {
+                    feeDebts.forEach(item => {
+                        const userId = item.users.id;
+                        if (!debts[userId]) {
+                            debts[userId] = {
+                                user: item.users,
+                                electricity: 0,
+                                fees: 0,
+                                total: 0
+                            };
+                        }
+                        debts[userId].fees += item.amount;
+                        debts[userId].total += item.amount;
+                    });
+                }
+
+                const debtArray = Object.values(debts);
+
+                if (debtArray.length === 0) {
+                    reportContent = '<p>Нет задолженностей</p>';
+                } else {
+                    reportContent = `
+                        <h4>Отчет по задолженностям</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Участок</th>
+                                    <th>ФИО</th>
+                                    <th>Задолженность по э/э (₽)</th>
+                                    <th>Задолженность по взносам (₽)</th>
+                                    <th>Общая задолженность (₽)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${debtArray.map(item => `
+                                    <tr>
+                                        <td>${item.user.plot_number}</td>
+                                        <td>${item.user.full_name}</td>
+                                        <td>${item.electricity.toFixed(2)}</td>
+                                        <td>${item.fees.toFixed(2)}</td>
+                                        <td><strong>${item.total.toFixed(2)}</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            }
+
+            document.getElementById('reportContent').innerHTML = reportContent;
+            document.getElementById('reportResult').style.display = 'block';
+        }
+
+        // Экспорт отчета
+        function exportReport() {
+            const reportContent = document.getElementById('reportContent').innerText;
+            const reportType = document.getElementById('reportType').value;
+            const month = document.getElementById('reportMonth').value;
+
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `report_${reportType}_${month}.txt`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Вспомогательные функции
+        function showError(message) {
+            const notification = document.getElementById('errorNotification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const notification = document.getElementById('successNotification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+
+        function logout() {
+            currentUser = null;
+            currentAdmin = null;
+            localStorage.removeItem('snt_user');
+            document.getElementById('loginSection').classList.add('section-active');
+            document.getElementById('userSection').classList.remove('section-active');
+            document.getElementById('adminSection').classList.remove('section-active');
+            document.getElementById('userInfo').textContent = '';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // Переключение типа входа
+        function toggleLoginType() {
+            const loginType = document.getElementById('loginType').value;
+            if (loginType === 'admin') {
+                document.getElementById('username').placeholder = 'Введите логин администратора';
+            } else {
+                document.getElementById('username').placeholder = 'Введите ваш логин';
+            }
+        }
+    </script>
+</body>
+</html>
