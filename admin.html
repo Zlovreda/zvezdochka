@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>СНТ "Звездочка" - Админ-панель</title>
+    <title>Администратор - СНТ "Звездочка"</title>
     <style>
         * {
             margin: 0;
@@ -13,202 +13,236 @@
         }
         
         body {
-            background-color: #f5f7fa;
-            color: #333;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-info h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .container {
             max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
         
-        /* Header */
-        .header {
+        .tabs {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid #ddd;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
             margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
         }
         
-        .logo {
-            font-size: 1.8rem;
-            color: #2c3e50;
-        }
-        
-        .logo span {
-            color: #e74c3c;
-        }
-        
-        .admin-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .admin-name {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .btn-logout {
-            padding: 8px 16px;
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .tab {
+            padding: 18px 30px;
             cursor: pointer;
             font-weight: 500;
-            transition: background-color 0.3s;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
         }
         
-        .btn-logout:hover {
-            background-color: #c0392b;
+        .tab:hover {
+            background: #f8f9fa;
         }
         
-        /* Dashboard Stats */
-        .stats {
+        .tab.active {
+            color: #2c3e50;
+            border-bottom-color: #2c3e50;
+            background: #f8f9fa;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
         
-        .stat-card {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .stat-title {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 10px;
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
         }
         
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
         }
         
-        .stat-trend {
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.9;
         }
         
-        .trend-up {
-            color: #2ecc71;
-        }
-        
-        .trend-down {
-            color: #e74c3c;
-        }
-        
-        /* Main Content */
-        .main-content {
+        .form-grid {
             display: grid;
-            grid-template-columns: 250px 1fr;
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
         
-        @media (max-width: 992px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            height: fit-content;
-        }
-        
-        .sidebar-title {
-            font-size: 1.2rem;
-            color: #2c3e50;
+        .form-group {
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
         }
         
-        .sidebar-menu {
-            list-style-type: none;
-        }
-        
-        .menu-item {
-            padding: 12px 15px;
+        .form-group label {
+            display: block;
             margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
             border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
         }
         
-        .menu-item:hover {
-            background-color: #f8f9fa;
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
-        .menu-item.active {
-            background-color: #3498db;
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         
-        /* Content Area */
-        .content-area {
-            background-color: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            min-height: 500px;
+        .btn:hover {
+            transform: translateY(-2px);
         }
         
-        .content-title {
-            font-size: 1.4rem;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
+        .btn-secondary {
+            background: #6c757d;
         }
         
-        /* Table */
-        .table-container {
-            overflow-x: auto;
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4cd964 0%, #5ac8fa 100%);
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 20px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         
         th, td {
-            padding: 12px 15px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
         
         th {
-            background-color: #f8f9fa;
+            background: #f8f9fa;
             font-weight: 600;
-            color: #2c3e50;
+            color: #555;
             position: sticky;
             top: 0;
         }
         
         tr:hover {
-            background-color: #f8f9fa;
+            background: #f8f9fa;
         }
         
         .action-buttons {
@@ -216,1809 +250,1430 @@
             gap: 5px;
         }
         
-        .btn-icon {
-            padding: 6px 10px;
+        .action-btn {
+            padding: 5px 10px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
+            font-size: 12px;
         }
         
-        .btn-edit {
-            background-color: #3498db;
+        .edit-btn {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
             color: white;
         }
         
-        .btn-edit:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-delete {
-            background-color: #e74c3c;
+        .paid-badge {
+            background: #28a745;
             color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
         }
         
-        .btn-delete:hover {
-            background-color: #c0392b;
-        }
-        
-        /* Forms */
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #2c3e50;
-        }
-        
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            background-color: #3498db;
+        .unpaid-badge {
+            background: #dc3545;
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
         }
         
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-block {
-            width: 100%;
-            padding: 14px;
-        }
-        
-        .btn-success {
-            background-color: #2ecc71;
-        }
-        
-        .btn-success:hover {
-            background-color: #27ae60;
-        }
-        
-        .btn-secondary {
-            background-color: #7f8c8d;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #636e72;
-        }
-        
-        /* Tabs */
-        .content-tabs {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        
-        .content-tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            color: #7f8c8d;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-        }
-        
-        .content-tab.active {
-            color: #3498db;
-            border-bottom-color: #3498db;
-        }
-        
-        .tab-panel {
-            display: none;
-        }
-        
-        .tab-panel.active {
-            display: block;
-        }
-        
-        /* File Upload */
-        .file-upload {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            margin-bottom: 20px;
-            transition: border-color 0.3s;
-        }
-        
-        .file-upload:hover {
-            border-color: #3498db;
-        }
-        
-        .file-upload input {
-            display: none;
-        }
-        
-        .upload-label {
-            display: inline-block;
-            padding: 12px 20px;
-            background-color: #3498db;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.3s;
-        }
-        
-        .upload-label:hover {
-            background-color: #2980b9;
-        }
-        
-        /* Message */
         .message {
-            padding: 12px;
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            text-align: center;
             display: none;
         }
         
-        .success {
-            background-color: #d4edda;
+        .message.success {
+            background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
         
-        .error {
-            background-color: #f8d7da;
+        .message.error {
+            background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
         
-        /* Footer */
-        .footer {
-            text-align: center;
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            color: #7f8c8d;
-            font-size: 0.9rem;
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
         
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        .file-input {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .file-input input[type="file"] {
+            position: absolute;
+            opacity: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-content {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .modal-title {
-            font-size: 1.4rem;
-            color: #2c3e50;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
             cursor: pointer;
-            color: #7f8c8d;
         }
         
-        /* Search and Filters */
-        .search-container {
-            display: flex;
-            gap: 10px;
+        .file-input label {
+            display: block;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-input label:hover {
+            background: #e9ecef;
+        }
+        
+        .search-box {
             margin-bottom: 20px;
         }
         
-        .search-input {
-            flex: 1;
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
         }
         
-        .filter-select {
-            width: 200px;
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
         }
         
-        /* Mobile */
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
         @media (max-width: 768px) {
-            .admin-info {
-                display: none;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-container {
+            .tabs {
                 flex-direction: column;
             }
             
-            .filter-select {
+            .tab {
+                text-align: center;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
                 width: 100%;
+                margin-right: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div>
-                <h1 class="logo">СНТ "<span>Звездочка</span>"</h1>
-                <p>Админ-панель</p>
-            </div>
-            
+    <div class="header">
+        <div class="header-content">
             <div class="admin-info">
-                <div>
-                    <div class="admin-name" id="adminName">Администратор</div>
-                    <div id="adminEmail">admin@snt-zvezdochka.ru</div>
-                </div>
-                <button class="btn-logout" id="logoutBtn">Выйти</button>
+                <h1>Панель администратора СНТ "Звездочка"</h1>
+                <p>Управление пользователями, показаниями и начислениями</p>
             </div>
-        </div>
-        
-        <!-- Dashboard Stats -->
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-title">Всего пользователей</div>
-                <div class="stat-value" id="totalUsers">187</div>
-                <div class="stat-trend trend-up">+5 за месяц</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-title">Неоплаченные взносы</div>
-                <div class="stat-value" id="unpaidFees">124,560 ₽</div>
-                <div class="stat-trend trend-down">-12% за месяц</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-title">Передано показаний</div>
-                <div class="stat-value" id="submittedReadings">165</div>
-                <div class="stat-trend trend-up">+23 за неделю</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-title">Общее потребление</div>
-                <div class="stat-value" id="totalConsumption">15,678 кВт·ч</div>
-                <div class="stat-trend trend-down">-5% к прошлому месяцу</div>
-            </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <h2 class="sidebar-title">Управление</h2>
-                <ul class="sidebar-menu">
-                    <li class="menu-item active" data-section="dashboard">
-                        <span>📊</span> Дашборд
-                    </li>
-                    <li class="menu-item" data-section="users">
-                        <span>👥</span> Пользователи
-                    </li>
-                    <li class="menu-item" data-section="meters">
-                        <span>🔢</span> Счетчики
-                    </li>
-                    <li class="menu-item" data-section="readings">
-                        <span>📈</span> Показания
-                    </li>
-                    <li class="menu-item" data-section="fees">
-                        <span>💰</span> Взносы
-                    </li>
-                    <li class="menu-item" data-section="tariffs">
-                        <span>📋</span> Тарифы
-                    </li>
-                    <li class="menu-item" data-section="import">
-                        <span>📥</span> Импорт данных
-                    </li>
-                    <li class="menu-item" data-section="export">
-                        <span>📤</span> Экспорт данных
-                    </li>
-                    <li class="menu-item" data-section="common">
-                        <span>🏘️</span> Общее потребление
-                    </li>
-                </ul>
-            </div>
-            
-            <!-- Content Area -->
-            <div class="content-area">
-                <!-- Dashboard -->
-                <div id="dashboardSection" class="content-section active">
-                    <h2 class="content-title">Дашборд</h2>
-                    
-                    <div class="message" id="dashboardMessage"></div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                        <div>
-                            <h3 style="margin-bottom: 15px; color: #2c3e50;">Быстрые действия</h3>
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <button class="btn" onclick="showSection('users')">Добавить пользователя</button>
-                                <button class="btn btn-success" onclick="showSection('readings')">Внести показания</button>
-                                <button class="btn btn-secondary" onclick="showSection('import')">Импорт данных</button>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 style="margin-bottom: 15px; color: #2c3e50;">Статус системы</h3>
-                            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                    <span>База данных:</span>
-                                    <span style="color: #2ecc71; font-weight: 600;">✔ Активна</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                    <span>Пользователи онлайн:</span>
-                                    <span style="font-weight: 600;">12</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Последнее обновление:</span>
-                                    <span id="lastUpdateTime">Сегодня, 10:30</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Недавняя активность</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Время</th>
-                                    <th>Пользователь</th>
-                                    <th>Действие</th>
-                                    <th>Детали</th>
-                                </tr>
-                            </thead>
-                            <tbody id="activityTable">
-                                <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Users Management -->
-                <div id="usersSection" class="content-section">
-                    <h2 class="content-title">Управление пользователями</h2>
-                    
-                    <div class="message" id="usersMessage"></div>
-                    
-                    <div class="search-container">
-                        <input type="text" class="search-input" id="userSearch" placeholder="Поиск по имени или email...">
-                        <select class="filter-select" id="userFilter">
-                            <option value="all">Все пользователи</option>
-                            <option value="active">Активные</option>
-                            <option value="inactive">Неактивные</option>
-                        </select>
-                        <button class="btn" id="addUserBtn">Добавить пользователя</button>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>ФИО</th>
-                                    <th>Email</th>
-                                    <th>Телефон</th>
-                                    <th>Роль</th>
-                                    <th>Дата регистрации</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTable">
-                                <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Meters Management -->
-                <div id="metersSection" class="content-section">
-                    <h2 class="content-title">Управление счетчиками</h2>
-                    
-                    <div class="message" id="metersMessage"></div>
-                    
-                    <div class="search-container">
-                        <input type="text" class="search-input" id="meterSearch" placeholder="Поиск по номеру счетчика...">
-                        <select class="filter-select" id="meterFilter">
-                            <option value="all">Все счетчики</option>
-                            <option value="active">Активные</option>
-                            <option value="inactive">Неактивные</option>
-                        </select>
-                        <button class="btn" id="addMeterBtn">Добавить счетчик</button>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Номер счетчика</th>
-                                    <th>Владелец</th>
-                                    <th>Тип</th>
-                                    <th>Дата установки</th>
-                                    <th>Статус</th>
-                                    <th>Последние показания</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="metersTable">
-                                <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Readings Management -->
-                <div id="readingsSection" class="content-section">
-                    <h2 class="content-title">Управление показаниями</h2>
-                    
-                    <div class="content-tabs">
-                        <div class="content-tab active" data-tab="addReadings">Добавить показания</div>
-                        <div class="content-tab" data-tab="viewReadings">Просмотр показаний</div>
-                        <div class="content-tab" data-tab="bulkReadings">Пакетное добавление</div>
-                    </div>
-                    
-                    <div class="message" id="readingsMessage"></div>
-                    
-                    <!-- Add Readings Tab -->
-                    <div id="addReadingsTab" class="tab-panel active">
-                        <form id="addReadingForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="readingUser">Пользователь</label>
-                                    <select id="readingUser" required>
-                                        <option value="">Выберите пользователя</option>
-                                        <!-- Опции загрузятся через JS -->
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="readingMeter">Счетчик</label>
-                                    <select id="readingMeter" required>
-                                        <option value="">Выберите счетчик</option>
-                                        <!-- Опции загрузятся через JS -->
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="readingMonth">Месяц</label>
-                                    <select id="readingMonth" required>
-                                        <option value="">Выберите месяц</option>
-                                        <option value="1">Январь</option>
-                                        <option value="2">Февраль</option>
-                                        <option value="3">Март</option>
-                                        <option value="4">Апрель</option>
-                                        <option value="5">Май</option>
-                                        <option value="6">Июнь</option>
-                                        <option value="7">Июль</option>
-                                        <option value="8">Август</option>
-                                        <option value="9">Сентябрь</option>
-                                        <option value="10">Октябрь</option>
-                                        <option value="11">Ноябрь</option>
-                                        <option value="12">Декабрь</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="readingYear">Год</label>
-                                    <input type="number" id="readingYear" min="2023" max="2030" value="2024" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="readingValue">Показания (кВт·ч)</label>
-                                    <input type="number" id="readingValue" step="0.01" min="0" required>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-block">Добавить показания</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- View Readings Tab -->
-                    <div id="viewReadingsTab" class="tab-panel">
-                        <div class="search-container">
-                            <input type="text" class="search-input" id="readingsSearch" placeholder="Поиск по пользователю или счетчику...">
-                            <select class="filter-select" id="readingsMonthFilter">
-                                <option value="all">Все месяцы</option>
-                                <option value="1">Январь</option>
-                                <option value="2">Февраль</option>
-                                <option value="3">Март</option>
-                                <option value="4">Апрель</option>
-                                <option value="5">Май</option>
-                                <option value="6">Июнь</option>
-                                <option value="7">Июль</option>
-                                <option value="8">Август</option>
-                                <option value="9">Сентябрь</option>
-                                <option value="10">Октябрь</option>
-                                <option value="11">Ноябрь</option>
-                                <option value="12">Декабрь</option>
-                            </select>
-                            <select class="filter-select" id="readingsYearFilter">
-                                <option value="2024">2024</option>
-                                <option value="2023">2023</option>
-                                <option value="2022">2022</option>
-                            </select>
-                        </div>
-                        
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Пользователь</th>
-                                        <th>Счетчик</th>
-                                        <th>Месяц/Год</th>
-                                        <th>Показания</th>
-                                        <th>Дата передачи</th>
-                                        <th>Действия</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="readingsTable">
-                                    <!-- Данные загрузятся через JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Bulk Readings Tab -->
-                    <div id="bulkReadingsTab" class="tab-panel">
-                        <div class="file-upload">
-                            <input type="file" id="bulkReadingsFile" accept=".csv, .xlsx, .xls">
-                            <label for="bulkReadingsFile" class="upload-label">Выберите файл для импорта</label>
-                            <p style="margin-top: 10px; color: #7f8c8d;">Поддерживаемые форматы: CSV, Excel</p>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <h4>Шаблон для заполнения:</h4>
-                            <p style="color: #7f8c8d; margin-bottom: 10px;">Скачайте шаблон, заполните его и загрузите обратно</p>
-                            <button class="btn btn-secondary" id="downloadTemplateBtn">Скачать шаблон CSV</button>
-                        </div>
-                        
-                        <div>
-                            <h4>Инструкция:</h4>
-                            <ol style="padding-left: 20px; color: #7f8c8d;">
-                                <li>Скачайте шаблон CSV</li>
-                                <li>Заполните его данными (ID счетчика, месяц, год, показания)</li>
-                                <li>Загрузите заполненный файл</li>
-                                <li>Проверьте данные перед сохранением</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Fees Management -->
-                <div id="feesSection" class="content-section">
-                    <h2 class="content-title">Управление членскими взносами</h2>
-                    
-                    <div class="content-tabs">
-                        <div class="content-tab active" data-tab="manageFees">Назначить взносы</div>
-                        <div class="content-tab" data-tab="viewFees">Просмотр взносов</div>
-                    </div>
-                    
-                    <div class="message" id="feesMessage"></div>
-                    
-                    <!-- Manage Fees Tab -->
-                    <div id="manageFeesTab" class="tab-panel active">
-                        <form id="manageFeesForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="feeType">Тип взноса</label>
-                                    <select id="feeType" required>
-                                        <option value="salary">Зарплата председателя</option>
-                                        <option value="maintenance">Содержание территории</option>
-                                        <option value="other">Прочие расходы</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="feeAmount">Сумма (₽)</label>
-                                    <input type="number" id="feeAmount" step="0.01" min="0" required>
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="feeMonth">Месяц</label>
-                                    <select id="feeMonth" required>
-                                        <option value="">Выберите месяц</option>
-                                        <option value="1">Январь</option>
-                                        <option value="2">Февраль</option>
-                                        <option value="3">Март</option>
-                                        <option value="4">Апрель</option>
-                                        <option value="5">Май</option>
-                                        <option value="6">Июнь</option>
-                                        <option value="7">Июль</option>
-                                        <option value="8">Август</option>
-                                        <option value="9">Сентябрь</option>
-                                        <option value="10">Октябрь</option>
-                                        <option value="11">Ноябрь</option>
-                                        <option value="12">Декабрь</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="feeYear">Год</label>
-                                    <input type="number" id="feeYear" min="2023" max="2030" value="2024" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="feeDueDate">Срок оплаты</label>
-                                    <input type="date" id="feeDueDate" required>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Применить к:</label>
-                                <div style="display: flex; gap: 20px; margin-top: 10px;">
-                                    <label style="display: flex; align-items: center; gap: 5px;">
-                                        <input type="radio" name="feeScope" value="all" checked> Все пользователи
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 5px;">
-                                        <input type="radio" name="feeScope" value="selected"> Выбранным пользователям
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group" id="selectedUsersContainer" style="display: none;">
-                                <label>Выберите пользователей:</label>
-                                <select id="selectedUsers" multiple style="height: 150px;">
-                                    <!-- Опции загрузятся через JS -->
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-block">Назначить взносы</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- View Fees Tab -->
-                    <div id="viewFeesTab" class="tab-panel">
-                        <div class="search-container">
-                            <input type="text" class="search-input" id="feesSearch" placeholder="Поиск по пользователю...">
-                            <select class="filter-select" id="feesStatusFilter">
-                                <option value="all">Все статусы</option>
-                                <option value="paid">Оплачено</option>
-                                <option value="unpaid">Не оплачено</option>
-                            </select>
-                            <select class="filter-select" id="feesTypeFilter">
-                                <option value="all">Все типы</option>
-                                <option value="salary">Зарплата</option>
-                                <option value="maintenance">Содержание</option>
-                                <option value="other">Прочие</option>
-                            </select>
-                        </div>
-                        
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Пользователь</th>
-                                        <th>Тип взноса</th>
-                                        <th>Период</th>
-                                        <th>Сумма</th>
-                                        <th>Срок оплаты</th>
-                                        <th>Статус</th>
-                                        <th>Действия</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="feesTable">
-                                    <!-- Данные загрузятся через JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tariffs Management -->
-                <div id="tariffsSection" class="content-section">
-                    <h2 class="content-title">Управление тарифами</h2>
-                    
-                    <div class="message" id="tariffsMessage"></div>
-                    
-                    <div class="table-container" style="margin-bottom: 30px;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Название тарифа</th>
-                                    <th>До 100 кВт·ч</th>
-                                    <th>Свыше 100 кВт·ч</th>
-                                    <th>Общее потребление</th>
-                                    <th>Дата начала</th>
-                                    <th>Дата окончания</th>
-                                    <th>Статус</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tariffsTable">
-                                <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Добавить новый тариф</h3>
-                    <form id="addTariffForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="tariffName">Название тарифа</label>
-                                <input type="text" id="tariffName" required placeholder="Например: Основной тариф 2024">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="tariffRate1">Тариф до 100 кВт·ч (₽/кВт·ч)</label>
-                                <input type="number" id="tariffRate1" step="0.01" min="0" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="tariffRate2">Тариф свыше 100 кВт·ч (₽/кВт·ч)</label>
-                                <input type="number" id="tariffRate2" step="0.01" min="0" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="tariffRateCommon">Тариф общее потребление (₽/кВт·ч)</label>
-                                <input type="number" id="tariffRateCommon" step="0.01" min="0" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="tariffStartDate">Дата начала действия</label>
-                                <input type="date" id="tariffStartDate" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="tariffEndDate">Дата окончания (необязательно)</label>
-                                <input type="date" id="tariffEndDate">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-block">Добавить тариф</button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Import Data -->
-                <div id="importSection" class="content-section">
-                    <h2 class="content-title">Импорт данных</h2>
-                    
-                    <div class="message" id="importMessage"></div>
-                    
-                    <div class="content-tabs">
-                        <div class="content-tab active" data-tab="importUsers">Пользователи</div>
-                        <div class="content-tab" data-tab="importMeters">Счетчики</div>
-                        <div class="content-tab" data-tab="importReadings">Показания</div>
-                        <div class="content-tab" data-tab="importFees">Взносы</div>
-                    </div>
-                    
-                    <!-- Import Users Tab -->
-                    <div id="importUsersTab" class="tab-panel active">
-                        <div class="file-upload">
-                            <input type="file" id="importUsersFile" accept=".csv, .xlsx, .xls">
-                            <label for="importUsersFile" class="upload-label">Выберите файл для импорта пользователей</label>
-                        </div>
-                        
-                        <div style="margin: 20px 0;">
-                            <button class="btn btn-secondary" id="downloadUsersTemplateBtn">Скачать шаблон CSV</button>
-                        </div>
-                        
-                        <div>
-                            <h4>Предпросмотр данных:</h4>
-                            <div class="table-container">
-                                <table id="importUsersPreview">
-                                    <thead>
-                                        <tr>
-                                            <th>ФИО</th>
-                                            <th>Email</th>
-                                            <th>Пароль</th>
-                                            <th>Телефон</th>
-                                            <th>Адрес</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Данные загрузятся через JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group" style="margin-top: 20px;">
-                            <button class="btn btn-success" id="importUsersBtn" disabled>Импортировать пользователей</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Other import tabs would be similar -->
-                    
-                </div>
-                
-                <!-- Export Data -->
-                <div id="exportSection" class="content-section">
-                    <h2 class="content-title">Экспорт данных</h2>
-                    
-                    <div class="message" id="exportMessage"></div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                        <div class="stat-card">
-                            <div class="stat-title">Экспорт пользователей</div>
-                            <p style="margin-bottom: 15px;">Экспорт списка всех пользователей в CSV формате</p>
-                            <button class="btn btn-block" id="exportUsersBtn">Экспорт CSV</button>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-title">Экспорт показаний</div>
-                            <p style="margin-bottom: 15px;">Экспорт показаний счетчиков за выбранный период</p>
-                            <div class="form-row">
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <select id="exportReadingsMonth">
-                                        <option value="all">Все месяцы</option>
-                                        <option value="1">Январь</option>
-                                        <option value="2">Февраль</option>
-                                        <option value="3">Март</option>
-                                        <option value="4">Апрель</option>
-                                        <option value="5">Май</option>
-                                        <option value="6">Июнь</option>
-                                        <option value="7">Июль</option>
-                                        <option value="8">Август</option>
-                                        <option value="9">Сентябрь</option>
-                                        <option value="10">Октябрь</option>
-                                        <option value="11">Ноябрь</option>
-                                        <option value="12">Декабрь</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <input type="number" id="exportReadingsYear" min="2023" max="2030" value="2024">
-                                </div>
-                            </div>
-                            <button class="btn btn-block" id="exportReadingsBtn">Экспорт CSV</button>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-title">Экспорт финансового отчета</div>
-                            <p style="margin-bottom: 15px;">Экспорт данных по взносам и платежам</p>
-                            <div class="form-row">
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <select id="exportFeesMonth">
-                                        <option value="all">Все месяцы</option>
-                                        <option value="1">Январь</option>
-                                        <option value="2">Февраль</option>
-                                        <option value="3">Март</option>
-                                        <option value="4">Апрель</option>
-                                        <option value="5">Май</option>
-                                        <option value="6">Июнь</option>
-                                        <option value="7">Июль</option>
-                                        <option value="8">Август</option>
-                                        <option value="9">Сентябрь</option>
-                                        <option value="10">Октябрь</option>
-                                        <option value="11">Ноябрь</option>
-                                        <option value="12">Декабрь</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 10px;">
-                                    <input type="number" id="exportFeesYear" min="2023" max="2030" value="2024">
-                                </div>
-                            </div>
-                            <button class="btn btn-block" id="exportFeesBtn">Экспорт CSV</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Common Consumption -->
-                <div id="commonSection" class="content-section">
-                    <h2 class="content-title">Общее потребление</h2>
-                    
-                    <div class="message" id="commonMessage"></div>
-                    
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="margin-bottom: 15px; color: #2c3e50;">Добавить общее потребление за период</h3>
-                        <form id="addCommonConsumptionForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="commonMonth">Месяц</label>
-                                    <select id="commonMonth" required>
-                                        <option value="">Выберите месяц</option>
-                                        <option value="1">Январь</option>
-                                        <option value="2">Февраль</option>
-                                        <option value="3">Март</option>
-                                        <option value="4">Апрель</option>
-                                        <option value="5">Май</option>
-                                        <option value="6">Июнь</option>
-                                        <option value="7">Июль</option>
-                                        <option value="8">Август</option>
-                                        <option value="9">Сентябрь</option>
-                                        <option value="10">Октябрь</option>
-                                        <option value="11">Ноябрь</option>
-                                        <option value="12">Декабрь</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="commonYear">Год</label>
-                                    <input type="number" id="commonYear" min="2023" max="2030" value="2024" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="commonConsumption">Общее потребление (кВт·ч)</label>
-                                    <input type="number" id="commonConsumption" step="0.01" min="0" required>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn">Добавить общее потребление</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <h3 style="margin-bottom: 15px; color: #2c3e50;">История общего потребления</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Период</th>
-                                    <th>Общее потребление (кВт·ч)</th>
-                                    <th>Стоимость общего потребления*</th>
-                                    <th>На одного пользователя*</th>
-                                    <th>Дата добавления</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="commonConsumptionTable">
-                                <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <p style="margin-top: 10px; color: #7f8c8d; font-size: 0.9rem;">* Расчет выполняется на основе текущего тарифа на общее потребление</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>СНТ "Звездочка" © 2024. Админ-панель. Все права защищены.</p>
-            <p>Версия системы: 1.0.0 | Последнее обновление: 15.03.2024</p>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
         </div>
     </div>
     
-    <!-- Modal for adding/editing -->
-    <div class="modal" id="userModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Добавить пользователя</h3>
-                <button class="modal-close" id="modalClose">&times;</button>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('dashboard')">Дашборд</div>
+            <div class="tab" onclick="switchTab('users')">Участники</div>
+            <div class="tab" onclick="switchTab('meters')">Показания</div>
+            <div class="tab" onclick="switchTab('contributions')">Взносы</div>
+            <div class="tab" onclick="switchTab('tariffs')">Тарифы</div>
+            <div class="tab" onclick="switchTab('import')">Импорт/Экспорт</div>
+            <div class="tab" onclick="switchTab('settings')">Настройки</div>
+        </div>
+        
+        <!-- Дашборд -->
+        <div class="tab-content active" id="dashboardTab">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Всего участников</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Общая задолженность</div>
+                    <div class="stat-value" id="totalDebt">0 ₽</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Электроэнергия</div>
+                    <div class="stat-value" id="electricityDebt">0 ₽</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Членские взносы</div>
+                    <div class="stat-value" id="contributionsDebt">0 ₽</div>
+                </div>
             </div>
-            <form id="userForm">
-                <input type="hidden" id="userId">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="modalFullName">ФИО *</label>
-                        <input type="text" id="modalFullName" required>
+            
+            <div class="card">
+                <h2>Быстрые действия</h2>
+                <div class="btn-group">
+                    <button class="btn" onclick="switchTab('users')">Добавить участника</button>
+                    <button class="btn btn-success" onclick="generateInvoices()">Сформировать начисления</button>
+                    <button class="btn btn-export" onclick="exportAllData()">Экспорт всех данных</button>
+                    <button class="btn btn-secondary" onclick="sendReminders()">Отправить напоминания</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Последние показания</h2>
+                <table id="recentReadings">
+                    <thead>
+                        <tr>
+                            <th>Участок</th>
+                            <th>Участник</th>
+                            <th>Показания</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Данные будут загружены через JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Управление участниками -->
+        <div class="tab-content" id="usersTab">
+            <div class="message" id="usersMessage"></div>
+            
+            <div class="btn-group">
+                <button class="btn" onclick="showUserForm()">+ Добавить участника</button>
+                <button class="btn btn-export" onclick="exportUsers()">Экспорт в CSV</button>
+                <button class="btn btn-secondary" onclick="importUsers()">Импорт из CSV</button>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="userSearch" placeholder="Поиск по ФИО или номеру участка..." 
+                       onkeyup="searchUsers()">
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Участок</th>
+                            <th>ФИО</th>
+                            <th>Логин</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th>Баланс</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Данные будут загружены через JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Форма добавления/редактирования пользователя -->
+            <div id="userForm" style="display: none; margin-top: 30px;">
+                <div class="card">
+                    <h2 id="userFormTitle">Добавление участника</h2>
+                    <form id="userFormData" onsubmit="saveUser(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Номер участка *</label>
+                                <input type="text" id="plotNumber" required>
+                            </div>
+                            <div class="form-group">
+                                <label>ФИО *</label>
+                                <input type="text" id="fullName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Логин *</label>
+                                <input type="text" id="username" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Пароль *</label>
+                                <input type="password" id="password" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Телефон</label>
+                                <input type="tel" id="phone">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="email">
+                            </div>
+                            <div class="form-group">
+                                <label>Площадь участка (соток)</label>
+                                <input type="number" id="area" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label>Дополнительная информация</label>
+                                <textarea id="notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-success">Сохранить</button>
+                            <button type="button" class="btn btn-secondary" onclick="hideUserForm()">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Показания счетчиков -->
+        <div class="tab-content" id="metersTab">
+            <div class="message" id="metersMessage"></div>
+            
+            <div class="btn-group">
+                <button class="btn" onclick="addMeterReading()">+ Добавить показания</button>
+                <button class="btn btn-export" onclick="exportMeterReadings()">Экспорт в CSV</button>
+                <button class="btn btn-secondary" onclick="importMeterReadings()">Импорт из CSV</button>
+                <button class="btn btn-success" onclick="calculateElectricity()">Рассчитать электроэнергию</button>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="meterSearch" placeholder="Поиск по участку или ФИО..." 
+                       onkeyup="searchMeterReadings()">
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table id="metersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Участок</th>
+                            <th>ФИО</th>
+                            <th>Дата</th>
+                            <th>Показания</th>
+                            <th>Расход</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Данные будут загружены через JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Членские взносы -->
+        <div class="tab-content" id="contributionsTab">
+            <div class="message" id="contributionsMessage"></div>
+            
+            <div class="btn-group">
+                <button class="btn" onclick="addContribution()">+ Начислить взнос</button>
+                <button class="btn" onclick="addMassContributions()">Массовое начисление</button>
+                <button class="btn btn-export" onclick="exportContributions()">Экспорт в CSV</button>
+                <button class="btn btn-secondary" onclick="importContributions()">Импорт из CSV</button>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Тип взноса</label>
+                    <select id="contributionTypeFilter" onchange="filterContributions()">
+                        <option value="">Все типы</option>
+                        <option value="salary">1. Зарплата</option>
+                        <option value="maintenance">2. Содержание</option>
+                        <option value="other">3. Прочее</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Статус</label>
+                    <select id="contributionStatusFilter" onchange="filterContributions()">
+                        <option value="">Все статусы</option>
+                        <option value="paid">Оплачено</option>
+                        <option value="unpaid">Не оплачено</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Месяц</label>
+                    <input type="month" id="contributionMonthFilter" onchange="filterContributions()">
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table id="contributionsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Участок</th>
+                            <th>ФИО</th>
+                            <th>Тип</th>
+                            <th>Сумма</th>
+                            <th>Дата начисления</th>
+                            <th>Срок оплаты</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Данные будут загружены через JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Тарифы -->
+        <div class="tab-content" id="tariffsTab">
+            <div class="message" id="tariffsMessage"></div>
+            
+            <div class="card">
+                <h2>Текущие тарифы</h2>
+                <div id="currentTariffs">
+                    <!-- Текущие тарифы будут загружены через JS -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Установить новые тарифы</h2>
+                <form id="tariffForm" onsubmit="saveTariffs(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Тариф 1 (до 100 кВт·ч) *</label>
+                            <input type="number" step="0.01" id="rate1" required placeholder="руб/кВт·ч">
+                        </div>
+                        <div class="form-group">
+                            <label>Тариф 2 (свыше 100 кВт·ч) *</label>
+                            <input type="number" step="0.01" id="rate2" required placeholder="руб/кВт·ч">
+                        </div>
+                        <div class="form-group">
+                            <label>Тариф на общественные нужды *</label>
+                            <input type="number" step="0.01" id="rateCommon" required placeholder="руб/кВт·ч">
+                        </div>
+                        <div class="form-group">
+                            <label>Дата начала действия *</label>
+                            <input type="date" id="validFrom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Комментарий</label>
+                            <input type="text" id="tariffComment" placeholder="Основание для изменения тарифов">
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="modalEmail">Email *</label>
-                        <input type="email" id="modalEmail" required>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">Сохранить тарифы</button>
                     </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>История изменения тарифов</h2>
+                <table id="tariffsHistory">
+                    <thead>
+                        <tr>
+                            <th>Дата установки</th>
+                            <th>Тариф 1</th>
+                            <th>Тариф 2</th>
+                            <th>Общественные нужды</th>
+                            <th>Комментарий</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- История будет загружена через JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Импорт/Экспорт -->
+        <div class="tab-content" id="importTab">
+            <div class="message" id="importMessage"></div>
+            
+            <div class="card">
+                <h2>Экспорт данных</h2>
+                <div class="btn-group">
+                    <button class="btn btn-export" onclick="exportData('users')">Экспорт участников</button>
+                    <button class="btn btn-export" onclick="exportData('readings')">Экспорт показаний</button>
+                    <button class="btn btn-export" onclick="exportData('contributions')">Экспорт взносов</button>
+                    <button class="btn btn-export" onclick="exportData('all')">Экспорт всех данных</button>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="modalPassword">Пароль *</label>
-                        <input type="password" id="modalPassword" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modalPhone">Телефон</label>
-                        <input type="tel" id="modalPhone">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="modalAddress">Адрес</label>
-                        <textarea id="modalAddress"></textarea>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="modalRole">Роль</label>
-                        <select id="modalRole">
-                            <option value="user">Пользователь</option>
-                            <option value="admin">Администратор</option>
-                        </select>
-                    </div>
+            </div>
+            
+            <div class="card">
+                <h2>Импорт данных</h2>
+                <div class="file-input">
+                    <input type="file" id="importFile" accept=".csv" onchange="handleFileSelect(event)">
+                    <label for="importFile">
+                        <div style="font-size: 48px;">📁</div>
+                        <div>Перетащите CSV файл или кликните для выбора</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                            Поддерживаемые форматы: Участники, Показания, Взносы
+                        </div>
+                    </label>
                 </div>
                 
                 <div class="form-group">
-                    <button type="submit" class="btn btn-block" id="modalSubmitBtn">Сохранить</button>
+                    <label>Тип импортируемых данных</label>
+                    <select id="importType">
+                        <option value="users">Участники</option>
+                        <option value="readings">Показания счетчиков</option>
+                        <option value="contributions">Членские взносы</option>
+                    </select>
                 </div>
-            </form>
+                
+                <div class="form-group">
+                    <label>Режим импорта</label>
+                    <select id="importMode">
+                        <option value="add">Добавить новые записи</option>
+                        <option value="replace">Заменить существующие</option>
+                        <option value="update">Обновить существующие</option>
+                    </select>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="processImport()">Начать импорт</button>
+                    <button class="btn btn-secondary" onclick="downloadTemplate()">Скачать шаблон</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Резервное копирование</h2>
+                <p>Создайте резервную копию всех данных базы данных.</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="createBackup()">Создать резервную копию</button>
+                    <button class="btn btn-secondary" onclick="restoreBackup()">Восстановить из копии</button>
+                </div>
+                
+                <div id="backupList" style="margin-top: 20px;">
+                    <!-- Список резервных копий будет загружен через JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Настройки -->
+        <div class="tab-content" id="settingsTab">
+            <div class="message" id="settingsMessage"></div>
+            
+            <div class="card">
+                <h2>Настройки системы</h2>
+                <form id="settingsForm" onsubmit="saveSettings(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Название СНТ</label>
+                            <input type="text" id="sntName" value="СНТ 'Звездочка'">
+                        </div>
+                        <div class="form-group">
+                            <label>Контактный телефон</label>
+                            <input type="tel" id="contactPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>Контактный email</label>
+                            <input type="email" id="contactEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Дни приема</label>
+                            <input type="text" id="receptionDays" placeholder="Пн-Пт, 10:00-18:00">
+                        </div>
+                        <div class="form-group">
+                            <label>Срок оплаты взносов (дней)</label>
+                            <input type="number" id="paymentDeadline" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label>Штраф за просрочку (%)</label>
+                            <input type="number" step="0.01" id="lateFee" value="0.5">
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">Сохранить настройки</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>Системная информация</h2>
+                <div id="systemInfo">
+                    <!-- Информация будет загружена через JS -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Опасная зона</h2>
+                <div class="btn-group">
+                    <button class="btn btn-danger" onclick="clearOldData()">Очистить старые данные</button>
+                    <button class="btn btn-danger" onclick="resetSystem()">Сбросить систему</button>
+                </div>
+                <p style="color: #666; margin-top: 10px; font-size: 14px;">
+                    Внимание: Эти действия необратимы. Создайте резервную копию перед выполнением.
+                </p>
+            </div>
         </div>
     </div>
 
     <script>
         // Конфигурация Supabase
-       const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co'; // Замените на ваш URL
-       const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk'; // Замените на ваш ключ
+        const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk';
         
-        // Инициализация Supabase клиента
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Инициализация Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Текущий пользователь (админ)
+        // Текущий администратор
         let currentAdmin = null;
         
-        // Инициализация приложения
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAdminAuth();
-            setupEventListeners();
-            loadAdminData();
-            loadDashboardData();
-            setupSectionSwitching();
-            
-            // Установка текущей даты в формах
-            const now = new Date();
-            const currentDate = now.toISOString().split('T')[0];
-            if (document.getElementById('feeDueDate')) {
-                // Установить срок оплаты на конец текущего месяца
-                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                document.getElementById('feeDueDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`;
-            }
-            
-            if (document.getElementById('tariffStartDate')) {
-                document.getElementById('tariffStartDate').value = currentDate;
-            }
-        });
-        
-        // Проверка авторизации администратора
-        function checkAdminAuth() {
-            const userId = localStorage.getItem('snt_user_id');
-            const userRole = localStorage.getItem('snt_user_role');
-            
-            if (!userId || userRole !== 'admin') {
+        // Инициализация страницы
+        async function initializePage() {
+            // Проверяем авторизацию
+            const userData = localStorage.getItem('user');
+            if (!userData) {
                 window.location.href = 'index.html';
+                return;
             }
             
-            currentAdmin = {
-                id: userId,
-                email: localStorage.getItem('snt_user_email'),
-                name: localStorage.getItem('snt_user_name'),
-                role: userRole
-            };
+            currentAdmin = JSON.parse(userData);
+            
+            // Если пользователь не админ, перенаправляем
+            if (currentAdmin.role !== 'admin') {
+                window.location.href = 'user.html';
+                return;
+            }
+            
+            // Инициализируем базу данных если нужно
+            await initializeDatabase();
+            
+            // Загружаем данные дашборда
+            await loadDashboardData();
+            
+            // Устанавливаем сегодняшнюю дату по умолчанию в формах
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('validFrom').value = today;
         }
         
-        // Настройка обработчиков событий
-        function setupEventListeners() {
-            // Выход из системы
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            
-            // Закрытие модального окна
-            document.getElementById('modalClose').addEventListener('click', closeModal);
-            
-            // Клик вне модального окна для закрытия
-            document.getElementById('userModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-            
-            // Добавление пользователя
-            document.getElementById('addUserBtn').addEventListener('click', function() {
-                openUserModal();
-            });
-            
-            // Обработка формы пользователя
-            document.getElementById('userForm').addEventListener('submit', saveUser);
-            
-            // Переключение между вкладками контента
-            document.querySelectorAll('.content-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    const parentSection = this.closest('.content-section').id;
-                    
-                    // Удаление активного класса у всех вкладок в этой секции
-                    this.parentElement.querySelectorAll('.content-tab').forEach(t => {
-                        t.classList.remove('active');
-                    });
-                    
-                    // Удаление активного класса у всех панелей в этой секции
-                    document.querySelectorAll(`#${parentSection} .tab-panel`).forEach(p => {
-                        p.classList.remove('active');
-                    });
-                    
-                    // Добавление активного класса
-                    this.classList.add('active');
-                    document.getElementById(`${tabId}Tab`).classList.add('active');
-                });
-            });
-            
-            // Переключение области применения взносов
-            document.querySelectorAll('input[name="feeScope"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const selectedUsersContainer = document.getElementById('selectedUsersContainer');
-                    if (this.value === 'selected') {
-                        selectedUsersContainer.style.display = 'block';
-                        loadUsersForSelection();
-                    } else {
-                        selectedUsersContainer.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Экспорт данных
-            document.getElementById('exportUsersBtn').addEventListener('click', exportUsers);
-            document.getElementById('exportReadingsBtn').addEventListener('click', exportReadings);
-            document.getElementById('exportFeesBtn').addEventListener('click', exportFees);
-            
-            // Загрузка шаблонов
-            document.getElementById('downloadTemplateBtn').addEventListener('click', downloadReadingsTemplate);
-            document.getElementById('downloadUsersTemplateBtn').addEventListener('click', downloadUsersTemplate);
-            
-            // Обработка форм
-            if (document.getElementById('addReadingForm')) {
-                document.getElementById('addReadingForm').addEventListener('submit', addReading);
-            }
-            
-            if (document.getElementById('manageFeesForm')) {
-                document.getElementById('manageFeesForm').addEventListener('submit', manageFees);
-            }
-            
-            if (document.getElementById('addTariffForm')) {
-                document.getElementById('addTariffForm').addEventListener('submit', addTariff);
-            }
-            
-            if (document.getElementById('addCommonConsumptionForm')) {
-                document.getElementById('addCommonConsumptionForm').addEventListener('submit', addCommonConsumption);
+        // Инициализация базы данных
+        async function initializeDatabase() {
+            try {
+                // Создаем таблицы если их нет
+                await createTablesIfNotExist();
+                
+                // Создаем тестовые данные если база пуста
+                await createTestData();
+                
+            } catch (error) {
+                console.error('Ошибка инициализации базы данных:', error);
+                showMessage('usersMessage', 'Ошибка инициализации базы данных', 'error');
             }
         }
         
-        // Загрузка данных администратора
-        function loadAdminData() {
-            document.getElementById('adminName').textContent = currentAdmin.name;
-            document.getElementById('adminEmail').textContent = currentAdmin.email;
+        // Создание таблиц
+        async function createTablesIfNotExist() {
+            // Таблица пользователей
+            const { data: users, error: usersError } = await supabase
+                .from('users')
+                .select('id')
+                .limit(1);
+            
+            if (usersError) {
+                console.log('Таблица users не существует, создаем структуру...');
+                // В реальном проекте здесь был бы SQL для создания таблиц
+                // Для Supabase таблицы создаются через Dashboard
+            }
+        }
+        
+        // Создание тестовых данных
+        async function createTestData() {
+            // Проверяем, есть ли данные
+            const { data: users, error } = await supabase
+                .from('users')
+                .select('id')
+                .limit(1);
+            
+            if (users && users.length === 0) {
+                // Создаем администратора
+                await supabase
+                    .from('users')
+                    .insert([
+                        {
+                            username: 'admin',
+                            password: 'admin123',
+                            role: 'admin',
+                            full_name: 'Администратор СНТ',
+                            plot_number: '0',
+                            phone: '+7 (999) 123-45-67',
+                            email: 'admin@zvezdochka-snt.ru',
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                
+                // Создаем тарифы
+                await supabase
+                    .from('tariffs')
+                    .insert([
+                        {
+                            rate1: 6.1,
+                            rate2: 7.3,
+                            rate_common: 0.36,
+                            valid_from: new Date().toISOString().split('T')[0],
+                            comment: 'Начальные тарифы',
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                
+                console.log('Тестовые данные созданы');
+            }
         }
         
         // Загрузка данных дашборда
-        function loadDashboardData() {
-            // В реальном приложении здесь будут запросы к Supabase
-            // Для демо используем фиктивные данные
-            
-            // Загрузка активности
-            const activities = [
-                { time: '10:30', user: 'Иванов И.И.', action: 'Передал показания', details: '1245.67 кВт·ч' },
-                { time: '10:15', user: 'Петров П.П.', action: 'Оплатил взносы', details: '1600 ₽' },
-                { time: '09:45', user: 'Сидоров С.С.', action: 'Зарегистрировался', details: 'Новый пользователь' },
-                { time: '09:30', user: 'Администратор', action: 'Обновил тарифы', details: 'Новые тарифы с 01.04.2024' },
-                { time: 'Вчера, 18:20', user: 'Кузнецов К.К.', action: 'Передал показания', details: '987.65 кВт·ч' }
-            ];
-            
-            const activityTable = document.getElementById('activityTable');
-            activityTable.innerHTML = '';
-            
-            activities.forEach(activity => {
-                const row = activityTable.insertRow();
-                row.innerHTML = `
-                    <td>${activity.time}</td>
-                    <td>${activity.user}</td>
-                    <td>${activity.action}</td>
-                    <td>${activity.details}</td>
-                `;
-            });
-            
-            // Обновление времени последнего обновления
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('lastUpdateTime').textContent = `Сегодня, ${timeString}`;
+        async function loadDashboardData() {
+            try {
+                // Загружаем статистику
+                await loadStatistics();
+                
+                // Загружаем последние показания
+                await loadRecentReadings();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки дашборда:', error);
+            }
         }
         
-        // Переключение между секциями
-        function setupSectionSwitching() {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const sectionId = this.getAttribute('data-section');
-                    showSection(sectionId);
+        // Загрузка статистики
+        async function loadStatistics() {
+            try {
+                // Общее количество пользователей
+                const { count: totalUsers, error: usersError } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .neq('role', 'admin');
+                
+                if (!usersError) {
+                    document.getElementById('totalUsers').textContent = totalUsers;
+                }
+                
+                // Общая задолженность
+                const { data: balances, error: balancesError } = await supabase
+                    .from('user_balance')
+                    .select('total_debt');
+                
+                if (!balancesError && balances) {
+                    const totalDebt = balances.reduce((sum, balance) => sum + (balance.total_debt || 0), 0);
+                    document.getElementById('totalDebt').textContent = totalDebt.toFixed(2) + ' ₽';
                     
-                    // Удаление активного класса у всех элементов меню
-                    document.querySelectorAll('.menu-item').forEach(i => {
-                        i.classList.remove('active');
-                    });
+                    const electricityDebt = balances.reduce((sum, balance) => sum + (balance.electricity_debt || 0), 0);
+                    document.getElementById('electricityDebt').textContent = electricityDebt.toFixed(2) + ' ₽';
                     
-                    // Добавление активного класса к текущему элементу
-                    this.classList.add('active');
-                });
-            });
+                    const contributionsDebt = balances.reduce((sum, balance) => sum + (balance.contributions_debt || 0), 0);
+                    document.getElementById('contributionsDebt').textContent = contributionsDebt.toFixed(2) + ' ₽';
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+            }
         }
         
-        // Показать секцию
-        function showSection(sectionId) {
-            // Скрыть все секции
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
+        // Загрузка последних показаний
+        async function loadRecentReadings() {
+            const { data, error } = await supabase
+                .from('meter_readings')
+                .select(`
+                    *,
+                    users:user_id (full_name, plot_number)
+                `)
+                .order('reading_date', { ascending: false })
+                .limit(10);
+            
+            if (data) {
+                const tbody = document.querySelector('#recentReadings tbody');
+                tbody.innerHTML = data.map(reading => `
+                    <tr>
+                        <td>${reading.users?.plot_number || '-'}</td>
+                        <td>${reading.users?.full_name || '-'}</td>
+                        <td>${reading.reading.toFixed(2)} кВт·ч</td>
+                        <td>${new Date(reading.reading_date).toLocaleDateString()}</td>
+                        <td>
+                            ${reading.paid ? 
+                                '<span class="paid-badge">Оплачено</span>' : 
+                                '<span class="unpaid-badge">Не оплачено</span>'
+                            }
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+        // Переключение вкладок
+        function switchTab(tabName) {
+            // Убираем активный класс у всех вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
             });
             
-            // Показать выбранную секцию
-            document.getElementById(`${sectionId}Section`).classList.add('active');
+            // Скрываем все содержимое вкладок
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
             
-            // Загрузить данные для секции, если нужно
-            switch(sectionId) {
+            // Активируем выбранную вкладку
+            document.querySelectorAll('.tab').forEach((tab, index) => {
+                if (tab.textContent.includes(getTabTitle(tabName))) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Загружаем данные для выбранной вкладки
+            switch(tabName) {
                 case 'users':
                     loadUsers();
                     break;
                 case 'meters':
-                    loadMeters();
+                    loadMeterReadings();
                     break;
-                case 'readings':
-                    loadReadingUsers();
-                    loadReadings();
-                    break;
-                case 'fees':
-                    loadFees();
+                case 'contributions':
+                    loadContributions();
                     break;
                 case 'tariffs':
                     loadTariffs();
                     break;
-                case 'common':
-                    loadCommonConsumption();
-                    break;
             }
         }
         
-        // Открытие модального окна для добавления/редактирования пользователя
-        function openUserModal(user = null) {
-            const modal = document.getElementById('userModal');
-            const title = document.getElementById('modalTitle');
-            const form = document.getElementById('userForm');
-            
-            if (user) {
-                // Режим редактирования
-                title.textContent = 'Редактировать пользователя';
-                document.getElementById('userId').value = user.id;
-                document.getElementById('modalFullName').value = user.full_name || '';
-                document.getElementById('modalEmail').value = user.email || '';
-                document.getElementById('modalPassword').required = false;
-                document.getElementById('modalPhone').value = user.phone || '';
-                document.getElementById('modalAddress').value = user.address || '';
-                document.getElementById('modalRole').value = user.role || 'user';
-            } else {
-                // Режим добавления
-                title.textContent = 'Добавить пользователя';
-                form.reset();
-                document.getElementById('userId').value = '';
-                document.getElementById('modalPassword').required = true;
-            }
-            
-            modal.style.display = 'flex';
-        }
-        
-        // Закрытие модального окна
-        function closeModal() {
-            document.getElementById('userModal').style.display = 'none';
-        }
-        
-        // Сохранение пользователя
-        async function saveUser(e) {
-            e.preventDefault();
-            
-            const userId = document.getElementById('userId').value;
-            const fullName = document.getElementById('modalFullName').value;
-            const email = document.getElementById('modalEmail').value;
-            const password = document.getElementById('modalPassword').value;
-            const phone = document.getElementById('modalPhone').value;
-            const address = document.getElementById('modalAddress').value;
-            const role = document.getElementById('modalRole').value;
-            
-            const submitBtn = document.getElementById('modalSubmitBtn');
-            submitBtn.textContent = 'Сохранение...';
-            submitBtn.disabled = true;
-            
-            try {
-                // В реальном приложении здесь будет запрос к Supabase
-                // Для демо используем имитацию
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Успешное сохранение
-                showMessage('usersMessage', 'Пользователь успешно сохранен!', 'success');
-                closeModal();
-                loadUsers();
-            } catch (error) {
-                showMessage('usersMessage', 'Ошибка при сохранении пользователя', 'error');
-            } finally {
-                submitBtn.textContent = 'Сохранить';
-                submitBtn.disabled = false;
-            }
+        // Получение заголовка вкладки
+        function getTabTitle(tabName) {
+            const titles = {
+                'dashboard': 'Дашборд',
+                'users': 'Участники',
+                'meters': 'Показания',
+                'contributions': 'Взносы',
+                'tariffs': 'Тарифы',
+                'import': 'Импорт/Экспорт',
+                'settings': 'Настройки'
+            };
+            return titles[tabName] || tabName;
         }
         
         // Загрузка пользователей
-        function loadUsers() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const users = [
-                { id: 1, full_name: 'Иванов Иван Иванович', email: 'ivanov@example.com', phone: '+7 (999) 123-45-67', role: 'user', created_at: '15.01.2024' },
-                { id: 2, full_name: 'Петров Петр Петрович', email: 'petrov@example.com', phone: '+7 (999) 234-56-78', role: 'user', created_at: '20.01.2024' },
-                { id: 3, full_name: 'Сидорова Анна Сергеевна', email: 'sidorova@example.com', phone: '+7 (999) 345-67-89', role: 'user', created_at: '25.01.2024' },
-                { id: 4, full_name: 'Кузнецов Алексей Владимирович', email: 'kuznetsov@example.com', phone: '+7 (999) 456-78-90', role: 'user', created_at: '01.02.2024' },
-                { id: 5, full_name: 'Смирнова Ольга Дмитриевна', email: 'smirnova@example.com', phone: '+7 (999) 567-89-01', role: 'user', created_at: '05.02.2024' }
-            ];
+        async function loadUsers() {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .neq('role', 'admin')
+                    .order('plot_number');
+                
+                if (error) throw error;
+                
+                const tbody = document.querySelector('#usersTable tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 40px;">
+                                Нет данных об участниках
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(user => `
+                    <tr>
+                        <td>${user.id.substring(0, 8)}...</td>
+                        <td>${user.plot_number}</td>
+                        <td>${user.full_name}</td>
+                        <td>${user.username}</td>
+                        <td>${user.phone || '-'}</td>
+                        <td>${user.email || '-'}</td>
+                        <td>${user.balance || 0} ₽</td>
+                        <td class="action-buttons">
+                            <button class="action-btn edit-btn" onclick="editUser('${user.id}')">✏️</button>
+                            <button class="action-btn delete-btn" onclick="deleteUser('${user.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                showMessage('usersMessage', 'Ошибка загрузки пользователей', 'error');
+            }
+        }
+        
+        // Поиск пользователей
+        function searchUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTable tbody tr');
             
-            const usersTable = document.getElementById('usersTable');
-            usersTable.innerHTML = '';
-            
-            users.forEach(user => {
-                const row = usersTable.insertRow();
-                row.innerHTML = `
-                    <td>${user.id}</td>
-                    <td>${user.full_name}</td>
-                    <td>${user.email}</td>
-                    <td>${user.phone}</td>
-                    <td>${user.role === 'admin' ? 'Администратор' : 'Пользователь'}</td>
-                    <td>${user.created_at}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit" onclick="openUserModal(${JSON.stringify(user).replace(/"/g, '&quot;')})">✏️</button>
-                            <button class="btn-icon btn-delete" onclick="deleteUser(${user.id})">🗑️</button>
-                        </div>
-                    </td>
-                `;
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
             });
         }
         
-        // Загрузка пользователей для выбора при назначении взносов
-        function loadUsersForSelection() {
-            const select = document.getElementById('selectedUsers');
-            select.innerHTML = '';
+        // Показать форму пользователя
+        function showUserForm(userId = null) {
+            const form = document.getElementById('userForm');
+            const title = document.getElementById('userFormTitle');
             
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const users = [
-                { id: 1, name: 'Иванов Иван Иванович' },
-                { id: 2, name: 'Петров Петр Петрович' },
-                { id: 3, name: 'Сидорова Анна Сергеевна' },
-                { id: 4, name: 'Кузнецов Алексей Владимирович' },
-                { id: 5, name: 'Смирнова Ольга Дмитриевна' }
-            ];
-            
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name;
-                select.appendChild(option);
-            });
-        }
-        
-        // Загрузка пользователей для формы показаний
-        function loadReadingUsers() {
-            const select = document.getElementById('readingUser');
-            select.innerHTML = '<option value="">Выберите пользователя</option>';
-            
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const users = [
-                { id: 1, name: 'Иванов Иван Иванович' },
-                { id: 2, name: 'Петров Петр Петрович' },
-                { id: 3, name: 'Сидорова Анна Сергеевна' }
-            ];
-            
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name;
-                select.appendChild(option);
-            });
-        }
-        
-        // Загрузка счетчиков
-        function loadMeters() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const meters = [
-                { id: 1, number: '123456', owner: 'Иванов И.И.', type: 'Электроэнергия', installed: '15.01.2020', status: 'Активен', last_reading: '1245.67 кВт·ч' },
-                { id: 2, number: '789012', owner: 'Петров П.П.', type: 'Электроэнергия', installed: '20.02.2021', status: 'Активен', last_reading: '876.54 кВт·ч' },
-                { id: 3, number: '345678', owner: 'Сидорова А.С.', type: 'Электроэнергия', installed: '10.03.2022', status: 'Активен', last_reading: '987.65 кВт·ч' },
-                { id: 4, number: '901234', owner: 'Кузнецов А.В.', type: 'Электроэнергия', installed: '05.04.2023', status: 'Неактивен', last_reading: 'Нет данных' }
-            ];
-            
-            const metersTable = document.getElementById('metersTable');
-            metersTable.innerHTML = '';
-            
-            meters.forEach(meter => {
-                const row = metersTable.insertRow();
-                row.innerHTML = `
-                    <td>${meter.number}</td>
-                    <td>${meter.owner}</td>
-                    <td>${meter.type}</td>
-                    <td>${meter.installed}</td>
-                    <td>${meter.status}</td>
-                    <td>${meter.last_reading}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit">✏️</button>
-                            <button class="btn-icon btn-delete">🗑️</button>
-                        </div>
-                    </td>
-                `;
-            });
-        }
-        
-        // Загрузка показаний
-        function loadReadings() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const readings = [
-                { id: 1, user: 'Иванов И.И.', meter: '123456', period: 'Март 2024', value: '1245.67', submitted: '25.03.2024' },
-                { id: 2, user: 'Петров П.П.', meter: '789012', period: 'Март 2024', value: '876.54', submitted: '24.03.2024' },
-                { id: 3, user: 'Сидорова А.С.', meter: '345678', period: 'Март 2024', value: '987.65', submitted: '25.03.2024' },
-                { id: 4, user: 'Иванов И.И.', meter: '123456', period: 'Февраль 2024', value: '1122.22', submitted: '25.02.2024' },
-                { id: 5, user: 'Петров П.П.', meter: '789012', period: 'Февраль 2024', value: '765.43', submitted: '24.02.2024' }
-            ];
-            
-            const readingsTable = document.getElementById('readingsTable');
-            readingsTable.innerHTML = '';
-            
-            readings.forEach(reading => {
-                const row = readingsTable.insertRow();
-                row.innerHTML = `
-                    <td>${reading.user}</td>
-                    <td>${reading.meter}</td>
-                    <td>${reading.period}</td>
-                    <td>${reading.value} кВт·ч</td>
-                    <td>${reading.submitted}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit">✏️</button>
-                            <button class="btn-icon btn-delete">🗑️</button>
-                        </div>
-                    </td>
-                `;
-            });
-        }
-        
-        // Добавление показаний
-        async function addReading(e) {
-            e.preventDefault();
-            
-            const userId = document.getElementById('readingUser').value;
-            const meterId = document.getElementById('readingMeter').value;
-            const month = document.getElementById('readingMonth').value;
-            const year = document.getElementById('readingYear').value;
-            const value = document.getElementById('readingValue').value;
-            
-            if (!userId || !meterId || !month || !year || !value) {
-                showMessage('readingsMessage', 'Заполните все поля', 'error');
-                return;
+            if (userId) {
+                title.textContent = 'Редактирование участника';
+                // Здесь бы загружались данные пользователя
+            } else {
+                title.textContent = 'Добавление участника';
+                document.getElementById('userFormData').reset();
             }
             
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем имитацию
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            form.style.display = 'block';
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Скрыть форму пользователя
+        function hideUserForm() {
+            document.getElementById('userForm').style.display = 'none';
+        }
+        
+        // Сохранение пользователя
+        async function saveUser(event) {
+            event.preventDefault();
             
-            showMessage('readingsMessage', 'Показания успешно добавлены!', 'success');
-            document.getElementById('addReadingForm').reset();
-            loadReadings();
+            const userData = {
+                plot_number: document.getElementById('plotNumber').value,
+                full_name: document.getElementById('fullName').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                area: parseFloat(document.getElementById('area').value) || null,
+                notes: document.getElementById('notes').value,
+                role: 'user',
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                const { error } = await supabase
+                    .from('users')
+                    .insert([userData]);
+                
+                if (error) throw error;
+                
+                showMessage('usersMessage', 'Участник успешно добавлен!', 'success');
+                hideUserForm();
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Ошибка сохранения пользователя:', error);
+                showMessage('usersMessage', 'Ошибка сохранения пользователя', 'error');
+            }
+        }
+        
+        // Загрузка показаний счетчиков
+        async function loadMeterReadings() {
+            try {
+                const { data, error } = await supabase
+                    .from('meter_readings')
+                    .select(`
+                        *,
+                        users:user_id (full_name, plot_number)
+                    `)
+                    .order('reading_date', { ascending: false })
+                    .limit(100);
+                
+                if (error) throw error;
+                
+                const tbody = document.querySelector('#metersTable tbody');
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 40px;">
+                                Нет данных о показаниях
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(reading => `
+                    <tr>
+                        <td>${reading.id.substring(0, 8)}...</td>
+                        <td>${reading.users?.plot_number || '-'}</td>
+                        <td>${reading.users?.full_name || '-'}</td>
+                        <td>${new Date(reading.reading_date).toLocaleDateString()}</td>
+                        <td>${reading.reading.toFixed(2)} кВт·ч</td>
+                        <td>${reading.consumption ? reading.consumption.toFixed(2) + ' кВт·ч' : '-'}</td>
+                        <td>${reading.amount ? reading.amount.toFixed(2) + ' ₽' : '-'}</td>
+                        <td>
+                            ${reading.paid ? 
+                                '<span class="paid-badge">Оплачено</span>' : 
+                                '<span class="unpaid-badge">Не оплачено</span>'
+                            }
+                        </td>
+                        <td class="action-buttons">
+                            <button class="action-btn edit-btn" onclick="editMeterReading('${reading.id}')">✏️</button>
+                            <button class="action-btn delete-btn" onclick="deleteMeterReading('${reading.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Ошибка загрузки показаний:', error);
+                showMessage('metersMessage', 'Ошибка загрузки показаний', 'error');
+            }
         }
         
         // Загрузка взносов
-        function loadFees() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const fees = [
-                { id: 1, user: 'Иванов И.И.', type: 'Зарплата председателя', period: 'Март 2024', amount: '500.00', due_date: '31.03.2024', status: 'Не оплачено' },
-                { id: 2, user: 'Иванов И.И.', type: 'Содержание территории', period: 'Март 2024', amount: '800.00', due_date: '31.03.2024', status: 'Не оплачено' },
-                { id: 3, user: 'Петров П.П.', type: 'Зарплата председателя', period: 'Март 2024', amount: '500.00', due_date: '31.03.2024', status: 'Оплачено' },
-                { id: 4, user: 'Петров П.П.', type: 'Содержание территории', period: 'Март 2024', amount: '800.00', due_date: '31.03.2024', status: 'Оплачено' },
-                { id: 5, user: 'Сидорова А.С.', type: 'Прочие расходы', period: 'Март 2024', amount: '300.00', due_date: '31.03.2024', status: 'Не оплачено' }
-            ];
-            
-            const feesTable = document.getElementById('feesTable');
-            feesTable.innerHTML = '';
-            
-            fees.forEach(fee => {
-                const row = feesTable.insertRow();
-                const statusClass = fee.status === 'Оплачено' ? 'status-paid' : 'status-unpaid';
-                const typeText = fee.type === 'salary' ? 'Зарплата председателя' : 
-                                fee.type === 'maintenance' ? 'Содержание территории' : 'Прочие расходы';
+        async function loadContributions() {
+            try {
+                const { data, error } = await supabase
+                    .from('contributions')
+                    .select(`
+                        *,
+                        users:user_id (full_name, plot_number)
+                    `)
+                    .order('due_date', { ascending: false })
+                    .limit(100);
                 
-                row.innerHTML = `
-                    <td>${fee.user}</td>
-                    <td>${typeText}</td>
-                    <td>${fee.period}</td>
-                    <td>${fee.amount} ₽</td>
-                    <td>${fee.due_date}</td>
-                    <td class="${statusClass}">${fee.status}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit">✏️</button>
-                            <button class="btn-icon btn-delete">🗑️</button>
-                        </div>
-                    </td>
-                `;
-            });
+                if (error) throw error;
+                
+                displayContributions(data);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки взносов:', error);
+                showMessage('contributionsMessage', 'Ошибка загрузки взносов', 'error');
+            }
         }
         
-        // Управление взносами
-        async function manageFees(e) {
-            e.preventDefault();
+        // Отображение взносов
+        function displayContributions(data) {
+            const tbody = document.querySelector('#contributionsTable tbody');
             
-            const type = document.getElementById('feeType').value;
-            const amount = document.getElementById('feeAmount').value;
-            const month = document.getElementById('feeMonth').value;
-            const year = document.getElementById('feeYear').value;
-            const dueDate = document.getElementById('feeDueDate').value;
-            const scope = document.querySelector('input[name="feeScope"]:checked').value;
-            const selectedUsers = scope === 'selected' ? Array.from(document.getElementById('selectedUsers').selectedOptions).map(o => o.value) : [];
-            
-            if (!type || !amount || !month || !year || !dueDate) {
-                showMessage('feesMessage', 'Заполните все обязательные поля', 'error');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px;">
+                            Нет данных о взносах
+                        </td>
+                    </tr>
+                `;
                 return;
             }
             
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем имитацию
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            tbody.innerHTML = data.map(contribution => `
+                <tr>
+                    <td>${contribution.id.substring(0, 8)}...</td>
+                    <td>${contribution.users?.plot_number || '-'}</td>
+                    <td>${contribution.users?.full_name || '-'}</td>
+                    <td>${getContributionType(contribution.type)}</td>
+                    <td>${contribution.amount.toFixed(2)} ₽</td>
+                    <td>${new Date(contribution.created_at).toLocaleDateString()}</td>
+                    <td>${new Date(contribution.due_date).toLocaleDateString()}</td>
+                    <td>
+                        ${contribution.paid ? 
+                            '<span class="paid-badge">Оплачено</span>' : 
+                            '<span class="unpaid-badge">Не оплачено</span>'
+                        }
+                    </td>
+                    <td class="action-buttons">
+                        <button class="action-btn edit-btn" onclick="editContribution('${contribution.id}')">✏️</button>
+                        <button class="action-btn delete-btn" onclick="deleteContribution('${contribution.id}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Фильтрация взносов
+        function filterContributions() {
+            const typeFilter = document.getElementById('contributionTypeFilter').value;
+            const statusFilter = document.getElementById('contributionStatusFilter').value;
+            const monthFilter = document.getElementById('contributionMonthFilter').value;
             
-            showMessage('feesMessage', 'Взносы успешно назначены!', 'success');
-            document.getElementById('manageFeesForm').reset();
-            loadFees();
+            // В реальном приложении здесь был бы запрос с фильтрами
+            loadContributions(); // Перезагружаем все для простоты
         }
         
         // Загрузка тарифов
-        function loadTariffs() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const tariffs = [
-                { id: 1, name: 'Основной тариф 2024', rate_1: '6.10', rate_2: '7.30', rate_common: '0.36', start_date: '01.01.2024', end_date: '31.12.2024', status: 'Активен' },
-                { id: 2, name: 'Зимний тариф 2023', rate_1: '5.80', rate_2: '7.00', rate_common: '0.34', start_date: '01.10.2023', end_date: '31.12.2023', status: 'Неактивен' },
-                { id: 3, name: 'Летний тариф 2023', rate_1: '5.50', rate_2: '6.80', rate_common: '0.32', start_date: '01.06.2023', end_date: '30.09.2023', status: 'Неактивен' }
-            ];
-            
-            const tariffsTable = document.getElementById('tariffsTable');
-            tariffsTable.innerHTML = '';
-            
-            tariffs.forEach(tariff => {
-                const row = tariffsTable.insertRow();
-                row.innerHTML = `
-                    <td>${tariff.name}</td>
-                    <td>${tariff.rate_1} ₽/кВт·ч</td>
-                    <td>${tariff.rate_2} ₽/кВт·ч</td>
-                    <td>${tariff.rate_common} ₽/кВт·ч</td>
-                    <td>${tariff.start_date}</td>
-                    <td>${tariff.end_date || 'Бессрочно'}</td>
-                    <td>${tariff.status}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit">✏️</button>
-                            <button class="btn-icon btn-delete">🗑️</button>
+        async function loadTariffs() {
+            try {
+                // Текущие тарифы
+                const { data: current, error: currentError } = await supabase
+                    .from('tariffs')
+                    .select('*')
+                    .order('valid_from', { ascending: false })
+                    .limit(1);
+                
+                if (!currentError && current && current.length > 0) {
+                    const tariff = current[0];
+                    document.getElementById('currentTariffs').innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: bold; color: #667eea;">
+                                    ${tariff.rate1} ₽
+                                </div>
+                                <div style="font-size: 14px; color: #666;">
+                                    до 100 кВт·ч
+                                </div>
+                            </div>
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: bold; color: #764ba2;">
+                                    ${tariff.rate2} ₽
+                                </div>
+                                <div style="font-size: 14px; color: #666;">
+                                    свыше 100 кВт·ч
+                                </div>
+                            </div>
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: bold; color: #4facfe;">
+                                    ${tariff.rate_common} ₽
+                                </div>
+                                <div style="font-size: 14px; color: #666;">
+                                    общественные нужды
+                                </div>
+                            </div>
                         </div>
-                    </td>
-                `;
-            });
-        }
-        
-        // Добавление тарифа
-        async function addTariff(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('tariffName').value;
-            const rate1 = document.getElementById('tariffRate1').value;
-            const rate2 = document.getElementById('tariffRate2').value;
-            const rateCommon = document.getElementById('tariffRateCommon').value;
-            const startDate = document.getElementById('tariffStartDate').value;
-            const endDate = document.getElementById('tariffEndDate').value;
-            
-            if (!name || !rate1 || !rate2 || !rateCommon || !startDate) {
-                showMessage('tariffsMessage', 'Заполните все обязательные поля', 'error');
-                return;
-            }
-            
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем имитацию
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            showMessage('tariffsMessage', 'Тариф успешно добавлен!', 'success');
-            document.getElementById('addTariffForm').reset();
-            
-            // Установка даты начала на сегодня
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('tariffStartDate').value = today;
-            
-            loadTariffs();
-        }
-        
-        // Загрузка общего потребления
-        function loadCommonConsumption() {
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем фиктивные данные
-            const consumption = [
-                { id: 1, period: 'Март 2024', total: '15,678', cost: '5,644.08', per_user: '30.18', added: '01.04.2024' },
-                { id: 2, period: 'Февраль 2024', total: '14,532', cost: '5,231.52', per_user: '27.97', added: '01.03.2024' },
-                { id: 3, period: 'Январь 2024', total: '16,789', cost: '6,044.04', per_user: '32.32', added: '01.02.2024' },
-                { id: 4, period: 'Декабрь 2023', total: '15,432', cost: '5,555.52', per_user: '29.71', added: '01.01.2024' }
-            ];
-            
-            const consumptionTable = document.getElementById('commonConsumptionTable');
-            consumptionTable.innerHTML = '';
-            
-            consumption.forEach(item => {
-                const row = consumptionTable.insertRow();
-                row.innerHTML = `
-                    <td>${item.period}</td>
-                    <td>${item.total} кВт·ч</td>
-                    <td>${item.cost} ₽</td>
-                    <td>${item.per_user} ₽</td>
-                    <td>${item.added}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon btn-edit">✏️</button>
-                            <button class="btn-icon btn-delete">🗑️</button>
-                        </div>
-                    </td>
-                `;
-            });
-        }
-        
-        // Добавление общего потребления
-        async function addCommonConsumption(e) {
-            e.preventDefault();
-            
-            const month = document.getElementById('commonMonth').value;
-            const year = document.getElementById('commonYear').value;
-            const consumption = document.getElementById('commonConsumption').value;
-            
-            if (!month || !year || !consumption) {
-                showMessage('commonMessage', 'Заполните все поля', 'error');
-                return;
-            }
-            
-            // В реальном приложении здесь будет запрос к Supabase
-            // Для демо используем имитацию
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            showMessage('commonMessage', 'Общее потребление успешно добавлено!', 'success');
-            document.getElementById('addCommonConsumptionForm').reset();
-            loadCommonConsumption();
-        }
-        
-        // Удаление пользователя
-        function deleteUser(userId) {
-            if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
-                // В реальном приложении здесь будет запрос к Supabase
-                showMessage('usersMessage', 'Пользователь удален', 'success');
-                loadUsers();
+                        <p style="margin-top: 15px; color: #666;">
+                            Действуют с ${new Date(tariff.valid_from).toLocaleDateString()}
+                        </p>
+                    `;
+                }
+                
+                // История тарифов
+                const { data: history, error: historyError } = await supabase
+                    .from('tariffs')
+                    .select('*')
+                    .order('valid_from', { ascending: false })
+                    .limit(10);
+                
+                if (!historyError && history) {
+                    const tbody = document.querySelector('#tariffsHistory tbody');
+                    tbody.innerHTML = history.map(tariff => `
+                        <tr>
+                            <td>${new Date(tariff.valid_from).toLocaleDateString()}</td>
+                            <td>${tariff.rate1} ₽/кВт·ч</td>
+                            <td>${tariff.rate2} ₽/кВт·ч</td>
+                            <td>${tariff.rate_common} ₽/кВт·ч</td>
+                            <td>${tariff.comment || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки тарифов:', error);
+                showMessage('tariffsMessage', 'Ошибка загрузки тарифов', 'error');
             }
         }
         
-        // Экспорт пользователей
-        function exportUsers() {
-            // В реальном приложении здесь будет запрос к Supabase и создание CSV
-            showMessage('exportMessage', 'Экспорт пользователей начат. Файл будет загружен автоматически.', 'success');
+        // Сохранение тарифов
+        async function saveTariffs(event) {
+            event.preventDefault();
             
-            // Имитация загрузки файла
-            setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = 'data:text/csv;charset=utf-8,ФИО,Email,Телефон,Адрес\nИванов Иван,ivanov@example.com,+79991234567,ул. Садовая 1\n';
-                link.download = 'users_export.csv';
-                link.click();
-            }, 1000);
-        }
-        
-        // Экспорт показаний
-        function exportReadings() {
-            showMessage('exportMessage', 'Экспорт показаний начат. Файл будет загружен автоматически.', 'success');
+            const tariffData = {
+                rate1: parseFloat(document.getElementById('rate1').value),
+                rate2: parseFloat(document.getElementById('rate2').value),
+                rate_common: parseFloat(document.getElementById('rateCommon').value),
+                valid_from: document.getElementById('validFrom').value,
+                comment: document.getElementById('tariffComment').value,
+                created_at: new Date().toISOString()
+            };
             
-            setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = 'data:text/csv;charset=utf-8,Пользователь,Счетчик,Месяц,Год,Показания\nИванов И.И.,123456,3,2024,1245.67\n';
-                link.download = 'readings_export.csv';
-                link.click();
-            }, 1000);
+            try {
+                const { error } = await supabase
+                    .from('tariffs')
+                    .insert([tariffData]);
+                
+                if (error) throw error;
+                
+                showMessage('tariffsMessage', 'Тарифы успешно сохранены!', 'success');
+                document.getElementById('tariffForm').reset();
+                document.getElementById('validFrom').valueAsDate = new Date();
+                
+                // Обновляем отображение тарифов
+                loadTariffs();
+                
+            } catch (error) {
+                console.error('Ошибка сохранения тарифов:', error);
+                showMessage('tariffsMessage', 'Ошибка сохранения тарифов', 'error');
+            }
         }
         
-        // Экспорт взносов
-        function exportFees() {
-            showMessage('exportMessage', 'Экспорт взносов начат. Файл будет загружен автоматически.', 'success');
+        // Экспорт данных
+        async function exportData(type) {
+            try {
+                let data = [];
+                let filename = '';
+                
+                switch(type) {
+                    case 'users':
+                        const { data: users } = await supabase
+                            .from('users')
+                            .select('*')
+                            .neq('role', 'admin');
+                        data = users;
+                        filename = 'participants.csv';
+                        break;
+                        
+                    case 'readings':
+                        const { data: readings } = await supabase
+                            .from('meter_readings')
+                            .select('*');
+                        data = readings;
+                        filename = 'meter_readings.csv';
+                        break;
+                        
+                    case 'contributions':
+                        const { data: contributions } = await supabase
+                            .from('contributions')
+                            .select('*');
+                        data = contributions;
+                        filename = 'contributions.csv';
+                        break;
+                        
+                    case 'all':
+                        // Экспорт всех данных
+                        filename = 'snt_backup.json';
+                        const allData = {
+                            timestamp: new Date().toISOString(),
+                            users: (await supabase.from('users').select('*')).data,
+                            readings: (await supabase.from('meter_readings').select('*')).data,
+                            contributions: (await supabase.from('contributions').select('*')).data,
+                            tariffs: (await supabase.from('tariffs').select('*')).data
+                        };
+                        data = [allData];
+                        break;
+                }
+                
+                if (type === 'all') {
+                    // Экспорт в JSON
+                    const json = JSON.stringify(data[0], null, 2);
+                    downloadFile(json, filename, 'application/json');
+                } else {
+                    // Экспорт в CSV
+                    const csv = convertToCSV(data);
+                    downloadFile(csv, filename, 'text/csv');
+                }
+                
+                showMessage('importMessage', `Данные успешно экспортированы в ${filename}`, 'success');
+                
+            } catch (error) {
+                console.error('Ошибка экспорта данных:', error);
+                showMessage('importMessage', 'Ошибка экспорта данных', 'error');
+            }
+        }
+        
+        // Конвертация в CSV
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
             
-            setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = 'data:text/csv;charset=utf-8,Пользователь,Тип взноса,Период,Сумма,Статус\nИванов И.И.,Зарплата председателя,Март 2024,500.00,Не оплачено\n';
-                link.download = 'fees_export.csv';
-                link.click();
-            }, 1000);
+            const headers = Object.keys(data[0]);
+            const rows = data.map(row => 
+                headers.map(header => {
+                    const value = row[header];
+                    return typeof value === 'string' && value.includes(',') ? 
+                        `"${value}"` : value;
+                }).join(',')
+            );
+            
+            return [headers.join(','), ...rows].join('\n');
         }
         
-        // Загрузка шаблона для показаний
-        function downloadReadingsTemplate() {
-            const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,user_id,meter_id,month,year,reading\n1,1,3,2024,1245.67\n';
-            link.download = 'readings_template.csv';
-            link.click();
+        // Скачивание файла
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
         
-        // Загрузка шаблона для пользователей
-        function downloadUsersTemplate() {
-            const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,full_name,email,password,phone,address\nИванов Иван Иванович,ivanov@example.com,password123,+79991234567,ул. Садовая 1\n';
-            link.download = 'users_template.csv';
-            link.click();
+        // Генерация начислений
+        async function generateInvoices() {
+            try {
+                showMessage('dashboardTab', 'Начинаем расчет начислений...', 'info');
+                
+                // Получаем текущие тарифы
+                const { data: tariffs, error: tariffError } = await supabase
+                    .from('tariffs')
+                    .select('*')
+                    .order('valid_from', { ascending: false })
+                    .limit(1);
+                
+                if (tariffError || !tariffs || tariffs.length === 0) {
+                    throw new Error('Не установлены тарифы');
+                }
+                
+                const tariff = tariffs[0];
+                
+                // Получаем всех пользователей
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .neq('role', 'admin');
+                
+                if (usersError) throw usersError;
+                
+                // Для каждого пользователя рассчитываем начисления
+                for (const user of users) {
+                    await calculateUserCharges(user, tariff);
+                }
+                
+                showMessage('dashboardTab', 'Начисления успешно сформированы!', 'success');
+                
+                // Обновляем статистику
+                await loadStatistics();
+                
+            } catch (error) {
+                console.error('Ошибка генерации начислений:', error);
+                showMessage('dashboardTab', 'Ошибка генерации начислений: ' + error.message, 'error');
+            }
+        }
+        
+        // Расчет начислений для пользователя
+        async function calculateUserCharges(user, tariff) {
+            try {
+                // Получаем последние показания пользователя
+                const { data: readings, error: readingsError } = await supabase
+                    .from('meter_readings')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('reading_date', { ascending: false })
+                    .limit(2);
+                
+                if (readingsError) throw readingsError;
+                
+                if (readings.length < 2) {
+                    console.log(`Недостаточно данных для пользователя ${user.full_name}`);
+                    return;
+                }
+                
+                const currentReading = readings[0];
+                const previousReading = readings[1];
+                
+                // Рассчитываем потребление
+                const consumption = currentReading.reading - previousReading.reading;
+                
+                // Рассчитываем стоимость по сложному тарифу
+                let electricityCost = 0;
+                if (consumption <= 100) {
+                    electricityCost = consumption * tariff.rate1;
+                } else {
+                    electricityCost = (100 * tariff.rate1) + ((consumption - 100) * tariff.rate2);
+                }
+                
+                // Добавляем общественные нужды
+                electricityCost += consumption * tariff.rate_common;
+                
+                // Обновляем запись показаний
+                await supabase
+                    .from('meter_readings')
+                    .update({
+                        consumption: consumption,
+                        amount: electricityCost,
+                        calculated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentReading.id);
+                
+                // Обновляем баланс пользователя
+                await updateUserBalance(user.id, electricityCost);
+                
+            } catch (error) {
+                console.error(`Ошибка расчета для пользователя ${user.id}:`, error);
+            }
+        }
+        
+        // Обновление баланса пользователя
+        async function updateUserBalance(userId, electricityAmount) {
+            try {
+                // Получаем текущий баланс
+                const { data: balance, error: balanceError } = await supabase
+                    .from('user_balance')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+                
+                const now = new Date().toISOString();
+                
+                if (balanceError || !balance) {
+                    // Создаем новую запись баланса
+                    await supabase
+                        .from('user_balance')
+                        .insert({
+                            user_id: userId,
+                            electricity_debt: electricityAmount,
+                            contributions_debt: 0,
+                            total_debt: electricityAmount,
+                            last_update: now
+                        });
+                } else {
+                    // Обновляем существующую запись
+                    await supabase
+                        .from('user_balance')
+                        .update({
+                            electricity_debt: (balance.electricity_debt || 0) + electricityAmount,
+                            total_debt: (balance.total_debt || 0) + electricityAmount,
+                            last_update: now
+                        })
+                        .eq('user_id', userId);
+                }
+                
+            } catch (error) {
+                console.error('Ошибка обновления баланса:', error);
+            }
+        }
+        
+        // Получение типа взноса
+        function getContributionType(type) {
+            const types = {
+                'salary': '1. Зарплата',
+                'maintenance': '2. Содержание',
+                'other': '3. Прочее'
+            };
+            return types[type] || type;
+        }
+        
+        // Показ сообщений
+        function showMessage(tabId, text, type) {
+            const element = document.getElementById(tabId).querySelector('.message') || 
+                           document.getElementById(tabId + 'Message');
+            if (element) {
+                element.textContent = text;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+                
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 5000);
+            }
         }
         
         // Выход из системы
         function logout() {
-            localStorage.removeItem('snt_user_id');
-            localStorage.removeItem('snt_user_email');
-            localStorage.removeItem('snt_user_name');
-            localStorage.removeItem('snt_user_role');
+            localStorage.removeItem('user');
             window.location.href = 'index.html';
         }
         
-        // Функция для показа сообщений
-        function showMessage(elementId, text, type) {
-            const messageDiv = document.getElementById(elementId);
-            if (messageDiv) {
-                messageDiv.textContent = text;
-                messageDiv.className = 'message ' + type;
-                messageDiv.style.display = 'block';
-                
-                // Автоматическое скрытие сообщения
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, 5000);
-            }
-        }
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initializePage);
     </script>
+    
+    <!-- Подключаем Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
