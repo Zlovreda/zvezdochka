@@ -1,0 +1,146 @@
+# Файл .gitignore для проекта СНТ "Звездочка"
+
+# ==========================================
+# ФАЙЛЫ С КЛЮЧАМИ И СЕКРЕТНЫМИ ДАННЫМИ
+# ==========================================
+
+# Ключи Supabase
+auth.js
+auth.local.js
+*.key
+*.secret
+.env
+.env.local
+.env.production
+.env.development
+
+# Файлы с паролями
+passwords.txt
+credentials.json
+config.json
+secrets.json
+
+# ==========================================
+# СИСТЕМНЫЕ ФАЙЛЫ
+# ==========================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+
+# ==========================================
+# ФАЙЛЫ РАЗРАБОТЧИКОВ И IDE
+# ==========================================
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBraны IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.settings/
+.project
+.classpath
+.metadata/
+*.pydevproject
+
+# ==========================================
+# ФАЙЛЫ ПРОЕКТА И СБОРКИ
+# ==========================================
+
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Временные файлы
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Кэш
+.cache/
+.parcel-cache/
+
+# Зависимости
+node_modules/
+jspm_packages/
+bower_components/
+
+# Сборки
+dist/
+build/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ==========================================
+# ФАЙЛЫ ОПЕРАЦИОННЫХ СИСТЕМ
+# ==========================================
+
+# Папки для временных файлов
+/tmp/
+/temp/
+
+# Файлы подкачки
+*.swp
+*.swo
+*.swn
+*.swm
+*.swl
+
+# ==========================================
+# ФАЙЛЫ БАЗЫ ДАННЫХ
+# ==========================================
+
+*.db
+*.sqlite
+*.sqlite3
+dump.sql
+backup.sql
+
+# ==========================================
+# ДОПОЛНИТЕЛЬНО ДЛЯ ВЕБ-ПРОЕКТОВ
+# ==========================================
+
+# Файлы пакетных менеджеров
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Файлы для тестирования
+coverage/
+.nyc_output/
+
+# Документация
+docs/_build/
