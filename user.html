@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СНТ "Звездочка" - Личный кабинет</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+        
+        .logo span {
+            color: #e74c3c;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .btn-logout {
+            padding: 8px 16px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Main content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+        
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Cards */
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* Balance */
+        .balance {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .balance-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .balance-amount {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .balance-positive {
+            color: #2ecc71;
+        }
+        
+        .balance-negative {
+            color: #e74c3c;
+        }
+        
+        /* Meter reading form */
+        .meter-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .meter-form {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-block {
+            width: 100%;
+            padding: 14px;
+        }
+        
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status-paid {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+        
+        .status-unpaid {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #7f8c8d;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Message */
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .user-info {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .mobile-menu {
+                display: none;
+                position: absolute;
+                top: 80px;
+                right: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                padding: 15px;
+                z-index: 1000;
+            }
+            
+            .mobile-menu.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1 class="logo">СНТ "<span>Звездочка</span>"</h1>
+                <p>Личный кабинет</p>
+            </div>
+            
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            
+            <div class="user-info">
+                <div>
+                    <div class="user-name" id="userName">Иван Иванов</div>
+                    <div id="userEmail">user@example.com</div>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Выйти</button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                <div class="user-name" id="mobileUserName">Иван Иванов</div>
+                <div id="mobileUserEmail">user@example.com</div>
+            </div>
+            <button class="btn-logout" style="margin-top: 15px; width: 100%;" id="mobileLogoutBtn">Выйти</button>
+        </div>
+        
+        <!-- Balance -->
+        <div class="balance">
+            <div class="balance-title">Общая сумма к оплате</div>
+            <div class="balance-amount" id="totalBalance">0.00 ₽</div>
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Электроэнергия:</span>
+                    <span id="electricityBalance">0.00 ₽</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Членские взносы:</span>
+                    <span id="membershipBalance">0.00 ₽</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Column -->
+            <div>
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab active" data-tab="meter">Показания счетчика</div>
+                    <div class="tab" data-tab="history">История показаний</div>
+                    <div class="tab" data-tab="fees">Членские взносы</div>
+                </div>
+                
+                <!-- Tab Contents -->
+                <div class="tab-content active" id="meterTab">
+                    <div class="card">
+                        <h2 class="card-title">Передать показания счетчика</h2>
+                        
+                        <div id="message" class="message"></div>
+                        
+                        <form id="readingForm">
+                            <div class="meter-form">
+                                <div class="form-group">
+                                    <label for="meterSelect">Счетчик</label>
+                                    <select id="meterSelect" required>
+                                        <option value="">Выберите счетчик</option>
+                                        <option value="meter1">Счетчик №123456 (Электроэнергия)</option>
+                                        <option value="meter2">Счетчик №789012 (Электроэнергия)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="currentMonth">Месяц</label>
+                                    <select id="currentMonth" required>
+                                        <option value="">Выберите месяц</option>
+                                        <option value="1">Январь</option>
+                                        <option value="2">Февраль</option>
+                                        <option value="3">Март</option>
+                                        <option value="4">Апрель</option>
+                                        <option value="5">Май</option>
+                                        <option value="6">Июнь</option>
+                                        <option value="7">Июль</option>
+                                        <option value="8">Август</option>
+                                        <option value="9">Сентябрь</option>
+                                        <option value="10">Октябрь</option>
+                                        <option value="11">Ноябрь</option>
+                                        <option value="12">Декабрь</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="currentYear">Год</label>
+                                    <input type="number" id="currentYear" min="2023" max="2030" value="2024" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="meterValue">Текущие показания (кВт·ч)</label>
+                                    <input type="number" id="meterValue" step="0.01" min="0" required placeholder="Введите показания">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-block" id="submitReadingBtn">Передать показания</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="historyTab">
+                    <div class="card">
+                        <h2 class="card-title">История показаний</h2>
+                        
+                        <div class="table-container">
+                            <table id="readingsHistoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>Месяц/Год</th>
+                                        <th>Счетчик</th>
+                                        <th>Показания</th>
+                                        <th>Дата передачи</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Данные загрузятся через JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="feesTab">
+                    <div class="card">
+                        <h2 class="card-title">Членские взносы</h2>
+                        
+                        <div class="table-container">
+                            <table id="feesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Тип взноса</th>
+                                        <th>Период</th>
+                                        <th>Сумма</th>
+                                        <th>Срок оплаты</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Данные загрузятся через JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div>
+                <!-- Current Tariffs -->
+                <div class="card">
+                    <h2 class="card-title">Действующие тарифы</h2>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 500; color: #2c3e50; margin-bottom: 5px;">Электроэнергия</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>До 100 кВт·ч:</span>
+                            <span id="tariff1">6.10 ₽/кВт·ч</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Свыше 100 кВт·ч:</span>
+                            <span id="tariff2">7.30 ₽/кВт·ч</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Общественное потребление:</span>
+                            <span id="tariffCommon">0.36 ₽/кВт·ч</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="font-weight: 500; color: #2c3e50; margin-bottom: 5px;">Членские взносы (в месяц)</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Зарплата председателя:</span>
+                            <span id="feeSalary">500 ₽</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Содержание территории:</span>
+                            <span id="feeMaintenance">800 ₽</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Прочие расходы:</span>
+                            <span id="feeOther">300 ₽</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Last Reading -->
+                <div class="card">
+                    <h2 class="card-title">Последние показания</h2>
+                    
+                    <div id="lastReadingInfo">
+                        <p style="color: #7f8c8d; text-align: center; padding: 20px 0;">
+                            Загрузка данных...
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="card">
+                    <h2 class="card-title">Контакты</h2>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: 500; color: #2c3e50;">Председатель СНТ</div>
+                        <div>Иванов Петр Сергеевич</div>
+                        <div>+7 (999) 123-45-67</div>
+                    </div>
+                    
+                    <div>
+                        <div style="font-weight: 500; color: #2c3e50;">Техническая поддержка</div>
+                        <div>support@snt-zvezdochka.ru</div>
+                        <div>+7 (800) 123-45-67</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>СНТ "Звездочка" © 2024. Все права защищены.</p>
+            <p>Система учета электроэнергии и членских взносов</p>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация Supabase
+        const SUPABASE_URL = 'https://your-project.supabase.co'; // Замените на ваш URL
+        const SUPABASE_ANON_KEY = 'your-anon-key'; // Замените на ваш ключ
+        
+        // Инициализация Supabase клиента
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Элементы DOM
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const mobileUserName = document.getElementById('mobileUserName');
+        const mobileUserEmail = document.getElementById('mobileUserEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const totalBalance = document.getElementById('totalBalance');
+        const electricityBalance = document.getElementById('electricityBalance');
+        const membershipBalance = document.getElementById('membershipBalance');
+        const messageDiv = document.getElementById('message');
+        const readingForm = document.getElementById('readingForm');
+        const submitReadingBtn = document.getElementById('submitReadingBtn');
+        const meterSelect = document.getElementById('meterSelect');
+        const currentMonth = document.getElementById('currentMonth');
+        const currentYear = document.getElementById('currentYear');
+        const meterValue = document.getElementById('meterValue');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const readingsHistoryTable = document.getElementById('readingsHistoryTable').querySelector('tbody');
+        const feesTable = document.getElementById('feesTable').querySelector('tbody');
+        const lastReadingInfo = document.getElementById('lastReadingInfo');
+        const tariff1 = document.getElementById('tariff1');
+        const tariff2 = document.getElementById('tariff2');
+        const tariffCommon = document.getElementById('tariffCommon');
+        const feeSalary = document.getElementById('feeSalary');
+        const feeMaintenance = document.getElementById('feeMaintenance');
+        const feeOther = document.getElementById('feeOther');
+        
+        // Текущий пользователь
+        let currentUser = null;
+        
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            setupEventListeners();
+            loadUserData();
+            loadTariffs();
+            loadBalance();
+            loadLastReading();
+            loadReadingsHistory();
+            loadFees();
+            
+            // Установка текущего месяца и года по умолчанию
+            const now = new Date();
+            currentMonth.value = now.getMonth() + 1;
+            currentYear.value = now.getFullYear();
+        });
+        
+        // Проверка авторизации
+        function checkAuth() {
+            const userId = localStorage.getItem('snt_user_id');
+            const userRole = localStorage.getItem('snt_user_role');
+            
+            if (!userId || userRole === 'admin') {
+                window.location.href = 'index.html';
+            }
+            
+            currentUser = {
+                id: userId,
+                email: localStorage.getItem('snt_user_email'),
+                name: localStorage.getItem('snt_user_name'),
+                role: userRole
+            };
+        }
+        
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Выход из системы
+            logoutBtn.addEventListener('click', logout);
+            mobileLogoutBtn.addEventListener('click', logout);
+            
+            // Мобильное меню
+            mobileMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.toggle('show');
+            });
+            
+            // Закрытие мобильного меню при клике вне его
+            document.addEventListener('click', function(e) {
+                if (!mobileMenu.contains(e.target) && e.target !== mobileMenuBtn) {
+                    mobileMenu.classList.remove('show');
+                }
+            });
+            
+            // Переключение вкладок
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Удаление активного класса у всех вкладок
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Добавление активного класса к текущей вкладке
+                    this.classList.add('active');
+                    document.getElementById(tabId + 'Tab').classList.add('active');
+                });
+            });
+            
+            // Отправка показаний
+            readingForm.addEventListener('submit', submitReading);
+        }
+        
+        // Загрузка данных пользователя
+        function loadUserData() {
+            if (currentUser) {
+                userName.textContent = currentUser.name;
+                userEmail.textContent = currentUser.email;
+                mobileUserName.textContent = currentUser.name;
+                mobileUserEmail.textContent = currentUser.email;
+            }
+        }
+        
+        // Загрузка тарифов
+        function loadTariffs() {
+            // В реальном приложении здесь будет запрос к Supabase
+            // Для демо используем фиктивные данные
+            tariff1.textContent = '6.10 ₽/кВт·ч';
+            tariff2.textContent = '7.30 ₽/кВт·ч';
+            tariffCommon.textContent = '0.36 ₽/кВт·ч';
+            
+            feeSalary.textContent = '500 ₽';
+            feeMaintenance.textContent = '800 ₽';
+            feeOther.textContent = '300 ₽';
+        }
+        
+        // Загрузка баланса
+        function loadBalance() {
+            // В реальном приложении здесь будет запрос к Supabase
+            // Для демо используем фиктивные данные
+            const electricity = 2456.78;
+            const membership = 1600.00;
+            const total = electricity + membership;
+            
+            electricityBalance.textContent = electricity.toFixed(2) + ' ₽';
+            membershipBalance.textContent = membership.toFixed(2) + ' ₽';
+            totalBalance.textContent = total.toFixed(2) + ' ₽';
+            
+            if (total > 0) {
+                totalBalance.classList.add('balance-negative');
+                totalBalance.classList.remove('balance-positive');
+            } else {
+                totalBalance.classList.add('balance-positive');
+                totalBalance.classList.remove('balance-negative');
+            }
+        }
+        
+        // Загрузка последних показаний
+        function loadLastReading() {
+            // В реальном приложении здесь будет запрос к Supabase
+            // Для демо используем фиктивные данные
+            const lastReading = {
+                date: 'Март 2024',
+                meter: 'Счетчик №123456',
+                value: '1245.67 кВт·ч',
+                consumption: '123.45 кВт·ч'
+            };
+            
+            lastReadingInfo.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <div style="font-weight: 500; color: #2c3e50;">${lastReading.date}</div>
+                    <div>${lastReading.meter}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Показания:</span>
+                    <span style="font-weight: 600;">${lastReading.value}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Расход:</span>
+                    <span style="font-weight: 600;">${lastReading.consumption}</span>
+                </div>
+            `;
+        }
+        
+        // Загрузка истории показаний
+        function loadReadingsHistory() {
+            // В реальном приложении здесь будет запрос к Supabase
+            // Для демо используем фиктивные данные
+            const readings = [
+                { date: 'Март 2024', meter: '№123456', value: '1245.67', submitted: '25.03.2024' },
+                { date: 'Февраль 2024', meter: '№123456', value: '1122.22', submitted: '25.02.2024' },
+                { date: 'Январь 2024', meter: '№123456', value: '998.77', submitted: '25.01.2024' },
+                { date: 'Декабрь 2023', meter: '№123456', value: '876.55', submitted: '26.12.2023' },
+                { date: 'Ноябрь 2023', meter: '№123456', value: '765.43', submitted: '25.11.2023' }
+            ];
+            
+            readingsHistoryTable.innerHTML = '';
+            
+            readings.forEach(reading => {
+                const row = readingsHistoryTable.insertRow();
+                row.innerHTML = `
+                    <td>${reading.date}</td>
+                    <td>${reading.meter}</td>
+                    <td>${reading.value} кВт·ч</td>
+                    <td>${reading.submitted}</td>
+                `;
+            });
+        }
+        
+        // Загрузка членских взносов
+        function loadFees() {
+            // В реальном приложении здесь будет запрос к Supabase
+            // Для демо используем фиктивные данные
+            const fees = [
+                { type: 'Зарплата председателя', period: 'Март 2024', amount: '500.00', dueDate: '31.03.2024', status: 'Не оплачено' },
+                { type: 'Содержание территории', period: 'Март 2024', amount: '800.00', dueDate: '31.03.2024', status: 'Не оплачено' },
+                { type: 'Прочие расходы', period: 'Март 2024', amount: '300.00', dueDate: '31.03.2024', status: 'Не оплачено' },
+                { type: 'Зарплата председателя', period: 'Февраль 2024', amount: '500.00', dueDate: '29.02.2024', status: 'Оплачено' },
+                { type: 'Содержание территории', period: 'Февраль 2024', amount: '800.00', dueDate: '29.02.2024', status: 'Оплачено' }
+            ];
+            
+            feesTable.innerHTML = '';
+            
+            fees.forEach(fee => {
+                const row = feesTable.insertRow();
+                const statusClass = fee.status === 'Оплачено' ? 'status-paid' : 'status-unpaid';
+                
+                row.innerHTML = `
+                    <td>${fee.type}</td>
+                    <td>${fee.period}</td>
+                    <td>${fee.amount} ₽</td>
+                    <td>${fee.dueDate}</td>
+                    <td class="${statusClass}">${fee.status}</td>
+                `;
+            });
+        }
+        
+        // Отправка показаний
+        async function submitReading(e) {
+            e.preventDefault();
+            
+            const meter = meterSelect.value;
+            const month = currentMonth.value;
+            const year = currentYear.value;
+            const value = parseFloat(meterValue.value);
+            
+            if (!meter || !month || !year || isNaN(value)) {
+                showMessage('Пожалуйста, заполните все поля корректно', 'error');
+                return;
+            }
+            
+            // Показать загрузку
+            submitReadingBtn.textContent = 'Отправка...';
+            submitReadingBtn.disabled = true;
+            
+            try {
+                // В реальном приложении здесь будет запрос к Supabase
+                // Для демо используем имитацию
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Успешная отправка
+                showMessage(`Показания успешно переданы! ${value} кВт·ч за ${month}/${year}`, 'success');
+                
+                // Очистка формы
+                meterValue.value = '';
+                
+                // Обновление данных
+                loadLastReading();
+                loadReadingsHistory();
+                loadBalance();
+                
+                // Автоматическое переключение на следующую вкладку через 2 секунды
+                setTimeout(() => {
+                    document.querySelector('.tab[data-tab="history"]').click();
+                }, 2000);
+                
+            } catch (error) {
+                showMessage('Ошибка при отправке показаний. Попробуйте еще раз.', 'error');
+            } finally {
+                submitReadingBtn.textContent = 'Передать показания';
+                submitReadingBtn.disabled = false;
+            }
+        }
+        
+        // Выход из системы
+        function logout() {
+            localStorage.removeItem('snt_user_id');
+            localStorage.removeItem('snt_user_email');
+            localStorage.removeItem('snt_user_name');
+            localStorage.removeItem('snt_user_role');
+            window.location.href = 'index.html';
+        }
+        
+        // Функция для показа сообщений
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            
+            // Автоматическое скрытие сообщения
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
