@@ -13,98 +13,40 @@
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
         }
         
         .container {
-            max-width: 1200px;
             width: 100%;
-            margin: 0 auto;
+            max-width: 400px;
+            padding: 20px;
         }
         
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
         
         .logo {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .logo span {
-            color: #e74c3c;
-        }
-        
-        .subtitle {
-            color: #7f8c8d;
-            font-size: 1.2rem;
-        }
-        
-        .login-container {
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            display: flex;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        .login-info {
-            flex: 1;
-            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
-            color: white;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .login-form {
-            flex: 1;
-            padding: 40px;
-        }
-        
-        .info-title {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-        }
-        
-        .info-list {
-            list-style-type: none;
-            margin-bottom: 30px;
-        }
-        
-        .info-list li {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .info-list li::before {
-            content: "✓";
-            background-color: rgba(255, 255, 255, 0.2);
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 10px;
-        }
-        
-        .form-title {
-            font-size: 1.8rem;
-            color: #2c3e50;
-            margin-bottom: 30px;
             text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 14px;
         }
         
         .form-group {
@@ -114,237 +56,239 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #2c3e50;
+            color: #555;
             font-weight: 500;
         }
         
-        input {
+        input, select {
             width: 100%;
             padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
         }
         
-        input:focus {
+        input:focus, select:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         .btn {
-            display: block;
             width: 100%;
             padding: 14px;
-            background-color: #3498db;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: transform 0.3s;
         }
         
         .btn:hover {
-            background-color: #2980b9;
+            transform: translateY(-2px);
         }
         
-        .btn-secondary {
-            background-color: #2c3e50;
-            margin-top: 10px;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #1a252f;
-        }
-        
-        .message {
-            padding: 12px;
-            border-radius: 8px;
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 5px;
             margin-bottom: 20px;
-            text-align: center;
             display: none;
         }
         
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .footer {
+        .links {
             text-align: center;
-            margin-top: 30px;
-            color: #7f8c8d;
-            font-size: 0.9rem;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
         }
         
-        @media (max-width: 768px) {
-            .login-container {
-                flex-direction: column;
-            }
-            
-            .login-info {
-                padding: 30px;
-            }
-            
-            .login-form {
-                padding: 30px;
-            }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .admin-note {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1 class="logo">СНТ "<span>Звездочка</span>"</h1>
-            <p class="subtitle">Система учета электроэнергии и членских взносов</p>
-        </div>
-        
-        <div class="login-container">
-            <div class="login-info">
-                <h2 class="info-title">Добро пожаловать!</h2>
-                <p>Войдите в личный кабинет для управления показаниями счетчиков и оплаты членских взносов.</p>
-                
-                <ul class="info-list">
-                    <li>Передавайте показания счетчиков онлайн</li>
-                    <li>Следите за начислениями и оплатами</li>
-                    <li>Получайте актуальную информацию о задолженностях</li>
-                    <li>Оплачивайте членские взносы в три клика</li>
-                </ul>
-                
-                <p>Для входа используйте email и пароль, выданные администратором СНТ.</p>
+        <div class="login-card">
+            <div class="logo">
+                <h1>СНТ "Звездочка"</h1>
+                <p>Учет электроэнергии и взносов</p>
             </div>
             
-            <div class="login-form">
-                <h2 class="form-title">Вход в систему</h2>
+            <div id="errorMessage" class="error-message"></div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginType">Тип входа:</label>
+                    <select id="loginType">
+                        <option value="user">Участник</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
                 
-                <div id="message" class="message"></div>
+                <div class="form-group">
+                    <label for="username">Логин:</label>
+                    <input type="text" id="username" required placeholder="Введите ваш логин">
+                </div>
                 
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" placeholder="Введите ваш email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="password">Пароль</label>
-                        <input type="password" id="password" placeholder="Введите пароль" required>
-                    </div>
-                    
-                    <button type="submit" class="btn" id="loginBtn">Войти</button>
-                    
-                    <div class="footer">
-                        <p>Вход для администратора: admin@snt-zvezdochka.ru</p>
-                        <p>Техническая поддержка: support@snt-zvezdochka.ru</p>
-                    </div>
-                </form>
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" required placeholder="Введите ваш пароль">
+                </div>
+                
+                <button type="submit" class="btn">Войти</button>
+            </form>
+            
+            <div class="admin-note">
+                <p>Администратор: admin / admin123</p>
+                <p>Тестовый пользователь: user1 / password1</p>
             </div>
         </div>
     </div>
 
     <script>
         // Конфигурация Supabase
-        const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co'; // Замените на ваш URL
-        const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk'; // Замените на ваш ключ
+        const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk';
         
-        // Инициализация Supabase клиента
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Инициализация Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Элементы DOM
-        const loginForm = document.getElementById('loginForm');
-        const messageDiv = document.getElementById('message');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        // Обработка отправки формы
-        loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Показать загрузку
-            loginBtn.textContent = 'Вход...';
-            loginBtn.disabled = true;
-            
+        // Создание таблиц при первом запуске (только админ)
+        async function initializeDatabase() {
             try {
-                // В реальном приложении здесь будет запрос к Supabase для аутентификации
-                // Для демо-версии используем имитацию
+                // Таблица пользователей
+                const { data: usersTable, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .limit(1);
                 
-                // Имитация запроса к API
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Проверка учетных данных
-                if (email === 'admin@snt-zvezdochka.ru' && password === 'Admin123!') {
-                    // Администратор
-                    localStorage.setItem('snt_user_id', 'admin');
-                    localStorage.setItem('snt_user_email', email);
-                    localStorage.setItem('snt_user_name', 'Администратор СНТ');
-                    localStorage.setItem('snt_user_role', 'admin');
-                    
-                    showMessage('Успешный вход! Перенаправление...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'admin.html';
-                    }, 1000);
-                } else if (email && password) {
-                    // Обычный пользователь (в реальном приложении здесь будет проверка в Supabase)
-                    // Для демо используем фиктивные данные
-                    const userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('snt_user_id', userId);
-                    localStorage.setItem('snt_user_email', email);
-                    localStorage.setItem('snt_user_name', email.split('@')[0]);
-                    localStorage.setItem('snt_user_role', 'user');
-                    
-                    showMessage('Успешный вход! Перенаправление...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'user.html';
-                    }, 1000);
-                } else {
-                    throw new Error('Неверные учетные данные');
+                if (usersError && usersError.code === 'PGRST116') {
+                    // Таблица не существует, создаем
+                    alert("База данных не инициализирована. Пожалуйста, войдите как администратор для настройки.");
                 }
             } catch (error) {
-                showMessage(error.message || 'Ошибка входа. Проверьте email и пароль.', 'error');
-                loginBtn.textContent = 'Войти';
-                loginBtn.disabled = false;
-            }
-        });
-        
-        // Функция для показа сообщений
-        function showMessage(text, type) {
-            messageDiv.textContent = text;
-            messageDiv.className = 'message ' + type;
-            messageDiv.style.display = 'block';
-            
-            // Автоматическое скрытие сообщения об успехе
-            if (type === 'success') {
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, 3000);
+                console.error('Ошибка инициализации:', error);
             }
         }
         
-        // Проверка, если пользователь уже вошел
-        window.addEventListener('DOMContentLoaded', function() {
-            const userId = localStorage.getItem('snt_user_id');
-            const userRole = localStorage.getItem('snt_user_role');
+        // Проверка логина
+        async function handleLogin(event) {
+            event.preventDefault();
             
-            if (userId) {
-                if (userRole === 'admin') {
+            const loginType = document.getElementById('loginType').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            
+            errorDiv.style.display = 'none';
+            
+            try {
+                // Поиск пользователя
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .eq('role', loginType)
+                    .single();
+                
+                if (error || !users) {
+                    throw new Error('Неверный логин или пароль');
+                }
+                
+                // Сохраняем данные пользователя в localStorage
+                localStorage.setItem('user', JSON.stringify({
+                    id: users.id,
+                    username: users.username,
+                    role: users.role,
+                    fullName: users.full_name,
+                    plotNumber: users.plot_number
+                }));
+                
+                // Переходим в соответствующий кабинет
+                if (loginType === 'admin') {
                     window.location.href = 'admin.html';
                 } else {
                     window.location.href = 'user.html';
                 }
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
             }
+        }
+        
+        // Создание тестовых пользователей при первом запуске
+        async function createTestUsers() {
+            try {
+                // Проверяем, есть ли уже пользователи
+                const { data: existingUsers, error } = await supabase
+                    .from('users')
+                    .select('id')
+                    .limit(1);
+                
+                if (existingUsers && existingUsers.length === 0) {
+                    // Создаем администратора
+                    await supabase
+                        .from('users')
+                        .insert([
+                            {
+                                username: 'admin',
+                                password: 'admin123',
+                                role: 'admin',
+                                full_name: 'Администратор СНТ',
+                                plot_number: '0',
+                                created_at: new Date().toISOString()
+                            },
+                            {
+                                username: 'user1',
+                                password: 'password1',
+                                role: 'user',
+                                full_name: 'Иванов Иван Иванович',
+                                plot_number: '1',
+                                created_at: new Date().toISOString()
+                            }
+                        ]);
+                    
+                    console.log('Тестовые пользователи созданы');
+                }
+            } catch (error) {
+                console.error('Ошибка создания тестовых пользователей:', error);
+            }
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Проверяем, инициализирована ли база
+            initializeDatabase();
+            
+            // Создаем тестовых пользователей
+            createTestUsers();
         });
     </script>
+    
+    <!-- Подключаем Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
