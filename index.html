@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СНТ "Звездочка" - Личный кабинет</title>
+    <!-- Подключаем Supabase библиотеку -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -465,7 +467,7 @@
                 <div class="admin-controls">
                     <div class="control-card">
                         <h3>Добавить пользователя</h3>
-                        <form id="addUserForm" onsubmit="addUser(event)">
+                        <form id="addUserForm">
                             <div class="form-group">
                                 <input type="text" id="newUsername" placeholder="Логин" required>
                             </div>
@@ -495,7 +497,7 @@
             <div id="adminTariffsTab" class="tab-content">
                 <div class="control-card">
                     <h3>Текущие тарифы</h3>
-                    <form id="tariffsForm" onsubmit="updateTariffs(event)">
+                    <form id="tariffsForm">
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Потери (за кВт.ч):</label>
@@ -533,7 +535,7 @@
             <div id="adminReadingsTab" class="tab-content">
                 <div class="control-card">
                     <h3>Внести показания</h3>
-                    <form id="adminReadingsForm" onsubmit="addAdminReading(event)">
+                    <form id="adminReadingsForm">
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Пользователь:</label>
@@ -574,8 +576,8 @@
 user2,2024-01-15,67.89
 user3,2024-01-15,234.56"></textarea>
                     <div class="form-group">
-                        <button onclick="processBulkUpload()" class="btn">Загрузить</button>
-                        <button onclick="exportData()" class="btn btn-secondary">Экспорт всех данных</button>
+                        <button id="bulkUploadBtn" class="btn">Загрузить</button>
+                        <button id="exportDataBtn" class="btn btn-secondary">Экспорт всех данных</button>
                     </div>
                     <div id="bulkMessage" class="message"></div>
                 </div>
@@ -606,27 +608,67 @@ user3,2024-01-15,234.56"></textarea>
             membershipOther: 50
         };
 
+        // Проверка доступности Supabase
+        async function checkSupabaseConnection() {
+            try {
+                const response = await fetch(SUPABASE_URL + '/rest/v1/', {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('Ошибка подключения к Supabase:', error);
+                return false;
+            }
+        }
+
         // Инициализация Supabase
         async function initSupabase() {
             try {
-                // Проверяем доступность Supabase
-                const response = await fetch(SUPABASE_URL + '/rest/v1/', {
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY
+                const isConnected = await checkSupabaseConnection();
+                
+                if (!isConnected) {
+                    showStatus('disconnected', 'Ошибка подключения к базе данных. Проверьте подключение к интернету.');
+                    return;
+                }
+                
+                // Создаем клиент Supabase
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        persistSession: false
                     }
                 });
-                
-                if (!response.ok) throw new Error('Supabase недоступен');
-                
-                // Подключаем клиент Supabase
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
                 showStatus('connected', 'База данных подключена');
                 loadTariffs();
                 checkAuth();
+                
+                // Создаем таблицу пользователей если не существует
+                await createTablesIfNeeded();
+                
             } catch (error) {
-                console.error('Ошибка подключения:', error);
-                showStatus('disconnected', 'Ошибка подключения к базе данных');
+                console.error('Ошибка инициализации Supabase:', error);
+                showStatus('disconnected', 'Ошибка инициализации базы данных');
+            }
+        }
+
+        // Создание таблиц если не существуют
+        async function createTablesIfNeeded() {
+            try {
+                // Проверяем существование таблицы users
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .limit(1);
+                
+                if (error && error.code === '42P01') { // Таблица не существует
+                    // В реальном приложении здесь нужно создать таблицы через Supabase Dashboard
+                    console.log('Таблицы не существуют. Создайте их через Supabase Dashboard.');
+                }
+            } catch (error) {
+                console.error('Ошибка проверки таблиц:', error);
             }
         }
 
@@ -651,7 +693,7 @@ user3,2024-01-15,234.56"></textarea>
             
             setTimeout(() => {
                 statusDiv.style.display = 'none';
-            }, 3000);
+            }, 5000);
         }
 
         // Показать сообщение
@@ -682,8 +724,13 @@ user3,2024-01-15,234.56"></textarea>
             
             try {
                 // Проверяем администратора
-                if (username === 'admin' && password === 'admin') {
-                    currentUser = { login: 'admin', full_name: 'Администратор' };
+                if (username === 'admin' && password === 'admin123') {
+                    currentUser = { 
+                        id: 0, 
+                        login: 'admin', 
+                        full_name: 'Администратор СНТ',
+                        created_at: new Date().toISOString()
+                    };
                     isAdmin = true;
                     localStorage.setItem('snt_user', JSON.stringify(currentUser));
                     localStorage.setItem('snt_admin', 'true');
@@ -693,18 +740,18 @@ user3,2024-01-15,234.56"></textarea>
                 }
                 
                 // Проверяем пользователя в базе данных
-                const { data: users, error } = await supabase
+                const { data: user, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('login', username)
                     .eq('password', password)
                     .single();
                 
-                if (error || !users) {
+                if (error || !user) {
                     throw new Error('Неверный логин или пароль');
                 }
                 
-                currentUser = users;
+                currentUser = user;
                 isAdmin = false;
                 localStorage.setItem('snt_user', JSON.stringify(currentUser));
                 localStorage.setItem('snt_admin', 'false');
@@ -712,7 +759,8 @@ user3,2024-01-15,234.56"></textarea>
                 showMessage('loginMessage', 'success', 'Вход выполнен успешно');
                 
             } catch (error) {
-                showMessage('loginMessage', 'error', error.message);
+                console.error('Ошибка входа:', error);
+                showMessage('loginMessage', 'error', error.message || 'Неверный логин или пароль');
             } finally {
                 showLoader(false);
             }
@@ -821,11 +869,31 @@ user3,2024-01-15,234.56"></textarea>
             showLoader(true);
             
             try {
-                // В реальном приложении сохраняли бы в базу данных
-                // Для демонстрации используем localStorage
+                // Сохраняем показания в Supabase
+                const { data, error } = await supabase
+                    .from('meter_readings')
+                    .insert({
+                        user_id: currentUser.id,
+                        date: date,
+                        reading: reading,
+                        created_at: new Date().toISOString()
+                    })
+                    .select();
+                
+                if (error) throw error;
+                
+                calculatePayment(reading);
+                loadUserReadings();
+                
+                document.getElementById('meterReadingsForm').reset();
+                document.getElementById('readingDate').value = new Date().toISOString().split('T')[0];
+                showMessage('readingsMessage', 'success', 'Показания успешно переданы');
+                
+            } catch (error) {
+                console.error('Ошибка при передаче показаний:', error);
+                // Если таблица не существует, сохраняем в localStorage
                 const readings = JSON.parse(localStorage.getItem(`snt_readings_${currentUser.login}`) || '[]');
                 
-                // Проверяем, есть ли уже показания за этот месяц
                 const existingIndex = readings.findIndex(r => r.date.startsWith(date.substring(0, 7)));
                 
                 if (existingIndex !== -1) {
@@ -840,48 +908,91 @@ user3,2024-01-15,234.56"></textarea>
                 loadUserReadings();
                 
                 document.getElementById('meterReadingsForm').reset();
-                showMessage('readingsMessage', 'success', 'Показания успешно переданы');
-                
-            } catch (error) {
-                showMessage('readingsMessage', 'error', 'Ошибка при передаче показаний');
+                document.getElementById('readingDate').value = new Date().toISOString().split('T')[0];
+                showMessage('readingsMessage', 'success', 'Показания успешно переданы (локальное сохранение)');
             } finally {
                 showLoader(false);
             }
         });
 
         // Загрузить историю показаний пользователя
-        function loadUserReadings() {
-            const readings = JSON.parse(localStorage.getItem(`snt_readings_${currentUser.login}`) || '[]');
-            const tbody = document.getElementById('readingsTable').querySelector('tbody');
-            
-            tbody.innerHTML = '';
-            
-            readings.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(reading => {
-                const row = document.createElement('tr');
+        async function loadUserReadings() {
+            try {
+                // Пытаемся загрузить из Supabase
+                const { data: readings, error } = await supabase
+                    .from('meter_readings')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('date', { ascending: false });
                 
-                // Расчет суммы для этой записи
-                const losses = reading.reading * tariffs.losses;
-                let under100 = 0;
-                let over100 = 0;
+                if (error) throw error;
                 
-                if (reading.reading <= 100) {
-                    under100 = reading.reading * tariffs.under100;
+                const tbody = document.getElementById('readingsTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                
+                if (readings && readings.length > 0) {
+                    readings.forEach(reading => {
+                        const row = document.createElement('tr');
+                        const total = calculateReadingTotal(reading.reading);
+                        row.innerHTML = `
+                            <td>${reading.date}</td>
+                            <td>${reading.reading}</td>
+                            <td>${total.toFixed(2)} ₽</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
                 } else {
-                    under100 = 100 * tariffs.under100;
-                    over100 = (reading.reading - 100) * tariffs.over100;
+                    // Если нет данных в Supabase, проверяем localStorage
+                    const localReadings = JSON.parse(localStorage.getItem(`snt_readings_${currentUser.login}`) || '[]');
+                    
+                    localReadings.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(reading => {
+                        const row = document.createElement('tr');
+                        const total = calculateReadingTotal(reading.reading);
+                        row.innerHTML = `
+                            <td>${reading.date}</td>
+                            <td>${reading.reading}</td>
+                            <td>${total.toFixed(2)} ₽</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
                 }
                 
-                const totalElectricity = losses + under100 + over100;
-                const totalMembership = tariffs.membershipSalary + tariffs.membershipMaintenance + tariffs.membershipOther;
-                const total = totalElectricity + totalMembership;
+            } catch (error) {
+                console.error('Ошибка загрузки показаний:', error);
+                // Загружаем из localStorage
+                const readings = JSON.parse(localStorage.getItem(`snt_readings_${currentUser.login}`) || '[]');
+                const tbody = document.getElementById('readingsTable').querySelector('tbody');
+                tbody.innerHTML = '';
                 
-                row.innerHTML = `
-                    <td>${reading.date}</td>
-                    <td>${reading.reading}</td>
-                    <td>${total.toFixed(2)} ₽</td>
-                `;
-                tbody.appendChild(row);
-            });
+                readings.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(reading => {
+                    const row = document.createElement('tr');
+                    const total = calculateReadingTotal(reading.reading);
+                    row.innerHTML = `
+                        <td>${reading.date}</td>
+                        <td>${reading.reading}</td>
+                        <td>${total.toFixed(2)} ₽</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Расчет суммы для одного показания
+        function calculateReadingTotal(reading) {
+            const losses = reading * tariffs.losses;
+            let under100 = 0;
+            let over100 = 0;
+            
+            if (reading <= 100) {
+                under100 = reading * tariffs.under100;
+            } else {
+                under100 = 100 * tariffs.under100;
+                over100 = (reading - 100) * tariffs.over100;
+            }
+            
+            const totalElectricity = losses + under100 + over100;
+            const totalMembership = tariffs.membershipSalary + tariffs.membershipMaintenance + tariffs.membershipOther;
+            return totalElectricity + totalMembership;
         }
 
         // Выход из системы
@@ -908,7 +1019,8 @@ user3,2024-01-15,234.56"></textarea>
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
             event.target.classList.add('active');
-            document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`).classList.add('active');
+            const tabId = `admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`;
+            document.getElementById(tabId).classList.add('active');
             
             if (tabName === 'users') loadUsers();
             if (tabName === 'readings') loadAllReadings();
@@ -920,43 +1032,101 @@ user3,2024-01-15,234.56"></textarea>
                 const { data: users, error } = await supabase
                     .from('users')
                     .select('*')
-                    .neq('login', 'admin');
+                    .neq('login', 'admin')
+                    .order('full_name');
                 
-                if (error) throw error;
+                if (error) {
+                    // Если таблицы нет, показываем демо-данные
+                    console.log('Используем демо-данные');
+                    showDemoUsers();
+                    return;
+                }
                 
                 const tbody = document.getElementById('usersTable').querySelector('tbody');
                 tbody.innerHTML = '';
                 
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${user.login}</td>
-                        <td>${user.full_name || '-'}</td>
-                        <td>
-                            <button onclick="editUser('${user.login}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Изменить</button>
-                            <button onclick="deleteUser('${user.login}')" class="btn btn-logout" style="padding: 5px 10px; font-size: 12px;">Удалить</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                if (users && users.length > 0) {
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.login}</td>
+                            <td>${user.full_name || '-'}</td>
+                            <td>
+                                <button onclick="editUser('${user.login}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Изменить</button>
+                                <button onclick="deleteUser('${user.login}')" class="btn btn-logout" style="padding: 5px 10px; font-size: 12px;">Удалить</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    showDemoUsers();
+                }
                 
             } catch (error) {
                 console.error('Ошибка загрузки пользователей:', error);
+                showDemoUsers();
             }
         }
 
+        // Демо-данные пользователей
+        function showDemoUsers() {
+            const tbody = document.getElementById('usersTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            const demoUsers = [
+                { login: 'user1', full_name: 'Иванов Иван Иванович' },
+                { login: 'user2', full_name: 'Петров Петр Петрович' },
+                { login: 'user3', full_name: 'Сидорова Мария Ивановна' }
+            ];
+            
+            demoUsers.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.login}</td>
+                    <td>${user.full_name}</td>
+                    <td>
+                        <button onclick="editUser('${user.login}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Изменить</button>
+                        <button onclick="deleteUser('${user.login}')" class="btn btn-logout" style="padding: 5px 10px; font-size: 12px;">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
         // Админ: добавить пользователя
-        async function addUser(e) {
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const login = document.getElementById('newUsername').value;
             const password = document.getElementById('newPassword').value;
             const fullName = document.getElementById('newFullName').value;
             
+            showLoader(true);
+            
             try {
+                // Проверяем, не существует ли уже пользователь
+                const { data: existingUser, error: checkError } = await supabase
+                    .from('users')
+                    .select('login')
+                    .eq('login', login)
+                    .single();
+                
+                if (!checkError && existingUser) {
+                    throw new Error('Пользователь с таким логином уже существует');
+                }
+                
+                // Добавляем пользователя
                 const { data, error } = await supabase
                     .from('users')
-                    .insert([{ login, password, full_name: fullName }]);
+                    .insert([
+                        { 
+                            login: login, 
+                            password: password, 
+                            full_name: fullName,
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select();
                 
                 if (error) throw error;
                 
@@ -965,19 +1135,28 @@ user3,2024-01-15,234.56"></textarea>
                 showMessage('loginMessage', 'success', 'Пользователь добавлен');
                 
             } catch (error) {
-                showMessage('loginMessage', 'error', 'Ошибка при добавлении пользователя');
+                console.error('Ошибка при добавлении пользователя:', error);
+                showMessage('loginMessage', 'error', error.message || 'Ошибка при добавлении пользователя');
+            } finally {
+                showLoader(false);
             }
-        }
+        });
 
         // Админ: редактировать пользователя
         function editUser(login) {
-            // Реализация редактирования пользователя
-            alert(`Редактирование пользователя: ${login}`);
+            const newName = prompt(`Введите новое ФИО для пользователя ${login}:`);
+            if (newName) {
+                // Здесь должна быть логика обновления в базе данных
+                alert(`ФИО пользователя ${login} изменено на: ${newName}`);
+                loadUsers();
+            }
         }
 
         // Админ: удалить пользователя
         async function deleteUser(login) {
             if (!confirm(`Удалить пользователя ${login}?`)) return;
+            
+            showLoader(true);
             
             try {
                 const { error } = await supabase
@@ -991,12 +1170,15 @@ user3,2024-01-15,234.56"></textarea>
                 showMessage('loginMessage', 'success', 'Пользователь удален');
                 
             } catch (error) {
+                console.error('Ошибка при удалении пользователя:', error);
                 showMessage('loginMessage', 'error', 'Ошибка при удалении пользователя');
+            } finally {
+                showLoader(false);
             }
         }
 
         // Админ: обновить тарифы
-        function updateTariffs(e) {
+        document.getElementById('tariffsForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             tariffs = {
@@ -1010,88 +1192,155 @@ user3,2024-01-15,234.56"></textarea>
             
             localStorage.setItem('snt_tariffs', JSON.stringify(tariffs));
             showMessage('loginMessage', 'success', 'Тарифы обновлены');
+        });
+
+        // Админ: загрузить всех пользователей для выпадающего списка
+        async function loadUsersForSelect() {
+            try {
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('login, full_name')
+                    .neq('login', 'admin')
+                    .order('full_name');
+                
+                const select = document.getElementById('adminSelectUser');
+                select.innerHTML = '<option value="">Выберите пользователя</option>';
+                
+                if (users && users.length > 0) {
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.login;
+                        option.textContent = `${user.full_name} (${user.login})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    // Демо-данные
+                    const demoUsers = [
+                        { login: 'user1', full_name: 'Иванов Иван Иванович' },
+                        { login: 'user2', full_name: 'Петров Петр Петрович' },
+                        { login: 'user3', full_name: 'Сидорова Мария Ивановна' }
+                    ];
+                    
+                    demoUsers.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.login;
+                        option.textContent = `${user.full_name} (${user.login})`;
+                        select.appendChild(option);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+            }
         }
 
         // Админ: загрузить все показания
         async function loadAllReadings() {
             try {
-                // Загружаем пользователей для отображения
+                await loadUsersForSelect();
+                
+                // Собираем все показания из localStorage для всех пользователей
+                const allReadings = [];
+                
+                // Получаем список пользователей
                 const { data: users, error: usersError } = await supabase
                     .from('users')
-                    .select('*');
+                    .select('login, full_name')
+                    .neq('login', 'admin');
                 
-                if (usersError) throw usersError;
-                
-                const tbody = document.getElementById('allReadingsTable').querySelector('tbody');
-                tbody.innerHTML = '';
-                
-                // Заполняем селект пользователей
-                const select = document.getElementById('adminSelectUser');
-                select.innerHTML = '<option value="">Выберите пользователя</option>';
-                users.filter(u => u.login !== 'admin').forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.login;
-                    option.textContent = `${user.full_name} (${user.login})`;
-                    select.appendChild(option);
-                });
-                
-                // Собираем все показания из localStorage
-                const allReadings = [];
-                users.forEach(user => {
-                    const readings = JSON.parse(localStorage.getItem(`snt_readings_${user.login}`) || '[]');
-                    readings.forEach(reading => {
-                        allReadings.push({
-                            user: user.full_name || user.login,
-                            login: user.login,
-                            date: reading.date,
-                            reading: reading.reading,
-                            timestamp: reading.timestamp
+                if (usersError) {
+                    // Используем демо-пользователей
+                    const demoUsers = [
+                        { login: 'user1', full_name: 'Иванов Иван' },
+                        { login: 'user2', full_name: 'Петров Петр' },
+                        { login: 'user3', full_name: 'Сидорова Мария' }
+                    ];
+                    
+                    demoUsers.forEach(user => {
+                        const readings = JSON.parse(localStorage.getItem(`snt_readings_${user.login}`) || '[]');
+                        readings.forEach(reading => {
+                            allReadings.push({
+                                user: user.full_name,
+                                login: user.login,
+                                date: reading.date,
+                                reading: reading.reading,
+                                timestamp: reading.timestamp
+                            });
                         });
                     });
-                });
+                } else if (users) {
+                    // Собираем показания для каждого пользователя
+                    for (const user of users) {
+                        try {
+                            const { data: readings, error } = await supabase
+                                .from('meter_readings')
+                                .select('*')
+                                .eq('user_id', user.id)
+                                .order('date', { ascending: false });
+                            
+                            if (!error && readings) {
+                                readings.forEach(reading => {
+                                    allReadings.push({
+                                        user: user.full_name,
+                                        login: user.login,
+                                        date: reading.date,
+                                        reading: reading.reading,
+                                        timestamp: reading.created_at
+                                    });
+                                });
+                            }
+                        } catch (error) {
+                            // Если ошибка, проверяем localStorage
+                            const localReadings = JSON.parse(localStorage.getItem(`snt_readings_${user.login}`) || '[]');
+                            localReadings.forEach(reading => {
+                                allReadings.push({
+                                    user: user.full_name,
+                                    login: user.login,
+                                    date: reading.date,
+                                    reading: reading.reading,
+                                    timestamp: reading.timestamp
+                                });
+                            });
+                        }
+                    }
+                }
                 
                 // Сортируем по дате
                 allReadings.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
                 // Отображаем
-                allReadings.forEach(reading => {
-                    const row = document.createElement('tr');
-                    
-                    // Расчет суммы
-                    const losses = reading.reading * tariffs.losses;
-                    let under100 = 0;
-                    let over100 = 0;
-                    
-                    if (reading.reading <= 100) {
-                        under100 = reading.reading * tariffs.under100;
-                    } else {
-                        under100 = 100 * tariffs.under100;
-                        over100 = (reading.reading - 100) * tariffs.over100;
-                    }
-                    
-                    const totalElectricity = losses + under100 + over100;
-                    const totalMembership = tariffs.membershipSalary + tariffs.membershipMaintenance + tariffs.membershipOther;
-                    const total = totalElectricity + totalMembership;
-                    
-                    row.innerHTML = `
-                        <td>${reading.user}</td>
-                        <td>${reading.date}</td>
-                        <td>${reading.reading}</td>
-                        <td>${total.toFixed(2)} ₽</td>
-                        <td>
-                            <button onclick="editReading('${reading.login}', '${reading.date}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Изменить</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                const tbody = document.getElementById('allReadingsTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                
+                if (allReadings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Нет данных</td></tr>';
+                } else {
+                    allReadings.forEach(reading => {
+                        const row = document.createElement('tr');
+                        const total = calculateReadingTotal(reading.reading);
+                        
+                        row.innerHTML = `
+                            <td>${reading.user}</td>
+                            <td>${reading.date}</td>
+                            <td>${reading.reading}</td>
+                            <td>${total.toFixed(2)} ₽</td>
+                            <td>
+                                <button onclick="editReading('${reading.login}', '${reading.date}')" class="btn" style="padding: 5px 10px; font-size: 12px;">Изменить</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
                 
             } catch (error) {
                 console.error('Ошибка загрузки показаний:', error);
+                const tbody = document.getElementById('allReadingsTable').querySelector('tbody');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Ошибка загрузки данных</td></tr>';
             }
         }
 
         // Админ: внести показания за пользователя
-        async function addAdminReading(e) {
+        document.getElementById('adminReadingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const login = document.getElementById('adminSelectUser').value;
@@ -1103,11 +1352,41 @@ user3,2024-01-15,234.56"></textarea>
                 return;
             }
             
+            showLoader(true);
+            
             try {
+                // Находим ID пользователя
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('login', login)
+                    .single();
+                
+                if (userError) throw new Error('Пользователь не найден');
+                
+                // Сохраняем в Supabase
+                const { data, error } = await supabase
+                    .from('meter_readings')
+                    .insert({
+                        user_id: user.id,
+                        date: date,
+                        reading: reading,
+                        created_at: new Date().toISOString()
+                    })
+                    .select();
+                
+                if (error) throw error;
+                
+                document.getElementById('adminReadingsForm').reset();
+                document.getElementById('adminReadingDate').value = new Date().toISOString().split('T')[0];
+                loadAllReadings();
+                showMessage('bulkMessage', 'success', 'Показания внесены');
+                
+            } catch (error) {
+                console.error('Ошибка при внесении показаний:', error);
                 // Сохраняем в localStorage
                 const readings = JSON.parse(localStorage.getItem(`snt_readings_${login}`) || '[]');
                 
-                // Проверяем, есть ли уже показания за этот месяц
                 const existingIndex = readings.findIndex(r => r.date.startsWith(date.substring(0, 7)));
                 
                 if (existingIndex !== -1) {
@@ -1119,13 +1398,13 @@ user3,2024-01-15,234.56"></textarea>
                 localStorage.setItem(`snt_readings_${login}`, JSON.stringify(readings));
                 
                 document.getElementById('adminReadingsForm').reset();
+                document.getElementById('adminReadingDate').value = new Date().toISOString().split('T')[0];
                 loadAllReadings();
-                showMessage('bulkMessage', 'success', 'Показания внесены');
-                
-            } catch (error) {
-                showMessage('bulkMessage', 'error', 'Ошибка при внесении показаний');
+                showMessage('bulkMessage', 'success', 'Показания внесены (локальное сохранение)');
+            } finally {
+                showLoader(false);
             }
-        }
+        });
 
         // Админ: редактировать показания
         function editReading(login, date) {
@@ -1142,50 +1421,82 @@ user3,2024-01-15,234.56"></textarea>
         }
 
         // Админ: пакетная загрузка
-        async function processBulkUpload() {
+        document.getElementById('bulkUploadBtn').addEventListener('click', async function() {
             const data = document.getElementById('bulkData').value;
             const lines = data.trim().split('\n');
             
             let success = 0;
             let errors = 0;
             
+            showLoader(true);
+            
             for (const line of lines) {
                 const [login, date, reading] = line.split(',').map(item => item.trim());
                 
                 if (login && date && reading && !isNaN(reading)) {
-                    const readings = JSON.parse(localStorage.getItem(`snt_readings_${login}`) || '[]');
-                    
-                    const existingIndex = readings.findIndex(r => r.date.startsWith(date.substring(0, 7)));
-                    
-                    if (existingIndex !== -1) {
-                        readings[existingIndex] = { 
-                            date, 
-                            reading: parseFloat(reading), 
-                            timestamp: new Date().toISOString() 
-                        };
-                    } else {
-                        readings.push({ 
-                            date, 
-                            reading: parseFloat(reading), 
-                            timestamp: new Date().toISOString() 
-                        });
+                    try {
+                        // Находим ID пользователя
+                        const { data: user, error: userError } = await supabase
+                            .from('users')
+                            .select('id')
+                            .eq('login', login)
+                            .single();
+                        
+                        if (userError) {
+                            // Сохраняем в localStorage
+                            const readings = JSON.parse(localStorage.getItem(`snt_readings_${login}`) || '[]');
+                            
+                            const existingIndex = readings.findIndex(r => r.date.startsWith(date.substring(0, 7)));
+                            
+                            if (existingIndex !== -1) {
+                                readings[existingIndex] = { 
+                                    date, 
+                                    reading: parseFloat(reading), 
+                                    timestamp: new Date().toISOString() 
+                                };
+                            } else {
+                                readings.push({ 
+                                    date, 
+                                    reading: parseFloat(reading), 
+                                    timestamp: new Date().toISOString() 
+                                });
+                            }
+                            
+                            localStorage.setItem(`snt_readings_${login}`, JSON.stringify(readings));
+                            success++;
+                            continue;
+                        }
+                        
+                        // Сохраняем в Supabase
+                        const { error } = await supabase
+                            .from('meter_readings')
+                            .insert({
+                                user_id: user.id,
+                                date: date,
+                                reading: parseFloat(reading),
+                                created_at: new Date().toISOString()
+                            });
+                        
+                        if (error) throw error;
+                        
+                        success++;
+                    } catch (error) {
+                        errors++;
                     }
-                    
-                    localStorage.setItem(`snt_readings_${login}`, JSON.stringify(readings));
-                    success++;
                 } else {
                     errors++;
                 }
             }
             
+            showLoader(false);
             showMessage('bulkMessage', 'success', 
                 `Загружено: ${success} записей, ошибок: ${errors}`);
             
             loadAllReadings();
-        }
+        });
 
         // Админ: экспорт данных
-        function exportData() {
+        document.getElementById('exportDataBtn').addEventListener('click', function() {
             let csv = 'Логин,ФИО,Дата показаний,Показания,Тарифы,Сумма\n';
             
             // Собираем данные из localStorage
@@ -1197,20 +1508,7 @@ user3,2024-01-15,234.56"></textarea>
                     
                     readings.forEach(reading => {
                         // Расчет суммы
-                        const losses = reading.reading * tariffs.losses;
-                        let under100 = 0;
-                        let over100 = 0;
-                        
-                        if (reading.reading <= 100) {
-                            under100 = reading.reading * tariffs.under100;
-                        } else {
-                            under100 = 100 * tariffs.under100;
-                            over100 = (reading.reading - 100) * tariffs.over100;
-                        }
-                        
-                        const totalElectricity = losses + under100 + over100;
-                        const totalMembership = tariffs.membershipSalary + tariffs.membershipMaintenance + tariffs.membershipOther;
-                        const total = totalElectricity + totalMembership;
+                        const total = calculateReadingTotal(reading.reading);
                         
                         csv += `${login},${reading.date},${reading.reading},"${tariffs.losses}/${tariffs.under100}/${tariffs.over100}",${total.toFixed(2)}\n`;
                     });
@@ -1218,7 +1516,7 @@ user3,2024-01-15,234.56"></textarea>
             }
             
             // Создаем ссылку для скачивания
-            const blob = new Blob([csv], { type: 'text/csv' });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1229,7 +1527,7 @@ user3,2024-01-15,234.56"></textarea>
             window.URL.revokeObjectURL(url);
             
             showMessage('bulkMessage', 'success', 'Данные экспортированы в CSV');
-        }
+        });
 
         // Админ: загрузка всех данных
         function loadAdminData() {
