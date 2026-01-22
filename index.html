@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         
@@ -70,6 +70,11 @@
             border-bottom: 2px solid #667eea;
         }
         
+        h3 {
+            color: #555;
+            margin: 15px 0 10px 0;
+        }
+        
         .auth-form, .user-form {
             display: grid;
             gap: 20px;
@@ -88,7 +93,7 @@
             color: #555;
         }
         
-        input, select, button {
+        input, select, button, textarea {
             padding: 12px 15px;
             border: 2px solid #ddd;
             border-radius: 8px;
@@ -96,7 +101,7 @@
             transition: all 0.3s ease;
         }
         
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -118,6 +123,10 @@
         
         button.secondary {
             background: #6c757d;
+        }
+        
+        button.danger {
+            background: #dc3545;
         }
         
         .alert {
@@ -297,6 +306,67 @@
             background: rgba(255, 255, 255, 0.3);
         }
         
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .month-selector label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .tariff-history {
+            margin-top: 30px;
+        }
+        
+        .tariff-history table {
+            margin-top: 10px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .badge.current {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge.future {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .badge.past {
+            background: #6c757d;
+            color: white;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -312,6 +382,10 @@
             
             .nav-buttons {
                 flex-direction: column;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -330,9 +404,10 @@
         <!-- Навигационные кнопки (видны только администратору) -->
         <div id="nav-buttons" class="nav-buttons" style="display: none;">
             <button class="nav-btn" onclick="showCard('user-dashboard')" id="btn-dashboard">Личный кабинет</button>
-            <button class="nav-btn" onclick="showCard('admin-users')" id="btn-users">Управление пользователями</button>
-            <button class="nav-btn" onclick="showCard('admin-readings')" id="btn-readings">Показания счетчиков</button>
-            <button class="nav-btn" onclick="showCard('admin-payments')" id="btn-payments">Членские взносы</button>
+            <button class="nav-btn" onclick="showCard('admin-users')" id="btn-users">Пользователи</button>
+            <button class="nav-btn" onclick="showCard('admin-tariffs')" id="btn-tariffs">Тарифы</button>
+            <button class="nav-btn" onclick="showCard('admin-fees')" id="btn-fees">Взносы</button>
+            <button class="nav-btn" onclick="showCard('admin-readings')" id="btn-readings">Показания</button>
             <button class="nav-btn" onclick="showCard('admin-import')" id="btn-import">Импорт/Экспорт</button>
         </div>
         
@@ -380,6 +455,31 @@
                 <button class="logout-btn" onclick="logout()">Выйти</button>
             </div>
             
+            <!-- Селектор месяца для пользователя -->
+            <div class="month-selector">
+                <div class="form-group" style="flex: 1;">
+                    <label for="user-month">Месяц расчета:</label>
+                    <select id="user-month" onchange="loadUserData()">
+                        <option value="01">Январь</option>
+                        <option value="02">Февраль</option>
+                        <option value="03">Март</option>
+                        <option value="04">Апрель</option>
+                        <option value="05">Май</option>
+                        <option value="06">Июнь</option>
+                        <option value="07">Июль</option>
+                        <option value="08">Август</option>
+                        <option value="09">Сентябрь</option>
+                        <option value="10">Октябрь</option>
+                        <option value="11">Ноябрь</option>
+                        <option value="12">Декабрь</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="user-year">Год:</label>
+                    <input type="number" id="user-year" min="2024" max="2030" value="2026" onchange="loadUserData()">
+                </div>
+            </div>
+            
             <h2>Передать показания счетчика</h2>
             <div id="user-alert" class="alert" style="display: none;"></div>
             
@@ -394,27 +494,47 @@
                         <label for="user-previous-reading">Предыдущие показания:</label>
                         <input type="number" id="user-previous-reading" min="0" step="1" placeholder="0" readonly style="background: #f5f5f5;">
                     </div>
+                    <div class="form-group">
+                        <label>Тарифы на текущий месяц:</label>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; font-size: 0.9em;">
+                            <div>Потери: <span id="user-tariff-losses">0.36</span> руб/кВт·ч</div>
+                            <div>До 100 кВт·ч: <span id="user-tariff-under100">6.10</span> руб/кВт·ч</div>
+                            <div>Свыше 100 кВт·ч: <span id="user-tariff-over100">7.30</span> руб/кВт·ч</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="tariff-group">
                     <h3>Членские взносы</h3>
                     <div class="form-group">
-                        <label for="user-salary">Зарплата (руб):</label>
-                        <input type="number" id="user-salary" min="0" step="0.01" placeholder="0">
+                        <label>Зарплата:</label>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                            <span id="user-fee-salary">500</span> руб
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="user-maintenance">Содержание (руб):</label>
-                        <input type="number" id="user-maintenance" min="0" step="0.01" placeholder="0">
+                        <label>Содержание:</label>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                            <span id="user-fee-maintenance">800</span> руб
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="user-other">Прочее (руб):</label>
-                        <input type="number" id="user-other" min="0" step="0.01" placeholder="0">
+                        <label>Прочее:</label>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                            <span id="user-fee-other">200</span> руб
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Итого взносов:</label>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; font-weight: bold;">
+                            <span id="user-fee-total">1500</span> руб
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div id="user-calculation" class="calculation-result">
-                <h3 style="margin-top: 0;">Расчет к оплате:</h3>
+                <h3 style="margin-top: 0;">Расчет к оплате за <span id="current-month-text">Январь 2026</span>:</h3>
                 <div class="calculation-line">
                     <span>Электроэнергия (потери):</span>
                     <span id="calc-losses">0 кВт·ч × 0.36 = 0.00 руб</span>
@@ -429,11 +549,11 @@
                 </div>
                 <div class="calculation-line">
                     <span>Членские взносы:</span>
-                    <span id="calc-fees">0.00 руб</span>
+                    <span id="calc-fees">1500.00 руб</span>
                 </div>
                 <div class="calculation-line total">
                     <span>Итого к оплате:</span>
-                    <span id="calc-total">0.00 руб</span>
+                    <span id="calc-total">1500.00 руб</span>
                 </div>
             </div>
             
@@ -476,7 +596,7 @@
             
             <div id="add-user-form" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h3>Новый пользователь</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div class="form-grid">
                     <div class="form-group">
                         <label for="new-login">Логин:</label>
                         <input type="text" id="new-login">
@@ -530,6 +650,295 @@
             </div>
         </div>
         
+        <!-- Админ: Управление тарифами -->
+        <div id="admin-tariffs" class="card">
+            <h2>Управление тарифами на электроэнергию</h2>
+            <div id="admin-tariffs-alert" class="alert" style="display: none;"></div>
+            
+            <div class="month-selector">
+                <div class="form-group" style="flex: 1;">
+                    <label for="tariff-month">Месяц:</label>
+                    <select id="tariff-month">
+                        <option value="01">Январь</option>
+                        <option value="02">Февраль</option>
+                        <option value="03">Март</option>
+                        <option value="04">Апрель</option>
+                        <option value="05">Май</option>
+                        <option value="06">Июнь</option>
+                        <option value="07">Июль</option>
+                        <option value="08">Август</option>
+                        <option value="09">Сентябрь</option>
+                        <option value="10">Октябрь</option>
+                        <option value="11">Ноябрь</option>
+                        <option value="12">Декабрь</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="tariff-year">Год:</label>
+                    <input type="number" id="tariff-year" min="2024" max="2030" value="2026">
+                </div>
+                <button onclick="loadTariffs()">Загрузить тарифы</button>
+                <button onclick="showAddTariffForm()" style="background: #28a745;">Добавить тариф</button>
+            </div>
+            
+            <!-- Форма добавления/редактирования тарифа -->
+            <div id="add-tariff-form" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 id="tariff-form-title">Новый тариф</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Период действия</h4>
+                        <div class="form-group">
+                            <label for="edit-tariff-month">Месяц:</label>
+                            <select id="edit-tariff-month">
+                                <option value="01">Январь</option>
+                                <option value="02">Февраль</option>
+                                <option value="03">Март</option>
+                                <option value="04">Апрель</option>
+                                <option value="05">Май</option>
+                                <option value="06">Июнь</option>
+                                <option value="07">Июль</option>
+                                <option value="08">Август</option>
+                                <option value="09">Сентябрь</option>
+                                <option value="10">Октябрь</option>
+                                <option value="11">Ноябрь</option>
+                                <option value="12">Декабрь</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-tariff-year">Год:</label>
+                            <input type="number" id="edit-tariff-year" min="2024" max="2030" value="2026">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Тарифы на электроэнергию (руб/кВт·ч)</h4>
+                        <div class="form-group">
+                            <label for="edit-tariff-losses">Потери:</label>
+                            <input type="number" id="edit-tariff-losses" step="0.01" min="0" value="0.36">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-tariff-under100">До 100 кВт·ч:</label>
+                            <input type="number" id="edit-tariff-under100" step="0.01" min="0" value="6.10">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-tariff-over100">Свыше 100 кВт·ч:</label>
+                            <input type="number" id="edit-tariff-over100" step="0.01" min="0" value="7.30">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button onclick="saveTariff()" id="save-tariff-btn">Сохранить тариф</button>
+                    <button class="secondary" onclick="hideAddTariffForm()" style="margin-left: 10px;">Отмена</button>
+                    <button class="danger" onclick="deleteTariff()" id="delete-tariff-btn" style="margin-left: 10px; display: none;">Удалить тариф</button>
+                </div>
+            </div>
+            
+            <!-- Текущие тарифы -->
+            <div id="current-tariff-display" style="background: #e9f7ef; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #28a745;">
+                <h3>Текущие тарифы на <span id="current-tariff-month">Январь 2026</span></h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #dc3545; margin: 0 0 10px 0;">Потери</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-tariff-losses">0.36</span> руб/кВт·ч
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #fd7e14; margin: 0 0 10px 0;">До 100 кВт·ч</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-tariff-under100">6.10</span> руб/кВт·ч
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #28a745; margin: 0 0 10px 0;">Свыше 100 кВт·ч</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-tariff-over100">7.30</span> руб/кВт·ч
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- История тарифов -->
+            <div class="tariff-history">
+                <h3>История тарифов</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Период</th>
+                                <th>Потери</th>
+                                <th>До 100 кВт·ч</th>
+                                <th>Свыше 100 кВт·ч</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tariffs-table-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Админ: Управление членскими взносами -->
+        <div id="admin-fees" class="card">
+            <h2>Управление членскими взносами</h2>
+            <div id="admin-fees-alert" class="alert" style="display: none;"></div>
+            
+            <div class="month-selector">
+                <div class="form-group" style="flex: 1;">
+                    <label for="fees-month">Месяц:</label>
+                    <select id="fees-month">
+                        <option value="01">Январь</option>
+                        <option value="02">Февраль</option>
+                        <option value="03">Март</option>
+                        <option value="04">Апрель</option>
+                        <option value="05">Май</option>
+                        <option value="06">Июнь</option>
+                        <option value="07">Июль</option>
+                        <option value="08">Август</option>
+                        <option value="09">Сентябрь</option>
+                        <option value="10">Октябрь</option>
+                        <option value="11">Ноябрь</option>
+                        <option value="12">Декабрь</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="fees-year">Год:</label>
+                    <input type="number" id="fees-year" min="2024" max="2030" value="2026">
+                </div>
+                <button onclick="loadFees()">Загрузить взносы</button>
+                <button onclick="showAddFeeForm()" style="background: #28a745;">Добавить взносы</button>
+            </div>
+            
+            <!-- Форма добавления/редактирования взносов -->
+            <div id="add-fee-form" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 id="fee-form-title">Новые членские взносы</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Период действия</h4>
+                        <div class="form-group">
+                            <label for="edit-fee-month">Месяц:</label>
+                            <select id="edit-fee-month">
+                                <option value="01">Январь</option>
+                                <option value="02">Февраль</option>
+                                <option value="03">Март</option>
+                                <option value="04">Апрель</option>
+                                <option value="05">Май</option>
+                                <option value="06">Июнь</option>
+                                <option value="07">Июль</option>
+                                <option value="08">Август</option>
+                                <option value="09">Сентябрь</option>
+                                <option value="10">Октябрь</option>
+                                <option value="11">Ноябрь</option>
+                                <option value="12">Декабрь</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-fee-year">Год:</label>
+                            <input type="number" id="edit-fee-year" min="2024" max="2030" value="2026">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-fee-description">Описание:</label>
+                            <input type="text" id="edit-fee-description" placeholder="Например: Взносы на содержание дорог">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Суммы взносов (руб)</h4>
+                        <div class="form-group">
+                            <label for="edit-fee-salary">Зарплата:</label>
+                            <input type="number" id="edit-fee-salary" step="0.01" min="0" value="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-fee-maintenance">Содержание:</label>
+                            <input type="number" id="edit-fee-maintenance" step="0.01" min="0" value="800">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-fee-other">Прочее:</label>
+                            <input type="number" id="edit-fee-other" step="0.01" min="0" value="200">
+                        </div>
+                        <div class="form-group">
+                            <label>Итого:</label>
+                            <div style="background: #e9ecef; padding: 10px; border-radius: 5px; font-weight: bold;">
+                                <span id="edit-fee-total">1500.00</span> руб
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button onclick="saveFee()" id="save-fee-btn">Сохранить взносы</button>
+                    <button class="secondary" onclick="hideAddFeeForm()" style="margin-left: 10px;">Отмена</button>
+                    <button class="danger" onclick="deleteFee()" id="delete-fee-btn" style="margin-left: 10px; display: none;">Удалить взносы</button>
+                </div>
+            </div>
+            
+            <!-- Текущие взносы -->
+            <div id="current-fee-display" style="background: #e9f7ef; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #28a745;">
+                <h3>Текущие членские взносы на <span id="current-fee-month">Январь 2026</span></h3>
+                <div id="current-fee-description" style="margin-bottom: 15px; color: #666; font-style: italic;">
+                    Взносы на содержание территории
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #007bff; margin: 0 0 10px 0;">Зарплата</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-fee-salary">500</span> руб
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #6f42c1; margin: 0 0 10px 0;">Содержание</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-fee-maintenance">800</span> руб
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px;">
+                        <h4 style="color: #20c997; margin: 0 0 10px 0;">Прочее</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                            <span id="current-fee-other">200</span> руб
+                        </div>
+                    </div>
+                    <div style="background: #667eea; padding: 15px; border-radius: 8px; color: white;">
+                        <h4 style="margin: 0 0 10px 0; color: white;">Итого</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold;">
+                            <span id="current-fee-total">1500</span> руб
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- История взносов -->
+            <div class="tariff-history">
+                <h3>История членских взносов</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Период</th>
+                                <th>Описание</th>
+                                <th>Зарплата</th>
+                                <th>Содержание</th>
+                                <th>Прочее</th>
+                                <th>Итого</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fees-table-body">
+                            <tr>
+                                <td colspan="8" style="text-align: center;">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
         <!-- Админ: Показания счетчиков -->
         <div id="admin-readings" class="card">
             <h2>Управление показаниями счетчиков</h2>
@@ -576,86 +985,6 @@
             </div>
         </div>
         
-        <!-- Админ: Членские взносы -->
-        <div id="admin-payments" class="card">
-            <h2>Управление членскими взносами</h2>
-            <div id="admin-payments-alert" class="alert" style="display: none;"></div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button onclick="showAddPaymentForm()">Добавить взнос</button>
-                <button class="secondary" onclick="loadPayments()">Обновить список</button>
-            </div>
-            
-            <div id="add-payment-form" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3>Новый членский взнос</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div class="form-group">
-                        <label for="payment-user">Пользователь:</label>
-                        <select id="payment-user"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-month">Месяц:</label>
-                        <select id="payment-month">
-                            <option value="01">Январь</option>
-                            <option value="02">Февраль</option>
-                            <option value="03">Март</option>
-                            <option value="04">Апрель</option>
-                            <option value="05">Май</option>
-                            <option value="06">Июнь</option>
-                            <option value="07">Июль</option>
-                            <option value="08">Август</option>
-                            <option value="09">Сентябрь</option>
-                            <option value="10">Октябрь</option>
-                            <option value="11">Ноябрь</option>
-                            <option value="12">Декабрь</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-year">Год:</label>
-                        <input type="number" id="payment-year" min="2024" max="2030" value="2026">
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-salary">Зарплата (руб):</label>
-                        <input type="number" id="payment-salary" min="0" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-maintenance">Содержание (руб):</label>
-                        <input type="number" id="payment-maintenance" min="0" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-other">Прочее (руб):</label>
-                        <input type="number" id="payment-other" min="0" step="0.01" value="0">
-                    </div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <button onclick="addPayment()">Добавить взнос</button>
-                    <button class="secondary" onclick="hideAddPaymentForm()" style="margin-left: 10px;">Отмена</button>
-                </div>
-            </div>
-            
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Пользователь</th>
-                            <th>Период</th>
-                            <th>Зарплата</th>
-                            <th>Содержание</th>
-                            <th>Прочее</th>
-                            <th>Итого</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payments-table-body">
-                        <tr>
-                            <td colspan="8" style="text-align: center;">Загрузка данных...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
         <!-- Админ: Импорт/Экспорт -->
         <div id="admin-import" class="card">
             <h2>Импорт и экспорт данных</h2>
@@ -664,7 +993,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 20px;">
                 <div>
                     <h3>Импорт пользователей (CSV)</h3>
-                    <p>Загрузите CSV файл с данными пользователей. Формат: login,password,name,section,phone,email</p>
+                    <p>Загрузите CSV файл с данными пользователей.</p>
                     
                     <div class="file-upload" onclick="document.getElementById('csv-file').click()">
                         <input type="file" id="csv-file" accept=".csv" onchange="handleCSVUpload(event)">
@@ -683,8 +1012,9 @@
                     
                     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
                         <button onclick="exportData('users')">Экспорт пользователей</button>
+                        <button onclick="exportData('tariffs')">Экспорт тарифов</button>
+                        <button onclick="exportData('fees')">Экспорт взносов</button>
                         <button onclick="exportData('readings')">Экспорт показаний</button>
-                        <button onclick="exportData('payments')">Экспорт членских взносов</button>
                         <button onclick="exportData('all')">Экспорт всех данных</button>
                     </div>
                 </div>
@@ -702,11 +1032,11 @@
     </div>
 
     <script>
-        // Конфигурация Supabase [citation:2]
+        // Конфигурация Supabase
         const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk';
         
-        // Инициализация Supabase клиента [citation:2]
+        // Инициализация Supabase клиента
         const supabase = window.supabase ? 
             window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : 
             { 
@@ -727,11 +1057,15 @@
         let currentUser = null;
         let currentUserType = null;
         
-        // Тарифы на электроэнергию
-        const TARIFFS = {
-            losses: 0.36,      // Потери
-            under100: 6.10,    // До 100 кВт·ч
-            over100: 7.30      // Свыше 100 кВт·ч
+        // Текущие тарифы и взносы для редактирования
+        let currentEditingTariffId = null;
+        let currentEditingFeeId = null;
+        
+        // Месяцы для отображения
+        const MONTHS = {
+            '01': 'Январь', '02': 'Февраль', '03': 'Март', '04': 'Апрель',
+            '05': 'Май', '06': 'Июнь', '07': 'Июль', '08': 'Август',
+            '09': 'Сентябрь', '10': 'Октябрь', '11': 'Ноябрь', '12': 'Декабрь'
         };
         
         // Проверка доступности Supabase
@@ -740,16 +1074,13 @@
             const statusText = document.getElementById('status-text');
             
             try {
-                // Простая проверка подключения
                 statusText.textContent = 'Проверка соединения с сервером...';
                 statusIndicator.className = 'status-indicator';
                 
-                // Если Supabase доступен, попробуем выполнить простой запрос
                 const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
                 
                 if (error) {
                     if (error.message.includes('JWT')) {
-                        // Это нормально - анонимный доступ может быть ограничен
                         statusIndicator.className = 'status-indicator online';
                         statusText.textContent = 'Сервер доступен (ограниченный режим)';
                     } else {
@@ -768,15 +1099,12 @@
         
         // Отображение карточки
         function showCard(cardId) {
-            // Скрыть все карточки
             document.querySelectorAll('.card').forEach(card => {
                 card.classList.remove('active');
             });
             
-            // Показать выбранную карточку
             document.getElementById(cardId).classList.add('active');
             
-            // Обновить активную кнопку навигации
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -784,8 +1112,9 @@
             const btnMap = {
                 'user-dashboard': 'btn-dashboard',
                 'admin-users': 'btn-users',
+                'admin-tariffs': 'btn-tariffs',
+                'admin-fees': 'btn-fees',
                 'admin-readings': 'btn-readings',
-                'admin-payments': 'btn-payments',
                 'admin-import': 'btn-import'
             };
             
@@ -798,12 +1127,13 @@
                 loadUserData();
             } else if (cardId === 'admin-users') {
                 loadUsers();
+            } else if (cardId === 'admin-tariffs') {
+                loadTariffs();
+            } else if (cardId === 'admin-fees') {
+                loadFees();
             } else if (cardId === 'admin-readings') {
                 loadReadings();
                 populateUserFilter();
-            } else if (cardId === 'admin-payments') {
-                loadPayments();
-                populatePaymentUserFilter();
             }
         }
         
@@ -821,33 +1151,44 @@
                 return;
             }
             
-            // Демо-авторизация (в реальном приложении здесь будет запрос к Supabase)
+            // Демо-авторизация
             if (userType === 'admin' && login === 'admin' && password === 'admin123') {
-                currentUser = { id: 'admin', login: 'admin', name: 'Администратор', is_admin: true };
+                currentUser = { 
+                    id: 'admin', 
+                    login: 'admin', 
+                    name: 'Администратор', 
+                    section: 0, 
+                    phone: '+7 (999) 000-00-00', 
+                    email: 'admin@zvezdochka.ru',
+                    is_admin: true 
+                };
                 currentUserType = 'admin';
                 alert.textContent = 'Успешный вход как администратор';
                 alert.className = 'alert success';
                 alert.style.display = 'block';
                 
-                // Показать навигацию для админа
                 document.getElementById('nav-buttons').style.display = 'flex';
                 showCard('admin-users');
                 document.getElementById('auth-card').classList.remove('active');
             } else if (userType === 'user' && login === 'user1' && password === 'user123') {
-                currentUser = { id: 'user1', login: 'user1', name: 'Иванов Иван Иванович', section: 15, phone: '+7 (999) 123-45-67', email: 'user1@example.com' };
+                currentUser = { 
+                    id: 'user1', 
+                    login: 'user1', 
+                    name: 'Иванов Иван Иванович', 
+                    section: 15, 
+                    phone: '+7 (999) 123-45-67', 
+                    email: 'user1@example.com',
+                    is_admin: false 
+                };
                 currentUserType = 'user';
                 alert.textContent = 'Успешный вход в личный кабинет';
                 alert.className = 'alert success';
                 alert.style.display = 'block';
                 
-                // Обновить приветствие
                 document.getElementById('welcome-user').textContent = `Добро пожаловать, ${currentUser.name}! Участок №${currentUser.section}`;
-                
-                // Показать личный кабинет
                 showCard('user-dashboard');
                 document.getElementById('auth-card').classList.remove('active');
             } else {
-                // Попробуем найти пользователя в "базе данных"
                 const mockUsers = [
                     { id: 'user1', login: 'user1', password: 'user123', name: 'Иванов Иван Иванович', section: 15, phone: '+7 (999) 123-45-67', email: 'user1@example.com', is_admin: false },
                     { id: 'user2', login: 'user2', password: 'user123', name: 'Петров Петр Петрович', section: 23, phone: '+7 (999) 234-56-78', email: 'user2@example.com', is_admin: false },
@@ -884,38 +1225,32 @@
         function logout() {
             currentUser = null;
             currentUserType = null;
-            
-            // Скрыть навигацию для админа
             document.getElementById('nav-buttons').style.display = 'none';
-            
-            // Сбросить форму входа
             document.getElementById('login').value = '';
             document.getElementById('password').value = '';
-            
-            // Показать форму входа
             showCard('auth-card');
         }
         
         // Расчет стоимости электроэнергии по трехтарифной системе
-        function calculateElectricityCost(consumption) {
-            const lossesCost = consumption * TARIFFS.losses;
+        function calculateElectricityCost(consumption, tariffs) {
+            const lossesCost = consumption * tariffs.loss_tariff;
             
             let under100Cost = 0;
             let over100Cost = 0;
             
             if (consumption <= 100) {
-                under100Cost = consumption * TARIFFS.under100;
+                under100Cost = consumption * tariffs.under100_tariff;
             } else {
-                under100Cost = 100 * TARIFFS.under100;
-                over100Cost = (consumption - 100) * TARIFFS.over100;
+                under100Cost = 100 * tariffs.under100_tariff;
+                over100Cost = (consumption - 100) * tariffs.over100_tariff;
             }
             
             const totalCost = lossesCost + under100Cost + over100Cost;
             
             return {
-                losses: { kwh: consumption, rate: TARIFFS.losses, cost: lossesCost },
-                under100: { kwh: Math.min(consumption, 100), rate: TARIFFS.under100, cost: under100Cost },
-                over100: { kwh: Math.max(consumption - 100, 0), rate: TARIFFS.over100, cost: over100Cost },
+                losses: { kwh: consumption, rate: tariffs.loss_tariff, cost: lossesCost },
+                under100: { kwh: Math.min(consumption, 100), rate: tariffs.under100_tariff, cost: under100Cost },
+                over100: { kwh: Math.max(consumption - 100, 0), rate: tariffs.over100_tariff, cost: over100Cost },
                 total: totalCost
             };
         }
@@ -926,25 +1261,41 @@
             const previousReading = parseFloat(document.getElementById('user-previous-reading').value) || 0;
             const consumption = Math.max(0, reading - previousReading);
             
-            const salary = parseFloat(document.getElementById('user-salary').value) || 0;
-            const maintenance = parseFloat(document.getElementById('user-maintenance').value) || 0;
-            const other = parseFloat(document.getElementById('user-other').value) || 0;
+            // Получаем текущие тарифы
+            const lossesTariff = parseFloat(document.getElementById('user-tariff-losses').textContent) || 0.36;
+            const under100Tariff = parseFloat(document.getElementById('user-tariff-under100').textContent) || 6.10;
+            const over100Tariff = parseFloat(document.getElementById('user-tariff-over100').textContent) || 7.30;
+            
+            const tariffs = {
+                loss_tariff: lossesTariff,
+                under100_tariff: under100Tariff,
+                over100_tariff: over100Tariff
+            };
+            
+            const salary = parseFloat(document.getElementById('user-fee-salary').textContent) || 0;
+            const maintenance = parseFloat(document.getElementById('user-fee-maintenance').textContent) || 0;
+            const other = parseFloat(document.getElementById('user-fee-other').textContent) || 0;
             const feesTotal = salary + maintenance + other;
             
-            const electricity = calculateElectricityCost(consumption);
+            const electricity = calculateElectricityCost(consumption, tariffs);
             
             // Обновление отображения расчета
             document.getElementById('calc-losses').textContent = 
-                `${electricity.losses.kwh.toFixed(1)} кВт·ч × ${TARIFFS.losses.toFixed(2)} = ${electricity.losses.cost.toFixed(2)} руб`;
+                `${electricity.losses.kwh.toFixed(1)} кВт·ч × ${tariffs.loss_tariff.toFixed(2)} = ${electricity.losses.cost.toFixed(2)} руб`;
             
             document.getElementById('calc-under100').textContent = 
-                `${electricity.under100.kwh.toFixed(1)} кВт·ч × ${TARIFFS.under100.toFixed(2)} = ${electricity.under100.cost.toFixed(2)} руб`;
+                `${electricity.under100.kwh.toFixed(1)} кВт·ч × ${tariffs.under100_tariff.toFixed(2)} = ${electricity.under100.cost.toFixed(2)} руб`;
             
             document.getElementById('calc-over100').textContent = 
-                `${electricity.over100.kwh.toFixed(1)} кВт·ч × ${TARIFFS.over100.toFixed(2)} = ${electricity.over100.cost.toFixed(2)} руб`;
+                `${electricity.over100.kwh.toFixed(1)} кВт·ч × ${tariffs.over100_tariff.toFixed(2)} = ${electricity.over100.cost.toFixed(2)} руб`;
             
             document.getElementById('calc-fees').textContent = `${feesTotal.toFixed(2)} руб`;
             document.getElementById('calc-total').textContent = `${(electricity.total + feesTotal).toFixed(2)} руб`;
+            
+            // Обновляем текст текущего месяца
+            const month = document.getElementById('user-month').value;
+            const year = document.getElementById('user-year').value;
+            document.getElementById('current-month-text').textContent = `${MONTHS[month]} ${year}`;
         }
         
         // Загрузка данных пользователя
@@ -952,17 +1303,51 @@
             if (!currentUser || currentUserType !== 'user') return;
             
             const alert = document.getElementById('user-alert');
+            const month = document.getElementById('user-month').value;
+            const year = document.getElementById('user-year').value;
             
             try {
-                // В реальном приложении здесь будет запрос к Supabase
-                const mockReadings = [
-                    { date: '2026-01-15', reading: 700, previous_reading: 650, consumption: 50, electricity_cost: 305.50, fees: 1500, total: 1805.50 },
-                    { date: '2025-12-20', reading: 650, previous_reading: 580, consumption: 70, electricity_cost: 427.70, fees: 1500, total: 1927.70 },
-                    { date: '2025-11-18', reading: 580, previous_reading: 510, consumption: 70, electricity_cost: 427.70, fees: 1500, total: 1927.70 }
+                // Загрузка тарифов на выбранный месяц
+                const mockTariffs = [
+                    { month: '01', year: 2026, loss_tariff: 0.36, under100_tariff: 6.10, over100_tariff: 7.30 },
+                    { month: '02', year: 2026, loss_tariff: 0.38, under100_tariff: 6.20, over100_tariff: 7.40 },
+                    { month: '03', year: 2026, loss_tariff: 0.35, under100_tariff: 6.05, over100_tariff: 7.25 }
                 ];
                 
-                if (mockReadings.length > 0) {
-                    const latest = mockReadings[0];
+                const currentTariff = mockTariffs.find(t => t.month === month && t.year == year) || mockTariffs[0];
+                
+                // Обновляем отображение тарифов
+                document.getElementById('user-tariff-losses').textContent = currentTariff.loss_tariff.toFixed(2);
+                document.getElementById('user-tariff-under100').textContent = currentTariff.under100_tariff.toFixed(2);
+                document.getElementById('user-tariff-over100').textContent = currentTariff.over100_tariff.toFixed(2);
+                
+                // Загрузка взносов на выбранный месяц
+                const mockFees = [
+                    { month: '01', year: 2026, salary: 500, maintenance: 800, other: 200, description: 'Взносы на содержание территории' },
+                    { month: '02', year: 2026, salary: 550, maintenance: 850, other: 250, description: 'Взносы на ремонт дорог' },
+                    { month: '03', year: 2026, salary: 520, maintenance: 820, other: 220, description: 'Взносы на оплату охраны' }
+                ];
+                
+                const currentFee = mockFees.find(f => f.month === month && f.year == year) || mockFees[0];
+                
+                // Обновляем отображение взносов
+                document.getElementById('user-fee-salary').textContent = currentFee.salary;
+                document.getElementById('user-fee-maintenance').textContent = currentFee.maintenance;
+                document.getElementById('user-fee-other').textContent = currentFee.other;
+                document.getElementById('user-fee-total').textContent = (currentFee.salary + currentFee.maintenance + currentFee.other);
+                
+                // Загрузка истории показаний
+                const mockReadings = [
+                    { date: '2026-01-15', month: '01', year: 2026, reading: 700, previous_reading: 650, consumption: 50, electricity_cost: 305.50, fees: 1500, total: 1805.50 },
+                    { date: '2025-12-20', month: '12', year: 2025, reading: 650, previous_reading: 580, consumption: 70, electricity_cost: 427.70, fees: 1500, total: 1927.70 },
+                    { date: '2025-11-18', month: '11', year: 2025, reading: 580, previous_reading: 510, consumption: 70, electricity_cost: 427.70, fees: 1500, total: 1927.70 }
+                ];
+                
+                // Фильтруем по выбранному месяцу
+                const filteredReadings = mockReadings.filter(r => r.month === month && r.year == year);
+                
+                if (filteredReadings.length > 0) {
+                    const latest = filteredReadings[0];
                     document.getElementById('user-meter-reading').value = '';
                     document.getElementById('user-previous-reading').value = latest.reading;
                     
@@ -970,7 +1355,7 @@
                     const tbody = document.getElementById('user-history-body');
                     tbody.innerHTML = '';
                     
-                    mockReadings.forEach(r => {
+                    filteredReadings.forEach(r => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${r.date}</td>
@@ -983,14 +1368,16 @@
                         tbody.appendChild(row);
                     });
                     
-                    alert.textContent = 'Данные загружены';
+                    alert.textContent = `Данные за ${MONTHS[month]} ${year} загружены`;
                     alert.className = 'alert success';
                     alert.style.display = 'block';
                     setTimeout(() => { alert.style.display = 'none'; }, 3000);
                 } else {
                     document.getElementById('user-previous-reading').value = '0';
+                    const tbody = document.getElementById('user-history-body');
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет данных за выбранный период</td></tr>';
                     
-                    alert.textContent = 'Нет предыдущих показаний';
+                    alert.textContent = `Нет данных за ${MONTHS[month]} ${year}`;
                     alert.className = 'alert info';
                     alert.style.display = 'block';
                 }
@@ -1012,6 +1399,8 @@
             const reading = parseFloat(document.getElementById('user-meter-reading').value);
             const previousReading = parseFloat(document.getElementById('user-previous-reading').value) || 0;
             const alert = document.getElementById('user-alert');
+            const month = document.getElementById('user-month').value;
+            const year = document.getElementById('user-year').value;
             
             if (!reading || reading < previousReading) {
                 alert.textContent = 'Некорректные показания счетчика';
@@ -1020,27 +1409,34 @@
                 return;
             }
             
-            const salary = parseFloat(document.getElementById('user-salary').value) || 0;
-            const maintenance = parseFloat(document.getElementById('user-maintenance').value) || 0;
-            const other = parseFloat(document.getElementById('user-other').value) || 0;
+            // Получаем текущие тарифы и взносы
+            const lossesTariff = parseFloat(document.getElementById('user-tariff-losses').textContent) || 0.36;
+            const under100Tariff = parseFloat(document.getElementById('user-tariff-under100').textContent) || 6.10;
+            const over100Tariff = parseFloat(document.getElementById('user-tariff-over100').textContent) || 7.30;
+            
+            const tariffs = {
+                loss_tariff: lossesTariff,
+                under100_tariff: under100Tariff,
+                over100_tariff: over100Tariff
+            };
+            
+            const salary = parseFloat(document.getElementById('user-fee-salary').textContent) || 0;
+            const maintenance = parseFloat(document.getElementById('user-fee-maintenance').textContent) || 0;
+            const other = parseFloat(document.getElementById('user-fee-other').textContent) || 0;
             
             const consumption = reading - previousReading;
-            const electricity = calculateElectricityCost(consumption);
+            const electricity = calculateElectricityCost(consumption, tariffs);
             const feesTotal = salary + maintenance + other;
             const total = electricity.total + feesTotal;
             
             try {
-                // В реальном приложении здесь будет запрос к Supabase
-                alert.textContent = 'Показания успешно переданы! Сумма к оплате: ' + total.toFixed(2) + ' руб';
+                alert.textContent = `Показания за ${MONTHS[month]} ${year} успешно переданы! Сумма к оплате: ${total.toFixed(2)} руб`;
                 alert.className = 'alert success';
                 alert.style.display = 'block';
                 
                 // Обновляем предыдущие показания
                 document.getElementById('user-previous-reading').value = reading;
                 document.getElementById('user-meter-reading').value = '';
-                document.getElementById('user-salary').value = '';
-                document.getElementById('user-maintenance').value = '';
-                document.getElementById('user-other').value = '';
                 
                 // Добавляем в историю
                 const now = new Date();
@@ -1058,6 +1454,11 @@
                 `;
                 tbody.insertBefore(newRow, tbody.firstChild);
                 
+                // Если таблица была пуста, удаляем сообщение "нет данных"
+                if (tbody.children.length > 1 && tbody.children[1].querySelector('td[colspan]')) {
+                    tbody.removeChild(tbody.children[1]);
+                }
+                
                 // Обновляем расчет
                 updateCalculation();
                 
@@ -1074,13 +1475,12 @@
             const alert = document.getElementById('admin-users-alert');
             
             try {
-                // В реальном приложении здесь будет запрос к Supabase
                 const mockUsers = [
                     { id: 1, login: 'user1', name: 'Иванов Иван Иванович', section: 15, phone: '+7 (999) 123-45-67', email: 'user1@example.com', created_at: '2025-01-15' },
                     { id: 2, login: 'user2', name: 'Петров Петр Петрович', section: 23, phone: '+7 (999) 234-56-78', email: 'user2@example.com', created_at: '2025-01-20' },
                     { id: 3, login: 'user3', name: 'Сидорова Анна Васильевна', section: 7, phone: '+7 (999) 345-67-89', email: 'user3@example.com', created_at: '2025-02-05' },
                     { id: 4, login: 'user4', name: 'Кузнецов Алексей Николаевич', section: 42, phone: '+7 (999) 456-78-90', email: 'user4@example.com', created_at: '2025-02-10' },
-                    { id: 5, login: 'admin', name: 'Администратор', section: 0, phone: '+7 (999) 000-00-00', email: 'admin@zvezdochka.ru', created_at: '2025-01-01' }
+                    { id: 5, login: 'admin', name: 'Администратор', section: 0, phone: '+7 (999) 000-00-00', email: 'admin@zvezdochka.ru', created_at: '2025-01-01', is_admin: true }
                 ];
                 
                 tbody.innerHTML = '';
@@ -1089,14 +1489,14 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${user.id}</td>
-                        <td>${user.login}</td>
+                        <td>${user.login} ${user.is_admin ? '<span class="badge" style="background: #dc3545; color: white;">админ</span>' : ''}</td>
                         <td>${user.name}</td>
                         <td>${user.section || '—'}</td>
                         <td>${user.phone || '—'}</td>
                         <td>${user.email || '—'}</td>
                         <td>
                             <button onclick="editUser(${user.id})" style="padding: 5px 10px; font-size: 14px;">Изменить</button>
-                            <button onclick="deleteUser(${user.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
+                            ${!user.is_admin ? `<button onclick="deleteUser(${user.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>` : ''}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -1120,7 +1520,7 @@
             }
         }
         
-        // Админ: Показать форму добавления пользователя
+        // Показать форму добавления пользователя
         function showAddUserForm() {
             document.getElementById('add-user-form').style.display = 'block';
         }
@@ -1135,7 +1535,7 @@
             document.getElementById('new-email').value = '';
         }
         
-        // Админ: Добавление пользователя
+        // Добавление пользователя
         async function addUser() {
             const login = document.getElementById('new-login').value;
             const password = document.getElementById('new-password').value;
@@ -1153,7 +1553,6 @@
             }
             
             try {
-                // В реальном приложении здесь будет запрос к Supabase
                 alert.textContent = `Пользователь ${name} успешно добавлен`;
                 alert.className = 'alert success';
                 alert.style.display = 'block';
@@ -1168,6 +1567,427 @@
             }
         }
         
+        // Админ: Загрузка тарифов
+        async function loadTariffs() {
+            const tbody = document.getElementById('tariffs-table-body');
+            const alert = document.getElementById('admin-tariffs-alert');
+            const month = document.getElementById('tariff-month').value;
+            const year = document.getElementById('tariff-year').value;
+            
+            try {
+                const mockTariffs = [
+                    { id: 1, month: '01', year: 2026, loss_tariff: 0.36, under100_tariff: 6.10, over100_tariff: 7.30, is_current: true },
+                    { id: 2, month: '02', year: 2026, loss_tariff: 0.38, under100_tariff: 6.20, over100_tariff: 7.40, is_current: false },
+                    { id: 3, month: '03', year: 2026, loss_tariff: 0.35, under100_tariff: 6.05, over100_tariff: 7.25, is_current: false },
+                    { id: 4, month: '12', year: 2025, loss_tariff: 0.34, under100_tariff: 6.00, over100_tariff: 7.20, is_current: false }
+                ];
+                
+                // Фильтруем по выбранному месяцу и году
+                let filteredTariffs = mockTariffs;
+                if (month && year) {
+                    filteredTariffs = mockTariffs.filter(t => t.month === month && t.year == year);
+                }
+                
+                tbody.innerHTML = '';
+                
+                if (filteredTariffs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Нет данных для отображения</td></tr>`;
+                } else {
+                    // Находим текущий тариф (для текущего месяца)
+                    const now = new Date();
+                    const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+                    const currentYear = now.getFullYear();
+                    
+                    filteredTariffs.forEach(tariff => {
+                        const isCurrent = tariff.month === currentMonth && tariff.year == currentYear;
+                        const isPast = tariff.year < currentYear || (tariff.year == currentYear && tariff.month < currentMonth);
+                        const isFuture = tariff.year > currentYear || (tariff.year == currentYear && tariff.month > currentMonth);
+                        
+                        let statusBadge = '';
+                        if (isCurrent) {
+                            statusBadge = '<span class="badge current">Текущий</span>';
+                        } else if (isFuture) {
+                            statusBadge = '<span class="badge future">Будущий</span>';
+                        } else {
+                            statusBadge = '<span class="badge past">Прошлый</span>';
+                        }
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${MONTHS[tariff.month]} ${tariff.year}</td>
+                            <td>${tariff.loss_tariff.toFixed(2)} руб/кВт·ч</td>
+                            <td>${tariff.under100_tariff.toFixed(2)} руб/кВт·ч</td>
+                            <td>${tariff.over100_tariff.toFixed(2)} руб/кВт·ч</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button onclick="editTariff(${tariff.id})" style="padding: 5px 10px; font-size: 14px;">Изменить</button>
+                                <button onclick="deleteTariffPrompt(${tariff.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Обновляем отображение текущего тарифа
+                    const currentTariff = mockTariffs.find(t => t.is_current) || mockTariffs[0];
+                    document.getElementById('current-tariff-month').textContent = `${MONTHS[currentTariff.month]} ${currentTariff.year}`;
+                    document.getElementById('current-tariff-losses').textContent = currentTariff.loss_tariff.toFixed(2);
+                    document.getElementById('current-tariff-under100').textContent = currentTariff.under100_tariff.toFixed(2);
+                    document.getElementById('current-tariff-over100').textContent = currentTariff.over100_tariff.toFixed(2);
+                }
+                
+                if (alert) {
+                    alert.textContent = `Загружено ${filteredTariffs.length} тарифов`;
+                    alert.className = 'alert success';
+                    alert.style.display = 'block';
+                    setTimeout(() => { alert.style.display = 'none'; }, 3000);
+                }
+                
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #dc3545;">Ошибка загрузки: ${error.message}</td></tr>`;
+                
+                if (alert) {
+                    alert.textContent = 'Ошибка загрузки тарифов: ' + error.message;
+                    alert.className = 'alert error';
+                    alert.style.display = 'block';
+                }
+            }
+        }
+        
+        // Показать форму добавления/редактирования тарифа
+        function showAddTariffForm() {
+            document.getElementById('add-tariff-form').style.display = 'block';
+            document.getElementById('tariff-form-title').textContent = 'Новый тариф';
+            document.getElementById('save-tariff-btn').textContent = 'Сохранить тариф';
+            document.getElementById('delete-tariff-btn').style.display = 'none';
+            
+            // Сбрасываем значения
+            const now = new Date();
+            const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            const currentYear = now.getFullYear();
+            
+            document.getElementById('edit-tariff-month').value = currentMonth;
+            document.getElementById('edit-tariff-year').value = currentYear;
+            document.getElementById('edit-tariff-losses').value = '0.36';
+            document.getElementById('edit-tariff-under100').value = '6.10';
+            document.getElementById('edit-tariff-over100').value = '7.30';
+            
+            currentEditingTariffId = null;
+        }
+        
+        function hideAddTariffForm() {
+            document.getElementById('add-tariff-form').style.display = 'none';
+            currentEditingTariffId = null;
+        }
+        
+        // Редактирование тарифа
+        function editTariff(tariffId) {
+            const mockTariffs = [
+                { id: 1, month: '01', year: 2026, loss_tariff: 0.36, under100_tariff: 6.10, over100_tariff: 7.30 },
+                { id: 2, month: '02', year: 2026, loss_tariff: 0.38, under100_tariff: 6.20, over100_tariff: 7.40 },
+                { id: 3, month: '03', year: 2026, loss_tariff: 0.35, under100_tariff: 6.05, over100_tariff: 7.25 }
+            ];
+            
+            const tariff = mockTariffs.find(t => t.id === tariffId);
+            if (!tariff) return;
+            
+            document.getElementById('add-tariff-form').style.display = 'block';
+            document.getElementById('tariff-form-title').textContent = 'Редактирование тарифа';
+            document.getElementById('save-tariff-btn').textContent = 'Обновить тариф';
+            document.getElementById('delete-tariff-btn').style.display = 'inline-block';
+            
+            document.getElementById('edit-tariff-month').value = tariff.month;
+            document.getElementById('edit-tariff-year').value = tariff.year;
+            document.getElementById('edit-tariff-losses').value = tariff.loss_tariff;
+            document.getElementById('edit-tariff-under100').value = tariff.under100_tariff;
+            document.getElementById('edit-tariff-over100').value = tariff.over100_tariff;
+            
+            currentEditingTariffId = tariffId;
+        }
+        
+        // Сохранение тарифа
+        async function saveTariff() {
+            const month = document.getElementById('edit-tariff-month').value;
+            const year = document.getElementById('edit-tariff-year').value;
+            const lossTariff = parseFloat(document.getElementById('edit-tariff-losses').value);
+            const under100Tariff = parseFloat(document.getElementById('edit-tariff-under100').value);
+            const over100Tariff = parseFloat(document.getElementById('edit-tariff-over100').value);
+            const alert = document.getElementById('admin-tariffs-alert');
+            
+            if (!month || !year || isNaN(lossTariff) || isNaN(under100Tariff) || isNaN(over100Tariff)) {
+                alert.textContent = 'Заполните все поля корректно';
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+                return;
+            }
+            
+            try {
+                if (currentEditingTariffId) {
+                    alert.textContent = `Тариф на ${MONTHS[month]} ${year} обновлен`;
+                } else {
+                    alert.textContent = `Новый тариф на ${MONTHS[month]} ${year} добавлен`;
+                }
+                
+                alert.className = 'alert success';
+                alert.style.display = 'block';
+                
+                hideAddTariffForm();
+                loadTariffs();
+                
+            } catch (error) {
+                alert.textContent = 'Ошибка при сохранении тарифа: ' + error.message;
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+            }
+        }
+        
+        // Удаление тарифа (подтверждение)
+        function deleteTariffPrompt(tariffId) {
+            if (confirm('Вы уверены, что хотите удалить этот тариф?')) {
+                deleteTariff(tariffId);
+            }
+        }
+        
+        // Удаление тарифа
+        async function deleteTariff() {
+            if (!currentEditingTariffId) return;
+            
+            const alert = document.getElementById('admin-tariffs-alert');
+            
+            try {
+                alert.textContent = 'Тариф успешно удален';
+                alert.className = 'alert success';
+                alert.style.display = 'block';
+                
+                hideAddTariffForm();
+                loadTariffs();
+                
+            } catch (error) {
+                alert.textContent = 'Ошибка при удалении тарифа: ' + error.message;
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+            }
+        }
+        
+        // Админ: Загрузка членских взносов
+        async function loadFees() {
+            const tbody = document.getElementById('fees-table-body');
+            const alert = document.getElementById('admin-fees-alert');
+            const month = document.getElementById('fees-month').value;
+            const year = document.getElementById('fees-year').value;
+            
+            try {
+                const mockFees = [
+                    { id: 1, month: '01', year: 2026, salary: 500, maintenance: 800, other: 200, description: 'Взносы на содержание территории', is_current: true },
+                    { id: 2, month: '02', year: 2026, salary: 550, maintenance: 850, other: 250, description: 'Взносы на ремонт дорог', is_current: false },
+                    { id: 3, month: '03', year: 2026, salary: 520, maintenance: 820, other: 220, description: 'Взносы на оплату охраны', is_current: false },
+                    { id: 4, month: '12', year: 2025, salary: 480, maintenance: 780, other: 180, description: 'Взносы на подготовку к зиме', is_current: false }
+                ];
+                
+                // Фильтруем по выбранному месяцу и году
+                let filteredFees = mockFees;
+                if (month && year) {
+                    filteredFees = mockFees.filter(f => f.month === month && f.year == year);
+                }
+                
+                tbody.innerHTML = '';
+                
+                if (filteredFees.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">Нет данных для отображения</td></tr>`;
+                } else {
+                    // Находим текущий месяц
+                    const now = new Date();
+                    const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+                    const currentYear = now.getFullYear();
+                    
+                    filteredFees.forEach(fee => {
+                        const total = fee.salary + fee.maintenance + fee.other;
+                        const isCurrent = fee.month === currentMonth && fee.year == currentYear;
+                        const isPast = fee.year < currentYear || (fee.year == currentYear && fee.month < currentMonth);
+                        const isFuture = fee.year > currentYear || (fee.year == currentYear && fee.month > currentMonth);
+                        
+                        let statusBadge = '';
+                        if (isCurrent) {
+                            statusBadge = '<span class="badge current">Текущий</span>';
+                        } else if (isFuture) {
+                            statusBadge = '<span class="badge future">Будущий</span>';
+                        } else {
+                            statusBadge = '<span class="badge past">Прошлый</span>';
+                        }
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${MONTHS[fee.month]} ${fee.year}</td>
+                            <td>${fee.description}</td>
+                            <td>${fee.salary.toFixed(2)} руб</td>
+                            <td>${fee.maintenance.toFixed(2)} руб</td>
+                            <td>${fee.other.toFixed(2)} руб</td>
+                            <td>${total.toFixed(2)} руб</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button onclick="editFee(${fee.id})" style="padding: 5px 10px; font-size: 14px;">Изменить</button>
+                                <button onclick="deleteFeePrompt(${fee.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Обновляем отображение текущих взносов
+                    const currentFee = mockFees.find(f => f.is_current) || mockFees[0];
+                    document.getElementById('current-fee-month').textContent = `${MONTHS[currentFee.month]} ${currentFee.year}`;
+                    document.getElementById('current-fee-description').textContent = currentFee.description;
+                    document.getElementById('current-fee-salary').textContent = currentFee.salary;
+                    document.getElementById('current-fee-maintenance').textContent = currentFee.maintenance;
+                    document.getElementById('current-fee-other').textContent = currentFee.other;
+                    document.getElementById('current-fee-total').textContent = (currentFee.salary + currentFee.maintenance + currentFee.other);
+                }
+                
+                if (alert) {
+                    alert.textContent = `Загружено ${filteredFees.length} записей о взносах`;
+                    alert.className = 'alert success';
+                    alert.style.display = 'block';
+                    setTimeout(() => { alert.style.display = 'none'; }, 3000);
+                }
+                
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc3545;">Ошибка загрузки: ${error.message}</td></tr>`;
+                
+                if (alert) {
+                    alert.textContent = 'Ошибка загрузки взносов: ' + error.message;
+                    alert.className = 'alert error';
+                    alert.style.display = 'block';
+                }
+            }
+        }
+        
+        // Показать форму добавления/редактирования взносов
+        function showAddFeeForm() {
+            document.getElementById('add-fee-form').style.display = 'block';
+            document.getElementById('fee-form-title').textContent = 'Новые членские взносы';
+            document.getElementById('save-fee-btn').textContent = 'Сохранить взносы';
+            document.getElementById('delete-fee-btn').style.display = 'none';
+            
+            // Сбрасываем значения
+            const now = new Date();
+            const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            const currentYear = now.getFullYear();
+            
+            document.getElementById('edit-fee-month').value = currentMonth;
+            document.getElementById('edit-fee-year').value = currentYear;
+            document.getElementById('edit-fee-description').value = 'Взносы на содержание территории';
+            document.getElementById('edit-fee-salary').value = '500';
+            document.getElementById('edit-fee-maintenance').value = '800';
+            document.getElementById('edit-fee-other').value = '200';
+            updateFeeTotal();
+            
+            currentEditingFeeId = null;
+        }
+        
+        function hideAddFeeForm() {
+            document.getElementById('add-fee-form').style.display = 'none';
+            currentEditingFeeId = null;
+        }
+        
+        // Обновление итоговой суммы взносов
+        function updateFeeTotal() {
+            const salary = parseFloat(document.getElementById('edit-fee-salary').value) || 0;
+            const maintenance = parseFloat(document.getElementById('edit-fee-maintenance').value) || 0;
+            const other = parseFloat(document.getElementById('edit-fee-other').value) || 0;
+            const total = salary + maintenance + other;
+            document.getElementById('edit-fee-total').textContent = total.toFixed(2);
+        }
+        
+        // Редактирование взносов
+        function editFee(feeId) {
+            const mockFees = [
+                { id: 1, month: '01', year: 2026, salary: 500, maintenance: 800, other: 200, description: 'Взносы на содержание территории' },
+                { id: 2, month: '02', year: 2026, salary: 550, maintenance: 850, other: 250, description: 'Взносы на ремонт дорог' },
+                { id: 3, month: '03', year: 2026, salary: 520, maintenance: 820, other: 220, description: 'Взносы на оплату охраны' }
+            ];
+            
+            const fee = mockFees.find(f => f.id === feeId);
+            if (!fee) return;
+            
+            document.getElementById('add-fee-form').style.display = 'block';
+            document.getElementById('fee-form-title').textContent = 'Редактирование взносов';
+            document.getElementById('save-fee-btn').textContent = 'Обновить взносы';
+            document.getElementById('delete-fee-btn').style.display = 'inline-block';
+            
+            document.getElementById('edit-fee-month').value = fee.month;
+            document.getElementById('edit-fee-year').value = fee.year;
+            document.getElementById('edit-fee-description').value = fee.description;
+            document.getElementById('edit-fee-salary').value = fee.salary;
+            document.getElementById('edit-fee-maintenance').value = fee.maintenance;
+            document.getElementById('edit-fee-other').value = fee.other;
+            updateFeeTotal();
+            
+            currentEditingFeeId = feeId;
+        }
+        
+        // Сохранение взносов
+        async function saveFee() {
+            const month = document.getElementById('edit-fee-month').value;
+            const year = document.getElementById('edit-fee-year').value;
+            const description = document.getElementById('edit-fee-description').value;
+            const salary = parseFloat(document.getElementById('edit-fee-salary').value);
+            const maintenance = parseFloat(document.getElementById('edit-fee-maintenance').value);
+            const other = parseFloat(document.getElementById('edit-fee-other').value);
+            const alert = document.getElementById('admin-fees-alert');
+            
+            if (!month || !year || !description || isNaN(salary) || isNaN(maintenance) || isNaN(other)) {
+                alert.textContent = 'Заполните все поля корректно';
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+                return;
+            }
+            
+            try {
+                if (currentEditingFeeId) {
+                    alert.textContent = `Взносы на ${MONTHS[month]} ${year} обновлены`;
+                } else {
+                    alert.textContent = `Новые взносы на ${MONTHS[month]} ${year} добавлены`;
+                }
+                
+                alert.className = 'alert success';
+                alert.style.display = 'block';
+                
+                hideAddFeeForm();
+                loadFees();
+                
+            } catch (error) {
+                alert.textContent = 'Ошибка при сохранении взносов: ' + error.message;
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+            }
+        }
+        
+        // Удаление взносов (подтверждение)
+        function deleteFeePrompt(feeId) {
+            if (confirm('Вы уверены, что хотите удалить эти взносы?')) {
+                deleteFee(feeId);
+            }
+        }
+        
+        // Удаление взносов
+        async function deleteFee() {
+            if (!currentEditingFeeId) return;
+            
+            const alert = document.getElementById('admin-fees-alert');
+            
+            try {
+                alert.textContent = 'Взносы успешно удалены';
+                alert.className = 'alert success';
+                alert.style.display = 'block';
+                
+                hideAddFeeForm();
+                loadFees();
+                
+            } catch (error) {
+                alert.textContent = 'Ошибка при удалении взносов: ' + error.message;
+                alert.className = 'alert error';
+                alert.style.display = 'block';
+            }
+        }
+        
         // Админ: Загрузка показаний
         async function loadReadings() {
             const tbody = document.getElementById('readings-table-body');
@@ -1176,16 +1996,14 @@
             const monthFilter = document.getElementById('filter-month').value;
             
             try {
-                // В реальном приложении здесь будет запрос к Supabase
                 const mockReadings = [
-                    { id: 1, user_id: 1, user_name: 'Иванов И.И.', date: '2026-01-15', reading: 700, previous_reading: 650, consumption: 50, electricity_cost: 305.50, month: '01' },
-                    { id: 2, user_id: 2, user_name: 'Петров П.П.', date: '2026-01-14', reading: 850, previous_reading: 780, consumption: 70, electricity_cost: 427.70, month: '01' },
-                    { id: 3, user_id: 3, user_name: 'Сидорова А.В.', date: '2026-01-13', reading: 920, previous_reading: 850, consumption: 70, electricity_cost: 427.70, month: '01' },
-                    { id: 4, user_id: 1, user_name: 'Иванов И.И.', date: '2025-12-20', reading: 650, previous_reading: 580, consumption: 70, electricity_cost: 427.70, month: '12' },
-                    { id: 5, user_id: 4, user_name: 'Кузнецов А.Н.', date: '2025-12-18', reading: 1100, previous_reading: 1020, consumption: 80, electricity_cost: 488.80, month: '12' }
+                    { id: 1, user_id: 1, user_name: 'Иванов И.И.', date: '2026-01-15', reading: 700, previous_reading: 650, consumption: 50, electricity_cost: 305.50, month: '01', year: 2026 },
+                    { id: 2, user_id: 2, user_name: 'Петров П.П.', date: '2026-01-14', reading: 850, previous_reading: 780, consumption: 70, electricity_cost: 427.70, month: '01', year: 2026 },
+                    { id: 3, user_id: 3, user_name: 'Сидорова А.В.', date: '2026-01-13', reading: 920, previous_reading: 850, consumption: 70, electricity_cost: 427.70, month: '01', year: 2026 },
+                    { id: 4, user_id: 1, user_name: 'Иванов И.И.', date: '2025-12-20', reading: 650, previous_reading: 580, consumption: 70, electricity_cost: 427.70, month: '12', year: 2025 },
+                    { id: 5, user_id: 4, user_name: 'Кузнецов А.Н.', date: '2025-12-18', reading: 1100, previous_reading: 1020, consumption: 80, electricity_cost: 488.80, month: '12', year: 2025 }
                 ];
                 
-                // Фильтрация
                 let filteredReadings = mockReadings;
                 if (userFilter) {
                     filteredReadings = filteredReadings.filter(r => r.user_id == userFilter);
@@ -1209,7 +2027,7 @@
                             <td>${reading.electricity_cost.toFixed(2)} руб</td>
                             <td>
                                 <button onclick="editReading(${reading.id})" style="padding: 5px 10px; font-size: 14px;">Изменить</button>
-                                <button onclick="deleteReading(${reading.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
+                                <button onclick="deleteReadingPrompt(${reading.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
                             </td>
                         `;
                         tbody.appendChild(row);
@@ -1239,12 +2057,10 @@
             const select = document.getElementById('filter-user');
             const monthSelect = document.getElementById('filter-month');
             
-            // Очищаем опции пользователей
             while (select.options.length > 1) {
                 select.remove(1);
             }
             
-            // Добавляем пользователей
             const mockUsers = [
                 { id: 1, name: 'Иванов И.И.' },
                 { id: 2, name: 'Петров П.П.' },
@@ -1259,7 +2075,6 @@
                 select.appendChild(option);
             });
             
-            // Заполняем месяцы
             const months = [
                 { value: '01', name: 'Январь' },
                 { value: '02', name: 'Февраль' },
@@ -1287,127 +2102,26 @@
             });
         }
         
-        // Админ: Загрузка членских взносов
-        async function loadPayments() {
-            const tbody = document.getElementById('payments-table-body');
-            const alert = document.getElementById('admin-payments-alert');
-            
-            try {
-                // В реальном приложении здесь будет запрос к Supabase
-                const mockPayments = [
-                    { id: 1, user_id: 1, user_name: 'Иванов И.И.', date: '2026-01-10', month: '01', year: 2026, salary: 500, maintenance: 800, other: 200, total: 1500 },
-                    { id: 2, user_id: 2, user_name: 'Петров П.П.', date: '2026-01-11', month: '01', year: 2026, salary: 500, maintenance: 800, other: 200, total: 1500 },
-                    { id: 3, user_id: 3, user_name: 'Сидорова А.В.', date: '2025-12-15', month: '12', year: 2025, salary: 500, maintenance: 800, other: 200, total: 1500 },
-                    { id: 4, user_id: 4, user_name: 'Кузнецов А.Н.', date: '2025-12-18', month: '12', year: 2025, salary: 500, maintenance: 800, other: 200, total: 1500 }
-                ];
-                
-                tbody.innerHTML = '';
-                
-                mockPayments.forEach(payment => {
-                    const monthNames = {
-                        '01': 'Январь', '02': 'Февраль', '03': 'Март', '04': 'Апрель',
-                        '05': 'Май', '06': 'Июнь', '07': 'Июль', '08': 'Август',
-                        '09': 'Сентябрь', '10': 'Октябрь', '11': 'Ноябрь', '12': 'Декабрь'
-                    };
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${payment.date}</td>
-                        <td>${payment.user_name}</td>
-                        <td>${monthNames[payment.month]} ${payment.year}</td>
-                        <td>${payment.salary.toFixed(2)} руб</td>
-                        <td>${payment.maintenance.toFixed(2)} руб</td>
-                        <td>${payment.other.toFixed(2)} руб</td>
-                        <td>${payment.total.toFixed(2)} руб</td>
-                        <td>
-                            <button onclick="editPayment(${payment.id})" style="padding: 5px 10px; font-size: 14px;">Изменить</button>
-                            <button onclick="deletePayment(${payment.id})" style="padding: 5px 10px; font-size: 14px; background: #dc3545; margin-left: 5px;">Удалить</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                if (alert) {
-                    alert.textContent = `Загружено ${mockPayments.length} взносов`;
-                    alert.className = 'alert success';
-                    alert.style.display = 'block';
-                    setTimeout(() => { alert.style.display = 'none'; }, 3000);
-                }
-                
-            } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc3545;">Ошибка загрузки: ${error.message}</td></tr>`;
-                
-                if (alert) {
-                    alert.textContent = 'Ошибка загрузки взносов: ' + error.message;
-                    alert.className = 'alert error';
-                    alert.style.display = 'block';
-                }
+        // Удаление показания (подтверждение)
+        function deleteReadingPrompt(readingId) {
+            if (confirm('Вы уверены, что хотите удалить это показание?')) {
+                deleteReading(readingId);
             }
         }
         
-        // Заполнение фильтра пользователей для платежей
-        function populatePaymentUserFilter() {
-            const select = document.getElementById('payment-user');
-            
-            // Очищаем опции
-            select.innerHTML = '';
-            
-            // Добавляем пользователей
-            const mockUsers = [
-                { id: 1, name: 'Иванов И.И.' },
-                { id: 2, name: 'Петров П.П.' },
-                { id: 3, name: 'Сидорова А.В.' },
-                { id: 4, name: 'Кузнецов А.Н.' }
-            ];
-            
-            mockUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name;
-                select.appendChild(option);
-            });
-        }
-        
-        // Админ: Показать форму добавления платежа
-        function showAddPaymentForm() {
-            populatePaymentUserFilter();
-            document.getElementById('add-payment-form').style.display = 'block';
-        }
-        
-        function hideAddPaymentForm() {
-            document.getElementById('add-payment-form').style.display = 'none';
-        }
-        
-        // Админ: Добавление платежа
-        async function addPayment() {
-            const userId = document.getElementById('payment-user').value;
-            const month = document.getElementById('payment-month').value;
-            const year = document.getElementById('payment-year').value;
-            const salary = parseFloat(document.getElementById('payment-salary').value) || 0;
-            const maintenance = parseFloat(document.getElementById('payment-maintenance').value) || 0;
-            const other = parseFloat(document.getElementById('payment-other').value) || 0;
-            const alert = document.getElementById('admin-payments-alert');
-            
-            if (!userId) {
-                alert.textContent = 'Выберите пользователя';
-                alert.className = 'alert error';
-                alert.style.display = 'block';
-                return;
-            }
+        // Удаление показания
+        async function deleteReading(readingId) {
+            const alert = document.getElementById('admin-readings-alert');
             
             try {
-                const total = salary + maintenance + other;
-                
-                // В реальном приложении здесь будет запрос к Supabase
-                alert.textContent = `Членский взнос успешно добавлен. Сумма: ${total.toFixed(2)} руб`;
+                alert.textContent = 'Показание успешно удалено';
                 alert.className = 'alert success';
                 alert.style.display = 'block';
                 
-                hideAddPaymentForm();
-                loadPayments();
+                loadReadings();
                 
             } catch (error) {
-                alert.textContent = 'Ошибка при добавлении взноса: ' + error.message;
+                alert.textContent = 'Ошибка при удалении показания: ' + error.message;
                 alert.className = 'alert error';
                 alert.style.display = 'block';
             }
@@ -1428,14 +2142,12 @@
                     const lines = content.split('\n');
                     let importedCount = 0;
                     
-                    // Пропускаем заголовок и пустые строки
                     for (let i = 1; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
                         
                         const parts = line.split(',');
                         if (parts.length >= 6) {
-                            // В реальном приложении здесь будет сохранение в Supabase
                             importedCount++;
                         }
                     }
@@ -1444,7 +2156,6 @@
                     alert.className = 'alert success';
                     alert.style.display = 'block';
                     
-                    // Обновляем список пользователей
                     loadUsers();
                     
                 } catch (error) {
@@ -1484,16 +2195,19 @@
             let filename = '';
             
             if (type === 'users') {
-                csvContent = "id,login,name,section,phone,email\n1,user1,Иванов Иван Иванович,15,+79991234567,user1@example.com\n2,user2,Петров Петр Петрович,23,+79992345678,user2@example.com";
+                csvContent = "id,login,name,section,phone,email,is_admin\n1,user1,Иванов Иван Иванович,15,+79991234567,user1@example.com,false\n2,admin,Администратор,0,+79990000000,admin@zvezdochka.ru,true";
                 filename = 'users-export.csv';
+            } else if (type === 'tariffs') {
+                csvContent = "id,month,year,loss_tariff,under100_tariff,over100_tariff\n1,01,2026,0.36,6.10,7.30\n2,02,2026,0.38,6.20,7.40";
+                filename = 'tariffs-export.csv';
+            } else if (type === 'fees') {
+                csvContent = "id,month,year,salary,maintenance,other,description\n1,01,2026,500,800,200,Взносы на содержание территории\n2,02,2026,550,850,250,Взносы на ремонт дорог";
+                filename = 'fees-export.csv';
             } else if (type === 'readings') {
-                csvContent = "id,user_id,date,reading,previous_reading,consumption,electricity_cost\n1,1,2026-01-15,700,650,50,305.50\n2,2,2026-01-14,850,780,70,427.70";
+                csvContent = "id,user_id,date,reading,previous_reading,consumption,electricity_cost,month,year\n1,1,2026-01-15,700,650,50,305.50,01,2026\n2,2,2026-01-14,850,780,70,427.70,01,2026";
                 filename = 'readings-export.csv';
-            } else if (type === 'payments') {
-                csvContent = "id,user_id,date,month,year,salary,maintenance,other,total\n1,1,2026-01-10,01,2026,500,800,200,1500\n2,2,2026-01-11,01,2026,500,800,200,1500";
-                filename = 'payments-export.csv';
             } else if (type === 'all') {
-                csvContent = "Тип,Данные\nПользователи,2 записи\nПоказания,2 записи\nВзносы,2 записи";
+                csvContent = "Тип,Данные\nПользователи,2 записи\nТарифы,2 записи\nВзносы,2 записи\nПоказания,2 записи";
                 filename = 'all-data-export.csv';
             }
             
@@ -1561,53 +2275,35 @@
             alert(`Редактирование показания ID: ${id}\n(В реальном приложении здесь будет форма редактирования)`);
         }
         
-        function deleteReading(id) {
-            if (confirm(`Вы уверены, что хотите удалить показание ID: ${id}?`)) {
-                const alert = document.getElementById('admin-readings-alert');
-                alert.textContent = `Показание ID: ${id} удалено`;
-                alert.className = 'alert success';
-                alert.style.display = 'block';
-                setTimeout(() => { 
-                    alert.style.display = 'none'; 
-                    loadReadings(); 
-                }, 2000);
-            }
-        }
-        
-        function editPayment(id) {
-            alert(`Редактирование взноса ID: ${id}\n(В реальном приложении здесь будет форма редактирования)`);
-        }
-        
-        function deletePayment(id) {
-            if (confirm(`Вы уверены, что хотите удалить взнос ID: ${id}?`)) {
-                const alert = document.getElementById('admin-payments-alert');
-                alert.textContent = `Взнос ID: ${id} удален`;
-                alert.className = 'alert success';
-                alert.style.display = 'block';
-                setTimeout(() => { 
-                    alert.style.display = 'none'; 
-                    loadPayments(); 
-                }, 2000);
-            }
-        }
-        
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Проверка соединения с Supabase
             checkSupabaseConnection();
             
-            // Обработчики событий для обновления расчета в реальном времени
             document.getElementById('user-meter-reading').addEventListener('input', updateCalculation);
-            document.getElementById('user-salary').addEventListener('input', updateCalculation);
-            document.getElementById('user-maintenance').addEventListener('input', updateCalculation);
-            document.getElementById('user-other').addEventListener('input', updateCalculation);
             
-            // Инициализация расчета
+            // Обновление итоговой суммы при изменении взносов в форме админа
+            document.getElementById('edit-fee-salary').addEventListener('input', updateFeeTotal);
+            document.getElementById('edit-fee-maintenance').addEventListener('input', updateFeeTotal);
+            document.getElementById('edit-fee-other').addEventListener('input', updateFeeTotal);
+            
             updateCalculation();
+            
+            // Устанавливаем текущий месяц для пользователя
+            const now = new Date();
+            const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            const currentYear = now.getFullYear();
+            
+            document.getElementById('user-month').value = currentMonth;
+            document.getElementById('user-year').value = currentYear;
+            
+            document.getElementById('tariff-month').value = currentMonth;
+            document.getElementById('tariff-year').value = currentYear;
+            
+            document.getElementById('fees-month').value = currentMonth;
+            document.getElementById('fees-year').value = currentYear;
         });
     </script>
 
-    <!-- Подключение Supabase JS через CDN [citation:2] -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
