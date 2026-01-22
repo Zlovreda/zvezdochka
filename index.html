@@ -13,20 +13,21 @@
     <h2>Тест подключения Supabase</h2>
     
     <div>
-        <button onclick="testConnection()">Тест подключения</button>
-        <button onclick="createClient()">Создать клиент</button>
-        <button onclick="insertTest()">Тест записи</button>
-        <button onclick="readTest()">Тест чтения</button>
-        <button onclick="clearLog()">Очистить лог</button>
+        <button id="testBtn">Тест подключения</button>
+        <button id="clientBtn">Создать клиент</button>
+        <button id="insertBtn">Тест записи</button>
+        <button id="readBtn">Тест чтения</button>
+        <button id="clearBtn">Очистить лог</button>
     </div>
     
     <h3>Лог выполнения:</h3>
     <pre id="log">Нажмите кнопки для тестирования...</pre>
     
     <script>
+        // Используем другое имя переменной, чтобы избежать конфликта с глобальной supabase
         const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk';
-        let supabase = null;
+        let supabaseClient = null; // Используем другое имя для клиента
         
         function log(message) {
             const logElement = document.getElementById('log');
@@ -53,7 +54,8 @@
         
         function createClient() {
             try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                // Используем глобальную supabase из подключенной библиотеки
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 log('✓ Клиент Supabase создан успешно');
                 return true;
             } catch (error) {
@@ -63,7 +65,7 @@
         }
         
         async function insertTest() {
-            if (!supabase) {
+            if (!supabaseClient) {
                 log('✗ Сначала создайте клиент');
                 return;
             }
@@ -74,7 +76,7 @@
                     test_field: `Тест ${Date.now()}`
                 };
                 
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('test_table')
                     .insert([testData])
                     .select();
@@ -93,13 +95,13 @@
         }
         
         async function readTest() {
-            if (!supabase) {
+            if (!supabaseClient) {
                 log('✗ Сначала создайте клиент');
                 return;
             }
             
             try {
-                const { data, error, count } = await supabase
+                const { data, error, count } = await supabaseClient
                     .from('test_table')
                     .select('*', { count: 'exact' })
                     .limit(5);
@@ -115,10 +117,17 @@
             }
         }
         
-        // Автоматически создаем клиент при загрузке
-        window.onload = function() {
+        // Назначаем обработчики событий после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('testBtn').addEventListener('click', testConnection);
+            document.getElementById('clientBtn').addEventListener('click', createClient);
+            document.getElementById('insertBtn').addEventListener('click', insertTest);
+            document.getElementById('readBtn').addEventListener('click', readTest);
+            document.getElementById('clearBtn').addEventListener('click', clearLog);
+            
+            // Автоматически создаем клиент при загрузке
             createClient();
-        };
+        });
     </script>
 </body>
 </html>
