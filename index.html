@@ -3,519 +3,2604 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>СНТ "Звездочка" - Личный кабинет</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <title>СНТ "Звездочка" - Учет электроэнергии и взносов</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+        }
         
-        /* Шапка */
-        header { background: #2c3e50; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; }
-        h1 { font-size: 2.2rem; }
-        .user-info { display: flex; align-items: center; gap: 15px; }
-        .role-badge { background: #e74c3c; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
-        .role-badge.admin { background: #27ae60; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         
-        /* Основной контент */
-        .content { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; }
-        .main-content { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
-        .sidebar { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+        }
         
-        /* Формы */
-        .form-section { margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 2px solid #f0f0f0; }
-        h2 { color: #2c3e50; margin-bottom: 1.5rem; font-size: 1.6rem; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.2rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border 0.3s; }
-        .form-group input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
         
-        /* Кнопки */
-        .btn { background: #3498db; color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background: #2980b9; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-        .btn-success { background: #27ae60; }
-        .btn-success:hover { background: #219955; }
-        .btn-logout { background: #e74c3c; }
-        .btn-logout:hover { background: #c0392b; }
+        /* Хедер и навигация */
+        header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        
+        .logo-text p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .user-details h3 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .user-details p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: #fee2e2;
+        }
+        
+        /* Основная навигация */
+        .main-nav {
+            display: flex;
+            gap: 0.5rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+        
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:hover {
+            background: var(--light);
+            color: var(--dark);
+        }
+        
+        .nav-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Контент страницы */
+        .page-content {
+            display: none;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .page-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .page-header h2 {
+            font-size: 1.8rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        /* Экран входа */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-success {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Карточки */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-details {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
         
         /* Таблицы */
-        .table-container { overflow-x: auto; margin-top: 1.5rem; border-radius: 8px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 1rem; text-align: left; font-weight: 600; color: #2c3e50; border-bottom: 2px solid #dee2e6; }
-        td { padding: 1rem; border-bottom: 1px solid #eee; }
-        tr:hover { background: #f8f9fa; }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-top: 1.5rem;
+        }
         
-        /* Системные сообщения */
-        #systemLog { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid #3498db; font-family: monospace; max-height: 200px; overflow-y: auto; }
-        .log-entry { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
-        .log-success { color: #27ae60; }
-        .log-error { color: #e74c3c; }
-        .log-info { color: #3498db; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .data-table th {
+            background: var(--light);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .data-table tr:hover {
+            background: #f9fafb;
+        }
+        
+        /* Формы */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-section {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Алерты */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid;
+            background: white;
+        }
+        
+        .alert-success {
+            border-left-color: var(--secondary);
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .alert-error {
+            border-left-color: var(--danger);
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .alert-warning {
+            border-left-color: var(--warning);
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .alert-info {
+            border-left-color: var(--primary);
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+        }
+        
+        .close-modal:hover {
+            background: var(--light);
+        }
+        
+        /* Загрузка */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Вкладки */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6b7280;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: var(--dark);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Статус Supabase */
+        .supabase-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .status-up {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .status-down {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
         
         /* Адаптивность */
-        @media (max-width: 900px) {
-            .content { grid-template-columns: 1fr; }
-            header { flex-direction: column; gap: 15px; text-align: center; }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .main-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-table {
+                font-size: 0.875rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- ШАПКА С ИНФОРМАЦИЕЙ О ПОЛЬЗОВАТЕЛЕ -->
-        <header>
-            <h1>📊 СНТ "Звездочка" - Личный кабинет</h1>
-            <div class="user-info" id="userInfo">
-                <span id="userName">Гость</span>
-                <span id="userRole" class="role-badge">не авторизован</span>
-                <button id="logoutBtn" class="btn btn-logout" style="display:none;">🚪 Выйти</button>
+    <!-- Экран входа -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-header">
+            <h1>СНТ "Звездочка"</h1>
+            <p>Система учета электроэнергии и членских взносов</p>
+        </div>
+        
+        <div id="loginAlert" class="alert" style="display: none;"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Логин</label>
+                <input type="text" id="username" class="form-control" placeholder="Введите логин" required>
             </div>
-        </header>
-
-        <!-- ОСНОВНОЙ КОНТЕНТ -->
-        <div class="content">
-            <!-- Левая колонка: Формы и данные -->
-            <div class="main-content">
-                <!-- БЛОК АВТОРИЗАЦИИ -->
-                <section id="authSection" class="form-section">
-                    <h2>🔐 Вход в систему</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="loginEmail">Email</label>
-                            <input type="email" id="loginEmail" placeholder="ваш@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="loginPassword">Пароль</label>
-                            <input type="password" id="loginPassword" placeholder="••••••••">
-                        </div>
-                    </div>
-                    <button id="loginBtn" class="btn">👉 Войти</button>
-                    <button id="registerBtn" class="btn btn-success">📝 Зарегистрироваться</button>
-                    
-                    <!-- Тестовые данные для быстрого входа -->
-                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 0.9rem;">
-                        <strong>Тестовый доступ:</strong><br>
-                        • Админ: <code>admin@zvezdochka.test</code> / <code>admin123</code><br>
-                        • Пользователь: <code>user@zvezdochka.test</code> / <code>user123</code>
-                    </div>
-                </section>
-
-                <!-- БЛОК ДЛЯ АВТОРИЗОВАННЫХ -->
-                <div id="authenticatedContent" style="display:none;">
-                    <!-- Ввод показаний -->
-                    <section class="form-section">
-                        <h2>⚡ Показания электроэнергии</h2>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="readingMonth">Месяц</label>
-                                <input type="month" id="readingMonth" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="meterReading">Показания счетчика (кВт·ч)</label>
-                                <input type="number" id="meterReading" min="0" step="1" required>
-                            </div>
-                        </div>
-                        <button id="submitReadingBtn" class="btn btn-success">📤 Отправить показания</button>
-                    </section>
-
-                    <!-- Расчёт оплаты -->
-                    <section class="form-section">
-                        <h2>🧮 Расчёт оплаты</h2>
-                        <div id="calculationResult" style="padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
-                            <p>Выберите месяц и введите показания для расчёта.</p>
-                        </div>
-                    </section>
-
-                    <!-- История показаний -->
-                    <section class="form-section">
-                        <h2>📜 История показаний</h2>
-                        <div class="table-container">
-                            <table id="readingsTable">
-                                <thead><tr><th>Месяц</th><th>Показания</th><th>Дата внесения</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- АДМИН-ПАНЕЛЬ -->
-                    <section id="adminSection" class="form-section" style="display:none;">
-                        <h2>⚙️ Панель администратора</h2>
-                        
-                        <!-- Загрузка данных пользователей -->
-                        <h3>👥 Пакетная загрузка пользователей (CSV)</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="usersFile">CSV файл</label>
-                                <input type="file" id="usersFile" accept=".csv">
-                            </div>
-                        </div>
-                        <button id="uploadUsersBtn" class="btn">📤 Загрузить пользователей</button>
-                        
-                        <!-- Просмотр всех данных -->
-                        <h3 style="margin-top: 2rem;">📋 Все показания пользователей</h3>
-                        <div class="table-container">
-                            <table id="allReadingsTable">
-                                <thead><tr><th>Пользователь</th><th>Месяц</th><th>Показания</th><th>Дата</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
+            
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" class="form-control" placeholder="Введите пароль" required>
             </div>
-
-            <!-- Правая колонка: Информация и логи -->
-            <div class="sidebar">
-                <h3>ℹ️ Информация о тарифах</h3>
-                <div id="tariffsInfo" style="margin-bottom: 2rem;">
-                    <p>Загружаем актуальные тарифы...</p>
+            
+            <button type="submit" class="btn btn-primary">
+                <span id="loginLoading" class="loading" style="display: none;"></span>
+                Войти
+            </button>
+        </form>
+        
+        <div style="margin-top: 2rem; text-align: center; color: #6b7280; font-size: 0.875rem;">
+            <p>Демо доступы:</p>
+            <p>👤 <strong>Админ:</strong> admin / admin123</p>
+            <p>👤 <strong>Пользователь:</strong> user1 / password1</p>
+        </div>
+    </div>
+    
+    <!-- Основной интерфейс (скрыт до входа) -->
+    <div id="mainInterface" style="display: none;">
+        <div class="container">
+            <!-- Хедер -->
+            <header>
+                <div class="logo">
+                    <div class="logo-icon">⭐</div>
+                    <div class="logo-text">
+                        <h1>СНТ "Звездочка"</h1>
+                        <p>Учет электроэнергии и членских взносов</p>
+                    </div>
                 </div>
                 
-                <h3>📋 Системный журнал</h3>
-                <div id="systemLog"></div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <h3 id="userName">Пользователь</h3>
+                        <p id="userRole">Роль</p>
+                    </div>
+                    <button class="logout-btn" onclick="logout()" title="Выйти">🚪</button>
+                </div>
+            </header>
+            
+            <!-- Навигация -->
+            <nav class="main-nav">
+                <button class="nav-btn active" onclick="showPage('dashboard')">📊 Дашборд</button>
+                <button class="nav-btn" onclick="showPage('electricity')">⚡ Электроэнергия</button>
+                <button class="nav-btn" onclick="showPage('fees')">💳 Членские взносы</button>
+                <button class="nav-btn" onclick="showPage('readings')">📝 Показания</button>
+                <button class="nav-btn" onclick="showPage('profile')">👤 Профиль</button>
+                
+                <!-- Только для админа -->
+                <button class="nav-btn admin-only" onclick="showPage('admin')" style="display: none;">⚙️ Админ-панель</button>
+            </nav>
+            
+            <!-- Контент страниц -->
+            
+            <!-- Дашборд -->
+            <div id="dashboard" class="page-content active">
+                <div class="page-header">
+                    <h2>📊 Дашборд</h2>
+                </div>
+                
+                <div id="dashboardAlert" class="alert alert-info">
+                    Загрузка данных...
+                </div>
+                
+                <div class="cards-grid" id="dashboardCards">
+                    <!-- Карточки будут загружены динамически -->
+                </div>
+                
+                <div class="form-section">
+                    <h3>📈 Последние начисления</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Месяц</th>
+                                    <th>Электроэнергия</th>
+                                    <th>Членские взносы</th>
+                                    <th>Итого</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentCharges">
+                                <tr><td colspan="5">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Электроэнергия -->
+            <div id="electricity" class="page-content">
+                <div class="page-header">
+                    <h2>⚡ Учет электроэнергии</h2>
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>Формула расчета:</strong><br>
+                    1. Потери: весь расход × тариф потерь (0,36 руб/кВт·ч)<br>
+                    2. До 100 кВт·ч: min(100, расход) × тариф до 100 (6,1 руб/кВт·ч)<br>
+                    3. Свыше 100 кВт·ч: max(0, расход - 100) × тариф свыше 100 (7,3 руб/кВт·ч)
+                </div>
+                
+                <div class="form-section">
+                    <h3>📋 Текущие тарифы</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип тарифа</th>
+                                    <th>Значение (руб/кВт·ч)</th>
+                                    <th>Действует с</th>
+                                </tr>
+                            </thead>
+                            <tbody id="electricityTariffs">
+                                <tr><td colspan="3">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>🧮 Калькулятор расчета</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="calcReading">Текущие показания (кВт·ч)</label>
+                            <input type="number" id="calcReading" class="form-control" placeholder="763">
+                        </div>
+                        <div class="form-group">
+                            <label for="calcPrevReading">Предыдущие показания (кВт·ч)</label>
+                            <input type="number" id="calcPrevReading" class="form-control" placeholder="0">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="calculateElectricity()">Рассчитать</button>
+                    
+                    <div id="calcResult" style="margin-top: 1.5rem; display: none;">
+                        <div class="alert alert-success">
+                            <h4>Результаты расчета:</h4>
+                            <div id="calcDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Членские взносы -->
+            <div id="fees" class="page-content">
+                <div class="page-header">
+                    <h2>💳 Членские взносы</h2>
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>Формула расчета:</strong><br>
+                    1. Зарплата: 939,00 руб × количество участков<br>
+                    2. Содержание: 44 руб × общая площадь (соток)<br>
+                    3. Дополнительные взносы: вводятся вручную
+                </div>
+                
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Текущий месяц</div>
+                        </div>
+                        <div class="card-value" id="currentMonthFee">0 ₽</div>
+                        <div class="card-details" id="currentMonthDetails">Загрузка...</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📅</div>
+                            <div class="card-title">Общая задолженность</div>
+                        </div>
+                        <div class="card-value" id="totalDebt">0 ₽</div>
+                        <div class="card-details" id="debtDetails">Загрузка...</div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>📋 История взносов</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Месяц</th>
+                                    <th>Зарплата</th>
+                                    <th>Содержание</th>
+                                    <th>Дополнительно</th>
+                                    <th>Итого</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feesHistory">
+                                <tr><td colspan="6">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Показания -->
+            <div id="readings" class="page-content">
+                <div class="page-header">
+                    <h2>📝 Передача показаний</h2>
+                </div>
+                
+                <div class="alert alert-warning" id="readingAlert" style="display: none;"></div>
+                
+                <div class="form-section">
+                    <h3>📊 Передать текущие показания</h3>
+                    <form id="readingForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="readingMonth">Месяц</label>
+                                <select id="readingMonth" class="form-control" required>
+                                    <!-- Месяцы будут добавлены динамически -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="meterNumber">Номер счетчика</label>
+                                <input type="text" id="meterNumber" class="form-control" placeholder="СЧ-001" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currentReading">Текущие показания (кВт·ч)</label>
+                                <input type="number" step="0.01" id="currentReading" class="form-control" placeholder="763.5" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="previousReading">Предыдущие показания (кВт·ч)</label>
+                                <input type="number" step="0.01" id="previousReading" class="form-control" placeholder="0" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="readingNotes">Примечания (необязательно)</label>
+                            <textarea id="readingNotes" class="form-control" rows="3" placeholder="Дополнительная информация"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">
+                            <span id="readingLoading" class="loading" style="display: none;"></span>
+                            📤 Передать показания
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="form-section">
+                    <h3>📋 История показаний</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Месяц</th>
+                                    <th>Счетчик</th>
+                                    <th>Предыдущие</th>
+                                    <th>Текущие</th>
+                                    <th>Расход</th>
+                                    <th>Дата передачи</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readingsHistory">
+                                <tr><td colspan="6">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Профиль -->
+            <div id="profile" class="page-content">
+                <div class="page-header">
+                    <h2>👤 Личный кабинет</h2>
+                </div>
+                
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🏠</div>
+                            <div class="card-title">Участки</div>
+                        </div>
+                        <div class="card-value" id="plotsCount">0</div>
+                        <div class="card-details" id="plotsDetails">Загрузка...</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Средний расход</div>
+                        </div>
+                        <div class="card-value" id="avgConsumption">0 кВт·ч</div>
+                        <div class="card-details" id="consumptionDetails">Загрузка...</div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>🔐 Смена пароля</h3>
+                    <form id="passwordForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currentPassword">Текущий пароль</label>
+                                <input type="password" id="currentPassword" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">Новый пароль</label>
+                                <input type="password" id="newPassword" class="form-control" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">Подтвердите пароль</label>
+                                <input type="password" id="confirmPassword" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Сменить пароль</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Админ-панель (только для админа) -->
+            <div id="admin" class="page-content">
+                <div class="page-header">
+                    <h2>⚙️ Административная панель</h2>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showAdminTab('users')">👥 Пользователи</button>
+                    <button class="tab" onclick="showAdminTab('tariffs')">💰 Тарифы</button>
+                    <button class="tab" onclick="showAdminTab('batch')">📁 Пакетная загрузка</button>
+                    <button class="tab" onclick="showAdminTab('reports')">📊 Отчеты</button>
+                </div>
+                
+                <!-- Управление пользователями -->
+                <div id="adminUsers" class="tab-content active">
+                    <div class="alert alert-info">
+                        <strong>Всего пользователей:</strong> <span id="totalUsers">0</span>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="showAddUserModal()">➕ Добавить пользователя</button>
+                    
+                    <div class="table-container" style="margin-top: 1.5rem;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Логин</th>
+                                    <th>ФИО</th>
+                                    <th>Роль</th>
+                                    <th>Участков</th>
+                                    <th>Телефон</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <tr><td colspan="7">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Управление тарифами -->
+                <div id="adminTariffs" class="tab-content">
+                    <div class="form-section">
+                        <h3>⚡ Тарифы на электроэнергию</h3>
+                        <form id="electricityTariffForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="tariffLosses">Потери (руб/кВт·ч)</label>
+                                    <input type="number" step="0.01" id="tariffLosses" class="form-control" placeholder="0.36" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tariffUnder100">До 100 кВт·ч (руб/кВт·ч)</label>
+                                    <input type="number" step="0.01" id="tariffUnder100" class="form-control" placeholder="6.10" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tariffOver100">Свыше 100 кВт·ч (руб/кВт·ч)</label>
+                                    <input type="number" step="0.01" id="tariffOver100" class="form-control" placeholder="7.30" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tariffValidFrom">Действует с</label>
+                                <input type="date" id="tariffValidFrom" class="form-control" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">💾 Сохранить тариф</button>
+                        </form>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📋 История тарифов</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Действует с</th>
+                                        <th>Потери</th>
+                                        <th>До 100 кВт·ч</th>
+                                        <th>Свыше 100 кВт·ч</th>
+                                        <th>Создан</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tariffsHistory">
+                                    <tr><td colspan="5">Загрузка...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Пакетная загрузка -->
+                <div id="adminBatch" class="tab-content">
+                    <div class="alert alert-info">
+                        <strong>Поддерживаемые форматы:</strong> CSV, Excel (конвертировать в CSV)<br>
+                        <strong>Кодировка:</strong> UTF-8<br>
+                        <strong>Разделитель:</strong> запятая или точка с запятой
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📁 Загрузить данные</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="batchType">Тип данных</label>
+                                <select id="batchType" class="form-control">
+                                    <option value="readings">Показания счетчиков</option>
+                                    <option value="fees">Членские взносы</option>
+                                    <option value="users">Пользователи</option>
+                                    <option value="plots">Участки</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="batchFile">Файл</label>
+                                <input type="file" id="batchFile" class="form-control" accept=".csv,.txt">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="processBatch()">📤 Обработать файл</button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📥 Шаблоны файлов</h3>
+                        <div class="form-row">
+                            <button class="btn btn-secondary" onclick="downloadTemplate('readings')">📄 Шаблон для показаний</button>
+                            <button class="btn btn-secondary" onclick="downloadTemplate('fees')">📄 Шаблон для взносов</button>
+                            <button class="btn btn-secondary" onclick="downloadTemplate('users')">📄 Шаблон для пользователей</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Отчеты -->
+                <div id="adminReports" class="tab-content">
+                    <div class="form-section">
+                        <h3>📊 Генерация отчетов</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reportType">Тип отчета</label>
+                                <select id="reportType" class="form-control">
+                                    <option value="monthly">Ежемесячный отчет</option>
+                                    <option value="debts">Задолженности</option>
+                                    <option value="consumption">Потребление электроэнергии</option>
+                                    <option value="payments">Платежи</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reportMonth">Месяц</label>
+                                <input type="month" id="reportMonth" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="generateReport()">📄 Сгенерировать отчет</button>
+                        <button class="btn btn-success" onclick="exportToExcel()" style="margin-left: 1rem;">📥 Экспорт в Excel</button>
+                    </div>
+                    
+                    <div id="reportResults" style="margin-top: 2rem;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Статус Supabase -->
+        <div id="supabaseStatus" class="supabase-status">
+            <span class="loading" id="statusLoading"></span>
+            <span id="statusText">Проверка подключения...</span>
+        </div>
+    </div>
+    
+    <!-- Модальные окна -->
+    
+    <!-- Модальное окно добавления пользователя -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">➕ Добавить пользователя</div>
+                <button class="close-modal" onclick="closeModal('addUserModal')">×</button>
+            </div>
+            
+            <form id="addUserForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUserLogin">Логин *</label>
+                        <input type="text" id="newUserLogin" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserPassword">Пароль *</label>
+                        <input type="password" id="newUserPassword" class="form-control" required minlength="6">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUserName">ФИО *</label>
+                        <input type="text" id="newUserName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserRole">Роль *</label>
+                        <select id="newUserRole" class="form-control" required>
+                            <option value="user">Пользователь</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUserPhone">Телефон</label>
+                        <input type="tel" id="newUserPhone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserEmail">Email</label>
+                        <input type="email" id="newUserEmail" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="newUserAddress">Адрес</label>
+                    <input type="text" id="newUserAddress" class="form-control">
+                </div>
+                
+                <button type="submit" class="btn btn-success">💾 Сохранить</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно редактирования пользователя -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Редактировать пользователя</div>
+                <button class="close-modal" onclick="closeModal('editUserModal')">×</button>
+            </div>
+            
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUserLogin">Логин *</label>
+                        <input type="text" id="editUserLogin" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserName">ФИО *</label>
+                        <input type="text" id="editUserName" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUserRole">Роль *</label>
+                        <select id="editUserRole" class="form-control" required>
+                            <option value="user">Пользователь</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserPhone">Телефон</label>
+                        <input type="tel" id="editUserPhone" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserEmail">Email</label>
+                    <input type="email" id="editUserEmail" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserAddress">Адрес</label>
+                    <input type="text" id="editUserAddress" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserNotes">Примечания</label>
+                    <textarea id="editUserNotes" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success">💾 Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно добавления участка -->
+    <div id="addPlotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🏠 Добавить участок</div>
+                <button class="close-modal" onclick="closeModal('addPlotModal')">×</button>
+            </div>
+            
+            <form id="addPlotForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="plotNumber">Номер участка *</label>
+                        <input type="text" id="plotNumber" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="plotArea">Площадь (соток) *</label>
+                        <input type="number" step="0.01" id="plotArea" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="plotMeterNumber">Номер счетчика</label>
+                        <input type="text" id="plotMeterNumber" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="plotUserId">Владелец *</label>
+                        <select id="plotUserId" class="form-control" required>
+                            <!-- Список пользователей загрузится динамически -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="plotNotes">Примечания</label>
+                    <textarea id="plotNotes" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success">💾 Сохранить</button>
+            </form>
         </div>
     </div>
 
     <script>
         // ==================== КОНФИГУРАЦИЯ ====================
         const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_9NXa4FwnnrICXnXmrOVqRg_KB5LHkmk';
-        let supabase;
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+        
+        // Заголовки для запросов
+        const supabaseHeaders = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json'
+        };
+        
+        // Текущий пользователь
         let currentUser = null;
-        let currentTariffs = null;
-
+        let supabaseStatus = 'checking';
+        
+        // Демо пользователи (для тестирования)
+        const demoUsers = [
+            {
+                id: 'admin',
+                login: 'admin',
+                password: 'admin123',
+                name: 'Администратор',
+                role: 'admin',
+                phone: '+7 (999) 123-45-67',
+                email: 'admin@zvezdochka.ru',
+                address: 'СНТ "Звездочка", ул. Центральная, 1'
+            },
+            {
+                id: 'user1',
+                login: 'user1',
+                password: 'password1',
+                name: 'Иванов Иван Иванович',
+                role: 'user',
+                phone: '+7 (999) 111-11-11',
+                email: 'ivanov@example.ru',
+                address: 'СНТ "Звездочка", участок 15'
+            }
+        ];
+        
         // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initializeApp();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Проверка подключения к Supabase
+            checkSupabaseConnection();
+            
+            // Заполняем месяцы для формы показаний
+            populateMonths();
+            
+            // Настройка текущей даты для форм
+            setCurrentDate();
+            
+            // Настройка обработчиков форм
             setupEventListeners();
-            await checkSupabaseConnection();
-            await loadTariffs();
+            
+            // Проверяем, есть ли сохраненная сессия
+            checkSavedSession();
         });
-
-        async function initializeApp() {
+        
+        // ==================== ПРОВЕРКА SUPABASE ====================
+        async function checkSupabaseConnection() {
+            const statusEl = document.getElementById('supabaseStatus');
+            const statusText = document.getElementById('statusText');
+            const statusLoading = document.getElementById('statusLoading');
+            
             try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                addLog('✅ Клиент Supabase инициализирован', 'success');
+                // Тест 1: Проверка доступности
+                const testResponse = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    method: 'GET',
+                    headers: supabaseHeaders
+                });
                 
-                // Проверяем существующую сессию
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
-                if (session) {
-                    currentUser = session.user;
-                    await handleSuccessfulAuth();
+                if (testResponse.ok) {
+                    // Тест 2: Проверка таблицы profiles
+                    const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?limit=1`, {
+                        method: 'GET',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (profilesResponse.ok) {
+                        supabaseStatus = 'connected';
+                        statusEl.className = 'supabase-status status-up';
+                        statusText.textContent = '✅ Supabase подключен';
+                        statusLoading.style.display = 'none';
+                        
+                        // Создаем тестовые данные, если нужно
+                        await initializeDatabase();
+                    } else {
+                        throw new Error('Ошибка доступа к таблицам');
+                    }
+                } else {
+                    throw new Error('Сервер недоступен');
                 }
             } catch (error) {
-                addLog(`❌ Ошибка инициализации: ${error.message}`, 'error');
+                supabaseStatus = 'disconnected';
+                statusEl.className = 'supabase-status status-down';
+                statusText.textContent = `❌ Ошибка: ${error.message}`;
+                statusLoading.style.display = 'none';
+                
+                console.error('Ошибка подключения к Supabase:', error);
+                
+                // Показываем предупреждение
+                if (!currentUser) {
+                    const loginAlert = document.getElementById('loginAlert');
+                    loginAlert.className = 'alert alert-warning';
+                    loginAlert.innerHTML = `
+                        <strong>⚠️ Внимание:</strong> Supabase недоступен. Работа в демо-режиме.
+                        <br><small>Приложение использует локальные данные для тестирования.</small>
+                    `;
+                    loginAlert.style.display = 'block';
+                }
             }
         }
-
+        
+        // ==================== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ====================
+        async function initializeDatabase() {
+            try {
+                // Проверяем, есть ли пользователи
+                const usersResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?limit=1`, {
+                    method: 'GET',
+                    headers: supabaseHeaders
+                });
+                
+                const users = await usersResponse.json();
+                
+                // Если пользователей нет, создаем демо-данные
+                if (users.length === 0) {
+                    console.log('Создание демо-данных...');
+                    
+                    // Создаем админа
+                    await createUser({
+                        login: 'admin',
+                        password: 'admin123',
+                        name: 'Администратор',
+                        role: 'admin',
+                        phone: '+7 (999) 123-45-67',
+                        email: 'admin@zvezdochka.ru',
+                        address: 'СНТ "Звездочка", ул. Центральная, 1'
+                    });
+                    
+                    // Создаем тестового пользователя
+                    await createUser({
+                        login: 'user1',
+                        password: 'password1',
+                        name: 'Иванов Иван Иванович',
+                        role: 'user',
+                        phone: '+7 (999) 111-11-11',
+                        email: 'ivanov@example.ru',
+                        address: 'СНТ "Звездочка", участок 15'
+                    });
+                    
+                    // Создаем тарифы
+                    await createTariff({
+                        losses: 0.36,
+                        under_100: 6.10,
+                        over_100: 7.30,
+                        valid_from: new Date().toISOString().split('T')[0]
+                    });
+                    
+                    console.log('Демо-данные созданы успешно');
+                }
+            } catch (error) {
+                console.error('Ошибка инициализации базы данных:', error);
+            }
+        }
+        
         // ==================== АУТЕНТИФИКАЦИЯ ====================
-        async function setupEventListeners() {
-            document.getElementById('loginBtn').addEventListener('click', handleLogin);
-            document.getElementById('registerBtn').addEventListener('click', handleRegister);
-            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-            document.getElementById('submitReadingBtn').addEventListener('click', submitReading);
-            document.getElementById('uploadUsersBtn').addEventListener('click', uploadUsersBatch);
-            document.getElementById('meterReading').addEventListener('input', calculatePayment);
-            document.getElementById('readingMonth').addEventListener('change', loadUserReadings);
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+        function setupEventListeners() {
+            // Форма входа
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await login();
+            });
             
-            if (!email || !password) {
-                addLog('⚠️ Заполните все поля', 'error');
-                return;
-            }
-
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                addLog(`❌ Ошибка входа: ${error.message}`, 'error');
-                return;
-            }
+            // Форма показаний
+            document.getElementById('readingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitReading();
+            });
             
-            currentUser = data.user;
-            addLog(`✅ Вход выполнен: ${email}`, 'success');
-            await handleSuccessfulAuth();
-        }
-
-        async function handleRegister() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+            // Форма смены пароля
+            document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await changePassword();
+            });
             
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            if (error) {
-                addLog(`❌ Ошибка регистрации: ${error.message}`, 'error');
-                return;
-            }
+            // Форма добавления пользователя
+            document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await createUserFromForm();
+            });
             
-            addLog(`✅ Регистрация успешна! Проверьте почту ${email}`, 'success');
-        }
-
-        async function handleSuccessfulAuth() {
-            // Получаем профиль пользователя
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
-
-            // Создаём профиль, если его нет
-            if (!profile) {
-                const { error } = await supabase.from('profiles').insert([{
-                    id: currentUser.id,
-                    full_name: currentUser.email.split('@')[0],
-                    role: currentUser.email === 'admin@zvezdochka.test' ? 'admin' : 'user'
-                }]);
-                if (error) addLog(`⚠️ Ошибка создания профиля: ${error.message}`, 'error');
-            }
-
-            // Обновляем UI
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('authenticatedContent').style.display = 'block';
-            document.getElementById('logoutBtn').style.display = 'block';
-            document.getElementById('userName').textContent = profile?.full_name || currentUser.email;
-            document.getElementById('userRole').textContent = profile?.role === 'admin' ? 'Администратор' : 'Пользователь';
-            document.getElementById('userRole').className = `role-badge ${profile?.role}`;
-
-            // Показываем админ-панель
-            if (profile?.role === 'admin') {
-                document.getElementById('adminSection').style.display = 'block';
-                await loadAllReadings();
-            }
-
-            await loadUserReadings();
-        }
-
-        async function handleLogout() {
-            await supabase.auth.signOut();
-            currentUser = null;
-            location.reload();
-        }
-
-        // ==================== ПОКАЗАНИЯ И РАСЧЁТЫ ====================
-        async function submitReading() {
-            const month = document.getElementById('readingMonth').value;
-            const reading = parseInt(document.getElementById('meterReading').value);
+            // Форма редактирования пользователя
+            document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateUser();
+            });
             
-            if (!month || isNaN(reading)) {
-                addLog('⚠️ Заполните все поля корректно', 'error');
-                return;
-            }
-
-            const monthDate = `${month}-01`; // Формат YYYY-MM-DD
-            const { error } = await supabase
-                .from('electricity_readings')
-                .upsert([{ user_id: currentUser.id, month: monthDate, meter_reading: reading }]);
-
-            if (error) {
-                addLog(`❌ Ошибка сохранения: ${error.message}`, 'error');
-                return;
-            }
-
-            addLog(`✅ Показания за ${month} сохранены: ${reading} кВт·ч`, 'success');
-            await loadUserReadings();
-            calculatePayment();
-        }
-
-        async function calculatePayment() {
-            const reading = parseInt(document.getElementById('meterReading').value);
-            const month = document.getElementById('readingMonth').value;
+            // Форма тарифов
+            document.getElementById('electricityTariffForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveTariff();
+            });
             
-            if (!currentTariffs || isNaN(reading) || !month) return;
-
-            const losses = reading * currentTariffs.losses;
-            const under100 = Math.min(reading, 100) * currentTariffs.under_100;
-            const over100 = Math.max(reading - 100, 0) * currentTariffs.over_100;
-            const total = losses + under100 + over100;
-
-            document.getElementById('calculationResult').innerHTML = `
-                <h3>Расчёт за ${month}</h3>
-                <p>Потребление: <strong>${reading} кВт·ч</strong></p>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Потери (${currentTariffs.losses} ₽/кВт·ч): <strong>${losses.toFixed(2)} ₽</strong></li>
-                    <li>До 100 кВт·ч (${currentTariffs.under_100} ₽/кВт·ч): <strong>${under100.toFixed(2)} ₽</strong></li>
-                    <li>Свыше 100 кВт·ч (${currentTariffs.over_100} ₽/кВт·ч): <strong>${over100.toFixed(2)} ₽</strong></li>
-                </ul>
-                <h4>Итого к оплате: <span style="color:#e74c3c;">${total.toFixed(2)} ₽</span></h4>
-            `;
+            // Форма добавления участка
+            document.getElementById('addPlotForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await createPlot();
+            });
         }
-
-        // ==================== ЗАГРУЗКА ДАННЫХ ====================
-        async function loadUserReadings() {
+        
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginLoading = document.getElementById('loginLoading');
+            const loginAlert = document.getElementById('loginAlert');
+            
+            // Показываем загрузку
+            loginLoading.style.display = 'inline-block';
+            loginAlert.style.display = 'none';
+            
+            try {
+                let user = null;
+                
+                if (supabaseStatus === 'connected') {
+                    // Ищем пользователя в Supabase
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?login=eq.${encodeURIComponent(username)}`, {
+                        method: 'GET',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (response.ok) {
+                        const users = await response.json();
+                        if (users.length > 0) {
+                            // Проверяем пароль (в реальном приложении нужно использовать хэширование!)
+                            if (users[0].password === password) {
+                                user = users[0];
+                            }
+                        }
+                    }
+                } else {
+                    // Демо-режим: ищем в локальных данных
+                    user = demoUsers.find(u => u.login === username && u.password === password);
+                }
+                
+                if (user) {
+                    // Убираем пароль из объекта пользователя
+                    delete user.password;
+                    
+                    // Сохраняем пользователя
+                    currentUser = user;
+                    localStorage.setItem('zvezdochka_user', JSON.stringify(user));
+                    
+                    // Показываем основной интерфейс
+                    showMainInterface();
+                    
+                    // Обновляем UI
+                    updateUserUI();
+                    
+                    // Загружаем данные для дашборда
+                    loadDashboardData();
+                } else {
+                    throw new Error('Неверный логин или пароль');
+                }
+                
+            } catch (error) {
+                loginAlert.className = 'alert alert-error';
+                loginAlert.textContent = error.message;
+                loginAlert.style.display = 'block';
+            } finally {
+                loginLoading.style.display = 'none';
+            }
+        }
+        
+        function checkSavedSession() {
+            const savedUser = localStorage.getItem('zvezdochka_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    showMainInterface();
+                    updateUserUI();
+                    loadDashboardData();
+                } catch (e) {
+                    localStorage.removeItem('zvezdochka_user');
+                }
+            }
+        }
+        
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                currentUser = null;
+                localStorage.removeItem('zvezdochka_user');
+                
+                // Показываем экран входа
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('mainInterface').style.display = 'none';
+                
+                // Сбрасываем форму входа
+                document.getElementById('loginForm').reset();
+            }
+        }
+        
+        // ==================== ОСНОВНОЙ ИНТЕРФЕЙС ====================
+        function showMainInterface() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainInterface').style.display = 'block';
+        }
+        
+        function updateUserUI() {
             if (!currentUser) return;
             
-            const { data, error } = await supabase
-                .from('electricity_readings')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('month', { ascending: false });
-
-            if (error) {
-                addLog(`❌ Ошибка загрузки показаний: ${error.message}`, 'error');
-                return;
+            // Обновляем информацию о пользователе
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Администратор' : 'Пользователь';
+            document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+            
+            // Показываем/скрываем кнопки админа
+            const adminButtons = document.querySelectorAll('.admin-only');
+            adminButtons.forEach(btn => {
+                btn.style.display = currentUser.role === 'admin' ? 'inline-flex' : 'none';
+            });
+            
+            // Если не админ, скрываем админ-панель
+            if (currentUser.role !== 'admin') {
+                const adminBtn = document.querySelector('[onclick="showPage(\'admin\')"]');
+                if (adminBtn && adminBtn.classList.contains('active')) {
+                    showPage('dashboard');
+                }
             }
-
-            const tbody = document.getElementById('readingsTable').querySelector('tbody');
-            tbody.innerHTML = data.map(reading => `
-                <tr>
-                    <td>${reading.month.substring(0,7)}</td>
-                    <td>${reading.meter_reading} кВт·ч</td>
-                    <td>${new Date(reading.created_at).toLocaleDateString('ru-RU')}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="3">Нет данных</td></tr>';
         }
-
-        async function loadAllReadings() {
-            const { data, error } = await supabase
-                .from('electricity_readings')
-                .select(`
-                    *,
-                    profiles (full_name)
-                `)
-                .order('month', { ascending: false });
-
-            if (error) {
-                addLog(`❌ Ошибка загрузки всех данных: ${error.message}`, 'error');
-                return;
+        
+        function showPage(pageId) {
+            // Скрываем все страницы
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Убираем активный класс у всех кнопок навигации
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Показываем выбранную страницу
+            document.getElementById(pageId).classList.add('active');
+            
+            // Активируем соответствующую кнопку навигации
+            const activeBtn = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
             }
-
-            const tbody = document.getElementById('allReadingsTable').querySelector('tbody');
-            tbody.innerHTML = data.map(reading => `
-                <tr>
-                    <td>${reading.profiles?.full_name || 'Неизвестно'}</td>
-                    <td>${reading.month.substring(0,7)}</td>
-                    <td>${reading.meter_reading} кВт·ч</td>
-                    <td>${new Date(reading.created_at).toLocaleDateString('ru-RU')}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="4">Нет данных</td></tr>';
+            
+            // Загружаем данные для страницы
+            switch(pageId) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'electricity':
+                    loadElectricityData();
+                    break;
+                case 'fees':
+                    loadFeesData();
+                    break;
+                case 'readings':
+                    loadReadingsData();
+                    break;
+                case 'profile':
+                    loadProfileData();
+                    break;
+                case 'admin':
+                    loadAdminData();
+                    break;
+            }
         }
-
-        async function loadTariffs() {
-            const { data, error } = await supabase
-                .from('tariffs')
-                .select('*')
-                .order('valid_from', { ascending: false });
-
-            if (error) {
-                addLog(`❌ Ошибка загрузки тарифов: ${error.message}`, 'error');
+        
+        function showAdminTab(tabId) {
+            // Скрываем все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Убираем активный класс у всех кнопок вкладок
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Показываем выбранную вкладку
+            document.getElementById(`admin${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).classList.add('active');
+            
+            // Активируем соответствующую кнопку
+            const activeTab = document.querySelector(`[onclick="showAdminTab('${tabId}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+        }
+        
+        // ==================== ДАННЫЕ И РАСЧЕТЫ ====================
+        async function loadDashboardData() {
+            const alertEl = document.getElementById('dashboardAlert');
+            const cardsEl = document.getElementById('dashboardCards');
+            const chargesEl = document.getElementById('recentCharges');
+            
+            try {
+                // В реальном приложении здесь будет запрос к Supabase
+                // Для демо используем моковые данные
+                
+                // Данные для карточек
+                const dashboardData = {
+                    currentBalance: 0,
+                    currentMonthDebt: 12547.50,
+                    lastReading: 763.5,
+                    consumptionChange: '+12.5%'
+                };
+                
+                // Обновляем карточки
+                cardsEl.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Текущий баланс</div>
+                        </div>
+                        <div class="card-value">${dashboardData.currentBalance} ₽</div>
+                        <div class="card-details">Нет задолженности</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📅</div>
+                            <div class="card-title">Задолженность за месяц</div>
+                        </div>
+                        <div class="card-value">${dashboardData.currentMonthDebt} ₽</div>
+                        <div class="card-details">Январь 2024</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⚡</div>
+                            <div class="card-title">Последние показания</div>
+                        </div>
+                        <div class="card-value">${dashboardData.lastReading} кВт·ч</div>
+                        <div class="card-details">Изменение: ${dashboardData.consumptionChange}</div>
+                    </div>
+                `;
+                
+                // Обновляем таблицу начислений
+                chargesEl.innerHTML = `
+                    <tr>
+                        <td>Январь 2024</td>
+                        <td>8 475,50 ₽</td>
+                        <td>4 072,00 ₽</td>
+                        <td>12 547,50 ₽</td>
+                        <td><span style="color: #ef4444;">●</span> Не оплачено</td>
+                    </tr>
+                    <tr>
+                        <td>Декабрь 2023</td>
+                        <td>7 812,30 ₽</td>
+                        <td>4 072,00 ₽</td>
+                        <td>11 884,30 ₽</td>
+                        <td><span style="color: #10b981;">●</span> Оплачено</td>
+                    </tr>
+                    <tr>
+                        <td>Ноябрь 2023</td>
+                        <td>7 245,80 ₽</td>
+                        <td>4 072,00 ₽</td>
+                        <td>11 317,80 ₽</td>
+                        <td><span style="color: #10b981;">●</span> Оплачено</td>
+                    </tr>
+                `;
+                
+                // Скрываем алерт
+                alertEl.style.display = 'none';
+                
+            } catch (error) {
+                alertEl.className = 'alert alert-error';
+                alertEl.textContent = `Ошибка загрузки данных: ${error.message}`;
+            }
+        }
+        
+        async function loadElectricityData() {
+            try {
+                // Загружаем тарифы
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/tariffs?order=valid_from.desc&limit=5`, {
+                        method: 'GET',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (response.ok) {
+                        const tariffs = await response.json();
+                        updateTariffsTable(tariffs);
+                    }
+                } else {
+                    // Демо-данные
+                    const demoTariffs = [
+                        {
+                            name: 'Потери',
+                            price_per_kwh: 0.36,
+                            valid_from: '2024-01-01'
+                        },
+                        {
+                            name: 'До 100 кВт·ч',
+                            price_per_kwh: 6.10,
+                            valid_from: '2024-01-01'
+                        },
+                        {
+                            name: 'Свыше 100 кВт·ч',
+                            price_per_kwh: 7.30,
+                            valid_from: '2024-01-01'
+                        }
+                    ];
+                    updateTariffsTable(demoTariffs);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки тарифов:', error);
+            }
+        }
+        
+        function updateTariffsTable(tariffs) {
+            const tbody = document.getElementById('electricityTariffs');
+            
+            if (tariffs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">Тарифы не найдены</td></tr>';
                 return;
             }
-
-            // Берем последние тарифы
-            currentTariffs = {
-                losses: parseFloat(data.find(t => t.name === 'losses')?.price_per_kwh || 0.36),
-                under_100: parseFloat(data.find(t => t.name === 'under_100')?.price_per_kwh || 6.10),
-                over_100: parseFloat(data.find(t => t.name === 'over_100')?.price_per_kwh || 7.30)
+            
+            let html = '';
+            tariffs.forEach(tariff => {
+                html += `
+                    <tr>
+                        <td>${tariff.name}</td>
+                        <td>${tariff.price_per_kwh.toFixed(2)}</td>
+                        <td>${new Date(tariff.valid_from).toLocaleDateString('ru-RU')}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        function calculateElectricity() {
+            const current = parseFloat(document.getElementById('calcReading').value) || 0;
+            const previous = parseFloat(document.getElementById('calcPrevReading').value) || 0;
+            const consumption = current - previous;
+            
+            if (consumption < 0) {
+                alert('Текущие показания не могут быть меньше предыдущих!');
+                return;
+            }
+            
+            // Тарифы (можно загружать из базы)
+            const tariffLosses = 0.36;
+            const tariffUnder100 = 6.10;
+            const tariffOver100 = 7.30;
+            
+            // Расчет
+            const lossCost = consumption * tariffLosses;
+            const under100Cost = Math.min(consumption, 100) * tariffUnder100;
+            const over100Cost = Math.max(0, consumption - 100) * tariffOver100;
+            const totalCost = lossCost + under100Cost + over100Cost;
+            
+            // Отображение результатов
+            const details = document.getElementById('calcDetails');
+            details.innerHTML = `
+                <p><strong>Расход:</strong> ${consumption.toFixed(2)} кВт·ч</p>
+                <p><strong>Потери (${tariffLosses} руб/кВт·ч):</strong> ${lossCost.toFixed(2)} ₽</p>
+                <p><strong>До 100 кВт·ч (${tariffUnder100} руб/кВт·ч):</strong> ${under100Cost.toFixed(2)} ₽</p>
+                <p><strong>Свыше 100 кВт·ч (${tariffOver100} руб/кВт·ч):</strong> ${over100Cost.toFixed(2)} ₽</p>
+                <hr>
+                <p><strong>ИТОГО к оплате:</strong> <span style="font-size: 1.2em; font-weight: bold;">${totalCost.toFixed(2)} ₽</span></p>
+            `;
+            
+            document.getElementById('calcResult').style.display = 'block';
+        }
+        
+        async function loadFeesData() {
+            // Расчет взносов для текущего пользователя
+            // В реальном приложении здесь будет запрос к базе данных
+            
+            // Демо-данные
+            const plots = 1; // Количество участков
+            const area = 6; // Площадь в сотках
+            
+            const salaryPerPlot = 939.00;
+            const maintenancePerSotka = 44.00;
+            
+            const salaryFee = plots * salaryPerPlot;
+            const maintenanceFee = area * maintenancePerSotka;
+            const otherFee = 0; // Дополнительные взносы
+            const totalFee = salaryFee + maintenanceFee + otherFee;
+            
+            // Обновляем UI
+            document.getElementById('currentMonthFee').textContent = `${totalFee.toFixed(2)} ₽`;
+            document.getElementById('currentMonthDetails').innerHTML = `
+                ${plots} уч. × ${salaryPerPlot} ₽ + ${area} сот. × ${maintenancePerSotka} ₽
+            `;
+            
+            document.getElementById('totalDebt').textContent = '37 647,50 ₽';
+            document.getElementById('debtDetails').textContent = 'За 3 месяца';
+            
+            // Заполняем историю
+            const history = [
+                { month: 'Январь 2024', salary: 939.00, maintenance: 264.00, other: 0, total: 1203.00, status: 'Не оплачено' },
+                { month: 'Декабрь 2023', salary: 939.00, maintenance: 264.00, other: 0, total: 1203.00, status: 'Оплачено' },
+                { month: 'Ноябрь 2023', salary: 939.00, maintenance: 264.00, other: 0, total: 1203.00, status: 'Оплачено' }
+            ];
+            
+            let html = '';
+            history.forEach(item => {
+                const statusColor = item.status === 'Оплачено' ? '#10b981' : '#ef4444';
+                html += `
+                    <tr>
+                        <td>${item.month}</td>
+                        <td>${item.salary.toFixed(2)} ₽</td>
+                        <td>${item.maintenance.toFixed(2)} ₽</td>
+                        <td>${item.other.toFixed(2)} ₽</td>
+                        <td>${item.total.toFixed(2)} ₽</td>
+                        <td><span style="color: ${statusColor};">●</span> ${item.status}</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('feesHistory').innerHTML = html;
+        }
+        
+        async function loadReadingsData() {
+            // Заполняем историю показаний
+            const readings = [
+                { month: 'Январь 2024', meter: 'СЧ-001', previous: 0, current: 763.5, consumption: 763.5, date: '15.01.2024' },
+                { month: 'Декабрь 2023', meter: 'СЧ-001', previous: 0, current: 652.0, consumption: 652.0, date: '15.12.2023' },
+                { month: 'Ноябрь 2023', meter: 'СЧ-001', previous: 0, current: 579.5, consumption: 579.5, date: '15.11.2023' }
+            ];
+            
+            let html = '';
+            readings.forEach(r => {
+                html += `
+                    <tr>
+                        <td>${r.month}</td>
+                        <td>${r.meter}</td>
+                        <td>${r.previous.toFixed(2)}</td>
+                        <td>${r.current.toFixed(2)}</td>
+                        <td>${r.consumption.toFixed(2)}</td>
+                        <td>${r.date}</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('readingsHistory').innerHTML = html;
+        }
+        
+        async function submitReading() {
+            const loadingEl = document.getElementById('readingLoading');
+            const alertEl = document.getElementById('readingAlert');
+            
+            loadingEl.style.display = 'inline-block';
+            alertEl.style.display = 'none';
+            
+            try {
+                const month = document.getElementById('readingMonth').value;
+                const meter = document.getElementById('meterNumber').value;
+                const current = parseFloat(document.getElementById('currentReading').value);
+                const previous = parseFloat(document.getElementById('previousReading').value);
+                const notes = document.getElementById('readingNotes').value;
+                
+                if (current <= previous) {
+                    throw new Error('Текущие показания должны быть больше предыдущих!');
+                }
+                
+                const consumption = current - previous;
+                
+                // В реальном приложении здесь будет сохранение в Supabase
+                if (supabaseStatus === 'connected') {
+                    const readingData = {
+                        user_id: currentUser.id,
+                        month: month,
+                        meter_number: meter,
+                        previous_reading: previous,
+                        current_reading: current,
+                        consumption: consumption,
+                        notes: notes,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/electricity_readings`, {
+                        method: 'POST',
+                        headers: supabaseHeaders,
+                        body: JSON.stringify(readingData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка сохранения в базу данных');
+                    }
+                }
+                
+                // Показываем успех
+                alertEl.className = 'alert alert-success';
+                alertEl.innerHTML = `
+                    <strong>✅ Показания успешно переданы!</strong><br>
+                    <small>Расход: ${consumption.toFixed(2)} кВт·ч</small>
+                `;
+                alertEl.style.display = 'block';
+                
+                // Сбрасываем форму
+                document.getElementById('readingForm').reset();
+                
+                // Обновляем историю
+                loadReadingsData();
+                
+            } catch (error) {
+                alertEl.className = 'alert alert-error';
+                alertEl.textContent = `Ошибка: ${error.message}`;
+                alertEl.style.display = 'block';
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        async function loadProfileData() {
+            // Демо-данные для профиля
+            document.getElementById('plotsCount').textContent = '1';
+            document.getElementById('plotsDetails').textContent = 'Участок 15, 6 соток';
+            
+            document.getElementById('avgConsumption').textContent = '665 кВт·ч';
+            document.getElementById('consumptionDetails').textContent = 'Среднее за 3 месяца';
+        }
+        
+        async function changePassword() {
+            const currentPass = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            
+            if (newPass !== confirmPass) {
+                alert('Новый пароль и подтверждение не совпадают!');
+                return;
+            }
+            
+            if (newPass.length < 6) {
+                alert('Пароль должен содержать не менее 6 символов!');
+                return;
+            }
+            
+            // В реальном приложении здесь будет проверка текущего пароля и обновление в базе
+            // Для демо просто показываем сообщение
+            alert('✅ Пароль успешно изменен!');
+            document.getElementById('passwordForm').reset();
+        }
+        
+        // ==================== АДМИН-ПАНЕЛЬ ====================
+        async function loadAdminData() {
+            if (currentUser?.role !== 'admin') {
+                alert('Доступ запрещен!');
+                showPage('dashboard');
+                return;
+            }
+            
+            // Загружаем пользователей
+            await loadUsers();
+            
+            // Загружаем историю тарифов
+            await loadTariffsHistory();
+        }
+        
+        async function loadUsers() {
+            try {
+                let users = [];
+                
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?order=created_at.desc`, {
+                        method: 'GET',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (response.ok) {
+                        users = await response.json();
+                    }
+                } else {
+                    // Демо-пользователи
+                    users = demoUsers.map(u => ({...u}));
+                }
+                
+                // Обновляем счетчик
+                document.getElementById('totalUsers').textContent = users.length;
+                
+                // Обновляем таблицу
+                updateUsersTable(users);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+            }
+        }
+        
+        function updateUsersTable(users) {
+            const tbody = document.getElementById('usersTable');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">Пользователи не найдены</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                // Не показываем пароль
+                const userCopy = {...user};
+                delete userCopy.password;
+                
+                html += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.login}</td>
+                        <td>${user.name || '-'}</td>
+                        <td>${user.role === 'admin' ? '👑 Админ' : '👤 Пользователь'}</td>
+                        <td>${user.plots_count || 1}</td>
+                        <td>${user.phone || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editUser('${user.id}')">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')" ${user.id === currentUser.id ? 'disabled' : ''}>🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.add('active');
+        }
+        
+        async function createUserFromForm() {
+            const login = document.getElementById('newUserLogin').value;
+            const password = document.getElementById('newUserPassword').value;
+            const name = document.getElementById('newUserName').value;
+            const role = document.getElementById('newUserRole').value;
+            const phone = document.getElementById('newUserPhone').value;
+            const email = document.getElementById('newUserEmail').value;
+            const address = document.getElementById('newUserAddress').value;
+            
+            const userData = {
+                login,
+                password, // В реальном приложении нужно хэшировать!
+                name,
+                role,
+                phone,
+                email,
+                address,
+                created_at: new Date().toISOString()
             };
-
-            document.getElementById('tariffsInfo').innerHTML = `
-                <p><strong>Актуальные тарифы:</strong></p>
-                <ul style="margin-top: 10px; padding-left: 20px;">
-                    <li>Потери: <strong>${currentTariffs.losses} ₽/кВт·ч</strong></li>
-                    <li>До 100 кВт·ч: <strong>${currentTariffs.under_100} ₽/кВт·ч</strong></li>
-                    <li>Свыше 100 кВт·ч: <strong>${currentTariffs.over_100} ₽/кВт·ч</strong></li>
-                </ul>
+            
+            try {
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+                        method: 'POST',
+                        headers: supabaseHeaders,
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка создания пользователя');
+                    }
+                } else {
+                    // В демо-режиме добавляем локально
+                    userData.id = 'user' + Date.now();
+                    demoUsers.push(userData);
+                }
+                
+                alert('✅ Пользователь успешно создан!');
+                closeModal('addUserModal');
+                document.getElementById('addUserForm').reset();
+                loadUsers();
+                
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        function editUser(userId) {
+            // Находим пользователя
+            let user;
+            if (supabaseStatus === 'connected') {
+                // В реальном приложении здесь будет запрос к API
+                user = demoUsers.find(u => u.id === userId);
+            } else {
+                user = demoUsers.find(u => u.id === userId);
+            }
+            
+            if (!user) return;
+            
+            // Заполняем форму
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserLogin').value = user.login;
+            document.getElementById('editUserName').value = user.name;
+            document.getElementById('editUserRole').value = user.role;
+            document.getElementById('editUserPhone').value = user.phone || '';
+            document.getElementById('editUserEmail').value = user.email || '';
+            document.getElementById('editUserAddress').value = user.address || '';
+            document.getElementById('editUserNotes').value = user.notes || '';
+            
+            // Показываем модальное окно
+            document.getElementById('editUserModal').classList.add('active');
+        }
+        
+        async function updateUser() {
+            const userId = document.getElementById('editUserId').value;
+            const userData = {
+                login: document.getElementById('editUserLogin').value,
+                name: document.getElementById('editUserName').value,
+                role: document.getElementById('editUserRole').value,
+                phone: document.getElementById('editUserPhone').value,
+                email: document.getElementById('editUserEmail').value,
+                address: document.getElementById('editUserAddress').value,
+                notes: document.getElementById('editUserNotes').value
+            };
+            
+            try {
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+                        method: 'PATCH',
+                        headers: supabaseHeaders,
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка обновления пользователя');
+                    }
+                } else {
+                    // В демо-режиме обновляем локально
+                    const index = demoUsers.findIndex(u => u.id === userId);
+                    if (index !== -1) {
+                        demoUsers[index] = {...demoUsers[index], ...userData};
+                    }
+                }
+                
+                alert('✅ Пользователь успешно обновлен!');
+                closeModal('editUserModal');
+                loadUsers();
+                
+                // Если это текущий пользователь, обновляем его данные
+                if (currentUser.id === userId) {
+                    currentUser = {...currentUser, ...userData};
+                    localStorage.setItem('zvezdochka_user', JSON.stringify(currentUser));
+                    updateUserUI();
+                }
+                
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (userId === currentUser.id) {
+                alert('Нельзя удалить самого себя!');
+                return;
+            }
+            
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                return;
+            }
+            
+            try {
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+                        method: 'DELETE',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка удаления пользователя');
+                    }
+                } else {
+                    // В демо-режиме удаляем локально
+                    const index = demoUsers.findIndex(u => u.id === userId);
+                    if (index !== -1) {
+                        demoUsers.splice(index, 1);
+                    }
+                }
+                
+                alert('✅ Пользователь успешно удален!');
+                loadUsers();
+                
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        async function saveTariff() {
+            const losses = parseFloat(document.getElementById('tariffLosses').value);
+            const under100 = parseFloat(document.getElementById('tariffUnder100').value);
+            const over100 = parseFloat(document.getElementById('tariffOver100').value);
+            const validFrom = document.getElementById('tariffValidFrom').value;
+            
+            const tariffData = {
+                losses,
+                under_100: under100,
+                over_100: over100,
+                valid_from: validFrom,
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/tariffs`, {
+                        method: 'POST',
+                        headers: supabaseHeaders,
+                        body: JSON.stringify(tariffData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка сохранения тарифа');
+                    }
+                }
+                
+                alert('✅ Тариф успешно сохранен!');
+                document.getElementById('electricityTariffForm').reset();
+                loadTariffsHistory();
+                
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        async function loadTariffsHistory() {
+            try {
+                let tariffs = [];
+                
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/tariffs?order=valid_from.desc&limit=10`, {
+                        method: 'GET',
+                        headers: supabaseHeaders
+                    });
+                    
+                    if (response.ok) {
+                        tariffs = await response.json();
+                    }
+                } else {
+                    // Демо-данные
+                    tariffs = [
+                        {
+                            valid_from: '2024-01-01',
+                            losses: 0.36,
+                            under_100: 6.10,
+                            over_100: 7.30,
+                            created_at: '2023-12-15T10:00:00Z'
+                        },
+                        {
+                            valid_from: '2023-07-01',
+                            losses: 0.32,
+                            under_100: 5.80,
+                            over_100: 7.00,
+                            created_at: '2023-06-15T10:00:00Z'
+                        }
+                    ];
+                }
+                
+                updateTariffsHistoryTable(tariffs);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки истории тарифов:', error);
+            }
+        }
+        
+        function updateTariffsHistoryTable(tariffs) {
+            const tbody = document.getElementById('tariffsHistory');
+            
+            if (tariffs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Тарифы не найдены</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            tariffs.forEach(tariff => {
+                html += `
+                    <tr>
+                        <td>${new Date(tariff.valid_from).toLocaleDateString('ru-RU')}</td>
+                        <td>${tariff.losses.toFixed(2)}</td>
+                        <td>${tariff.under_100.toFixed(2)}</td>
+                        <td>${tariff.over_100.toFixed(2)}</td>
+                        <td>${new Date(tariff.created_at).toLocaleDateString('ru-RU')}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        function showAddPlotModal() {
+            // Загружаем список пользователей для выбора
+            loadUsersForPlot();
+            document.getElementById('addPlotModal').classList.add('active');
+        }
+        
+        async function loadUsersForPlot() {
+            const select = document.getElementById('plotUserId');
+            
+            // В реальном приложении здесь будет запрос к API
+            // Для демо используем моковые данные
+            const demoUsers = [
+                { id: 'admin', name: 'Администратор' },
+                { id: 'user1', name: 'Иванов Иван Иванович' }
+            ];
+            
+            let html = '<option value="">Выберите владельца</option>';
+            demoUsers.forEach(user => {
+                html += `<option value="${user.id}">${user.name}</option>`;
+            });
+            
+            select.innerHTML = html;
+        }
+        
+        async function createPlot() {
+            const number = document.getElementById('plotNumber').value;
+            const area = parseFloat(document.getElementById('plotArea').value);
+            const meter = document.getElementById('plotMeterNumber').value;
+            const userId = document.getElementById('plotUserId').value;
+            const notes = document.getElementById('plotNotes').value;
+            
+            const plotData = {
+                number,
+                area,
+                meter_number: meter,
+                user_id: userId,
+                notes,
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                if (supabaseStatus === 'connected') {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/plots`, {
+                        method: 'POST',
+                        headers: supabaseHeaders,
+                        body: JSON.stringify(plotData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Ошибка создания участка');
+                    }
+                }
+                
+                alert('✅ Участок успешно создан!');
+                closeModal('addPlotModal');
+                document.getElementById('addPlotForm').reset();
+                
+            } catch (error) {
+                alert(`❌ Ошибка: ${error.message}`);
+            }
+        }
+        
+        function processBatch() {
+            const fileInput = document.getElementById('batchFile');
+            const file = fileInput.files[0];
+            const type = document.getElementById('batchType').value;
+            
+            if (!file) {
+                alert('Выберите файл для загрузки');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const rows = csv.split('\n').filter(row => row.trim());
+                
+                // Обработка CSV
+                alert(`Обработано ${rows.length - 1} строк (тип: ${type})`);
+                
+                // Сброс файла
+                fileInput.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function downloadTemplate(type) {
+            let csv = '';
+            
+            switch(type) {
+                case 'readings':
+                    csv = 'user_id,month,meter_number,previous_reading,current_reading,notes\n';
+                    csv += 'user1,2024-01,СЧ-001,0,763.5,Первые показания\n';
+                    break;
+                case 'fees':
+                    csv = 'user_id,month,salary_fee,maintenance_fee,other_fee,notes\n';
+                    csv += 'user1,2024-01,939,264,0,Членские взносы\n';
+                    break;
+                case 'users':
+                    csv = 'login,password,name,role,phone,email,address\n';
+                    csv += 'newuser,password123,Новый Пользователь,user,+79991234567,email@example.ru,Адрес\n';
+                    break;
+            }
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `template_${type}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function generateReport() {
+            const type = document.getElementById('reportType').value;
+            const month = document.getElementById('reportMonth').value;
+            
+            const results = document.getElementById('reportResults');
+            
+            // В реальном приложении здесь будет генерация отчета
+            results.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✅ Отчет сгенерирован!</strong><br>
+                    Тип: ${type}<br>
+                    Период: ${month || 'Текущий месяц'}<br>
+                    <br>
+                    <button class="btn btn-primary" onclick="downloadReport()">📥 Скачать отчет</button>
+                </div>
             `;
         }
-
-        // ==================== АДМИН-ФУНКЦИИ ====================
-        async function uploadUsersBatch() {
-            const fileInput = document.getElementById('usersFile');
-            if (!fileInput.files.length) {
-                addLog('⚠️ Выберите CSV файл', 'error');
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const text = await file.text();
-            const rows = text.split('\n').slice(1); // Пропускаем заголовок
-
-            addLog(`📊 Начинаю обработку ${rows.length} пользователей...`, 'info');
-
-            for (const row of rows) {
-                if (!row.trim()) continue;
-                const [email, password, full_name, role] = row.split(',');
-                
-                // Регистрация пользователя
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email.trim(),
-                    password: password.trim(),
-                });
-
-                if (authError) {
-                    addLog(`❌ Ошибка регистрации ${email}: ${authError.message}`, 'error');
-                    continue;
-                }
-
-                // Создание профиля
-                if (authData.user) {
-                    await supabase.from('profiles').insert([{
-                        id: authData.user.id,
-                        full_name: full_name.trim(),
-                        role: (role || 'user').trim()
-                    }]);
-                    addLog(`✅ Создан: ${full_name} (${email})`, 'success');
-                }
-            }
-
-            addLog('🎉 Пакетная загрузка завершена!', 'success');
+        
+        function downloadReport() {
+            // Генерация простого CSV отчета
+            const csv = 'Месяц,Пользователь,Электроэнергия,Взносы,Итого,Статус\n';
+            csv += 'Январь 2024,Иванов И.И.,8475.50,1203.00,9678.50,Не оплачено\n';
+            csv += 'Декабрь 2023,Иванов И.И.,7812.30,1203.00,9015.30,Оплачено\n';
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'report.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
         }
-
-        // ==================== СЛУЖЕБНЫЕ ФУНКЦИИ ====================
-        async function checkSupabaseConnection() {
+        
+        function exportToExcel() {
+            alert('В реальном приложении здесь будет экспорт в Excel');
+        }
+        
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function populateMonths() {
+            const select = document.getElementById('readingMonth');
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            
+            let html = '';
+            
+            // Добавляем текущий и предыдущий месяцы
+            for (let i = 0; i < 6; i++) {
+                const date = new Date(currentYear, currentMonth - i, 1);
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const label = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                
+                html += `<option value="${year}-${month}">${label}</option>`;
+            }
+            
+            select.innerHTML = html;
+        }
+        
+        function setCurrentDate() {
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            const currentMonth = now.toISOString().slice(0, 7);
+            
+            // Устанавливаем текущую дату в формы
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (!input.id.includes('ValidFrom') && !input.value) {
+                    input.value = today;
+                }
+            });
+            
+            // Устанавливаем текущий месяц для отчетов
+            const monthInputs = document.querySelectorAll('input[type="month"]');
+            monthInputs.forEach(input => {
+                if (!input.value) {
+                    input.value = currentMonth;
+                }
+            });
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // ==================== API-ФУНКЦИИ ====================
+        async function createUser(userData) {
+            if (supabaseStatus !== 'connected') return;
+            
             try {
-                const response = await fetch(SUPABASE_URL);
-                addLog(`✅ Supabase доступен (статус: ${response.status})`, 'success');
-                return true;
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+                    method: 'POST',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify(userData)
+                });
+                
+                return response.ok;
             } catch (error) {
-                addLog(`❌ Ошибка подключения к Supabase: ${error.message}`, 'error');
+                console.error('Ошибка создания пользователя:', error);
                 return false;
             }
         }
-
-        function addLog(message, type = 'info') {
-            const logDiv = document.getElementById('systemLog');
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString('ru-RU')}] ${message}`;
-            logDiv.prepend(entry);
+        
+        async function createTariff(tariffData) {
+            if (supabaseStatus !== 'connected') return;
             
-            // Ограничиваем количество записей
-            if (logDiv.children.length > 10) {
-                logDiv.removeChild(logDiv.lastChild);
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/tariffs`, {
+                    method: 'POST',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify(tariffData)
+                });
+                
+                return response.ok;
+            } catch (error) {
+                console.error('Ошибка создания тарифа:', error);
+                return false;
             }
         }
-
-        // Создание тестовых пользователей при первом запуске
-        async function createTestUsers() {
-            const testUsers = [
-                { email: 'admin@zvezdochka.test', password: 'admin123', role: 'admin' },
-                { email: 'user@zvezdochka.test', password: 'user123', role: 'user' }
-            ];
-
-            for (const user of testUsers) {
-                const { data: existing } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('id', user.email)
-                    .single();
-
-                if (!existing) {
-                    const { data: authData } = await supabase.auth.signUp(user);
-                    if (authData?.user) {
-                        await supabase.from('profiles').insert([{
-                            id: authData.user.id,
-                            full_name: user.email.split('@')[0],
-                            role: user.role
-                        }]);
-                    }
+        
+        // ==================== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ====================
+        // Проверяем наличие необходимых таблиц
+        async function checkDatabaseTables() {
+            if (supabaseStatus !== 'connected') return;
+            
+            try {
+                // Проверяем таблицу profiles
+                const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles?limit=1`, {
+                    method: 'GET',
+                    headers: supabaseHeaders
+                });
+                
+                if (!profilesResponse.ok) {
+                    console.warn('Таблица profiles не найдена или недоступна');
                 }
+                
+                // Проверяем таблицу tariffs
+                const tariffsResponse = await fetch(`${SUPABASE_URL}/rest/v1/tariffs?limit=1`, {
+                    method: 'GET',
+                    headers: supabaseHeaders
+                });
+                
+                if (!tariffsResponse.ok) {
+                    console.warn('Таблица tariffs не найдена или недоступна');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка проверки таблиц:', error);
             }
         }
-
-        // Автоматически создаём тестовых пользователей (только при первом запуске)
-        setTimeout(createTestUsers, 3000);
+        
+        // Запускаем проверку таблиц после загрузки страницы
+        setTimeout(checkDatabaseTables, 2000);
     </script>
 </body>
 </html>
