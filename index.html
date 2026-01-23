@@ -233,23 +233,25 @@
         </section>
     </div>
 
-    <script>
-        // ================= КОНФИГУРАЦИЯ SUPABASE =================
-        const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        // Инициализация клиента Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true
-            }
-        });
+<script>
+    // ================= КОНФИГУРАЦИЯ SUPABASE =================
+    const SUPABASE_URL = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
 
-        // ================= ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =================
-        let currentUser = null;
-        let userRole = 'member';
+    // Инициализация клиента Supabase - ПРАВИЛЬНЫЙ СПОСОБ[citation:6][citation:9]
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        }
+    });
+
+    // ================= ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =================
+    let currentUser = null;
+    let userRole = 'member';
 
         // ================= ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ =================
         document.addEventListener('DOMContentLoaded', async function() {
