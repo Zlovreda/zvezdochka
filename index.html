@@ -17,7 +17,7 @@
         // Функция для отправки тестовых данных
         async function logVisit() {
             const { data, error } = await supabaseClient
-                .from('test_data') // Имя вашей таблицы
+                .from('page_visits') // Имя вашей таблицы
                 .insert([
                     { 
                         some_text: 'Page visited from GitHub repo', 
