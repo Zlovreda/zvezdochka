@@ -1,47 +1,1435 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Supabase Integration</title>
-    <!-- Подключаем клиентскую библиотеку Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script type="text/javascript">
-        // !!! ВАЖНО: ЗАМЕНИТЕ ЭТИ ЗНАЧЕНИЯ НА СВОИ !!!
-        const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co'; // Ваш Project URL
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo'; // Ваш anon/public key
+    <title>Учет электроэнергии - СНТ "Звездочка"</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .meter-reading {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding-top: 20px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .nav-link {
+            color: var(--primary-color);
+            padding: 10px 20px;
+            margin: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: var(--secondary-color);
+            color: white !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-lightning-charge-fill"></i> СНТ "Звездочка"
+            </a>
+            <div id="userMenu"></div>
+        </div>
+    </nav>
 
-        // Создаем клиент Supabase
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+    <!-- Основной контейнер -->
+    <div id="app" class="container-fluid p-0">
+        <!-- Контент будет подгружаться динамически -->
+    </div>
 
-        // Функция для отправки тестовых данных
-        async function logVisit() {
-            const { data, error } = await supabaseClient
-                .from('test_data') // Имя вашей таблицы
-                .insert([
-                    { 
-                        some_text: 'Page visited from GitHub repo', 
-                        user_ip: null // Supabase может получить IP автоматически через контекст, если настроить триггер
+    <!-- Модальные окна -->
+    <div id="modalsContainer"></div>
+
+    <script>
+        // Конфигурация Supabase
+        const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+
+        // Инициализация Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Глобальное состояние приложения
+        const appState = {
+            currentUser: null,
+            currentPage: 'login',
+            currentMeter: null
+        };
+
+        // Главный роутер приложения
+        class AppRouter {
+            constructor() {
+                this.routes = {
+                    'login': this.renderLogin,
+                    'dashboard': this.renderDashboard,
+                    'meters': this.renderMeters,
+                    'readings': this.renderReadings,
+                    'invoices': this.renderInvoices,
+                    'profile': this.renderProfile,
+                    'admin': this.renderAdmin,
+                    'admin-users': this.renderAdminUsers,
+                    'admin-tariffs': this.renderAdminTariffs,
+                    'admin-import': this.renderAdminImport
+                };
+            }
+
+            async navigate(page, params = {}) {
+                appState.currentPage = page;
+                await this.render();
+            }
+
+            async render() {
+                const app = document.getElementById('app');
+                const userMenu = document.getElementById('userMenu');
+                
+                // Проверяем авторизацию
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session && appState.currentPage !== 'login') {
+                    return this.navigate('login');
+                }
+
+                if (session) {
+                    // Загружаем профиль пользователя
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    appState.currentUser = profile;
+                    
+                    // Рендерим меню пользователя
+                    userMenu.innerHTML = `
+                        <div class="navbar-nav ms-auto">
+                            <span class="nav-link">${profile.email}</span>
+                            <button class="btn btn-outline-light" onclick="router.navigate('profile')">
+                                <i class="bi bi-person"></i>
+                            </button>
+                            <button class="btn btn-outline-light" onclick="authService.logout()">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    // Рендерим сайдбар для авторизованных пользователей
+                    if (!document.querySelector('.sidebar')) {
+                        const sidebar = document.createElement('div');
+                        sidebar.className = 'sidebar';
+                        sidebar.innerHTML = this.getSidebar(profile.role);
+                        document.body.appendChild(sidebar);
                     }
+
+                    // Основной контент
+                    if (document.querySelector('.main-content')) {
+                        document.querySelector('.main-content').remove();
+                    }
+                    
+                    const mainContent = document.createElement('div');
+                    mainContent.className = 'main-content';
+                    app.appendChild(mainContent);
+
+                    // Рендерим страницу
+                    const renderFunction = this.routes[appState.currentPage];
+                    if (renderFunction) {
+                        await renderFunction.call(this, mainContent);
+                    }
+                } else {
+                    // Рендерим страницу логина
+                    app.innerHTML = '';
+                    const modals = document.getElementById('modalsContainer');
+                    if (modals) modals.innerHTML = '';
+                    await this.routes['login'](app);
+                }
+            }
+
+            getSidebar(role) {
+                const userMenu = `
+                    <div class="nav flex-column">
+                        <a class="nav-link ${appState.currentPage === 'dashboard' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('dashboard')">
+                            <i class="bi bi-speedometer2"></i> Панель управления
+                        </a>
+                        <a class="nav-link ${appState.currentPage === 'meters' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('meters')">
+                            <i class="bi bi-speedometer"></i> Мои счетчики
+                        </a>
+                        <a class="nav-link ${appState.currentPage === 'readings' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('readings')">
+                            <i class="bi bi-clipboard-data"></i> Передать показания
+                        </a>
+                        <a class="nav-link ${appState.currentPage === 'invoices' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('invoices')">
+                            <i class="bi bi-receipt"></i> Мои счета
+                        </a>
+                    </div>
+                `;
+
+                const adminMenu = role === 'admin' ? `
+                    <hr>
+                    <h6 class="px-3 text-muted">Администрирование</h6>
+                    <div class="nav flex-column">
+                        <a class="nav-link ${appState.currentPage === 'admin-users' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('admin-users')">
+                            <i class="bi bi-people"></i> Пользователи
+                        </a>
+                        <a class="nav-link ${appState.currentPage === 'admin-tariffs' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('admin-tariffs')">
+                            <i class="bi bi-currency-exchange"></i> Тарифы
+                        </a>
+                        <a class="nav-link ${appState.currentPage === 'admin-import' ? 'active' : ''}" 
+                           href="#" onclick="router.navigate('admin-import')">
+                            <i class="bi bi-upload"></i> Импорт/Экспорт
+                        </a>
+                    </div>
+                ` : '';
+
+                return userMenu + adminMenu;
+            }
+
+            // Рендеринг страниц
+            async renderLogin(container) {
+                container.innerHTML = `
+                    <div class="login-container">
+                        <h2 class="text-center mb-4">
+                            <i class="bi bi-lightning-charge-fill text-primary"></i><br>
+                            Вход в систему
+                        </h2>
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Пароль</label>
+                                <input type="password" class="form-control" id="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </button>
+                        </form>
+                        <div class="text-center mt-3">
+                            <a href="#" onclick="showPasswordReset()">Забыли пароль?</a>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('loginForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    
+                    await authService.login(email, password);
+                };
+            }
+
+            async renderDashboard(container) {
+                // Загружаем данные для dashboard
+                const [meters, readings, invoices] = await Promise.all([
+                    supabase.from('meters').select('*').eq('user_id', appState.currentUser.id),
+                    supabase.from('meter_readings').select('*').eq('user_id', appState.currentUser.id)
+                        .order('reading_date', { ascending: false }).limit(5),
+                    supabase.from('invoices').select('*').eq('user_id', appState.currentUser.id)
+                        .order('invoice_date', { ascending: false }).limit(1)
                 ]);
 
-            if (error) {
-                console.error('Error inserting data:', error);
-                document.getElementById('status').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-            } else {
-                console.log('Data inserted successfully:', data);
-                document.getElementById('status').innerHTML = `<p style="color:green;">✅ Test data saved to Supabase successfully! Check your Table Editor.</p>`;
+                container.innerHTML = `
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h2>Добро пожаловать, ${appState.currentUser.full_name || appState.currentUser.email}!</h2>
+                            <p class="text-muted">Панель управления вашими показаниями и счетами</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <i class="bi bi-speedometer display-6"></i>
+                                <h3>${meters.data?.length || 0}</h3>
+                                <p>Счетчиков</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <i class="bi bi-lightning-charge display-6"></i>
+                                <h3>${readings.data?.[0]?.consumption || 0}</h3>
+                                <p>кВт·ч (последние)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                <i class="bi bi-cash display-6"></i>
+                                <h3>${invoices.data?.[0]?.total_amount || 0}₽</h3>
+                                <p>Текущий счет</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <i class="bi bi-calendar-check display-6"></i>
+                                <h3>${new Date().getDate()}</h3>
+                                <p>День месяца</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Последние показания</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${readings.data?.length ? `
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Дата</th>
+                                                        <th>Счетчик</th>
+                                                        <th>Показания</th>
+                                                        <th>Расход</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${readings.data.map(reading => `
+                                                        <tr>
+                                                            <td>${new Date(reading.reading_date).toLocaleDateString()}</td>
+                                                            <td>${reading.meter_id?.slice(0, 8)}...</td>
+                                                            <td>${reading.current_reading}</td>
+                                                            <td>${reading.consumption}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ` : '<p class="text-center text-muted">Нет показаний</p>'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Быстрые действия</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="router.navigate('readings')">
+                                            <i class="bi bi-clipboard-plus"></i> Передать показания
+                                        </button>
+                                        <button class="btn btn-success" onclick="router.navigate('invoices')">
+                                            <i class="bi bi-receipt"></i> Посмотреть счета
+                                        </button>
+                                        <button class="btn btn-info" onclick="router.navigate('meters')">
+                                            <i class="bi bi-gear"></i> Управление счетчиками
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Информация об участке</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Количество участков:</strong> ${appState.currentUser.plots_count}</p>
+                                    <p><strong>Площадь:</strong> ${appState.currentUser.area} соток</p>
+                                    <p><strong>Членские взносы (месяц):</strong> 
+                                        ${(appState.currentUser.plots_count * 939 + appState.currentUser.area * 8.77).toFixed(2)}₽
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async renderMeters(container) {
+                const { data: meters } = await supabase
+                    .from('meters')
+                    .select('*')
+                    .eq('user_id', appState.currentUser.id);
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Мои счетчики</h5>
+                                    <button class="btn btn-primary btn-sm" onclick="showAddMeterModal()">
+                                        <i class="bi bi-plus-circle"></i> Добавить счетчик
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    ${meters?.length ? `
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Номер счетчика</th>
+                                                        <th>Тип</th>
+                                                        <th>Место установки</th>
+                                                        <th>Статус</th>
+                                                        <th>Действия</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${meters.map(meter => `
+                                                        <tr>
+                                                            <td>${meter.meter_number}</td>
+                                                            <td>${meter.meter_type === 'electricity' ? 'Электричество' : meter.meter_type}</td>
+                                                            <td>${meter.location || 'Не указано'}</td>
+                                                            <td>
+                                                                <span class="badge ${meter.is_active ? 'bg-success' : 'bg-secondary'}">
+                                                                    ${meter.is_active ? 'Активен' : 'Неактивен'}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-primary" onclick="editMeter('${meter.id}')">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMeter('${meter.id}')">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-speedometer display-1 text-muted"></i>
+                                            <h4 class="mt-3">Нет счетчиков</h4>
+                                            <p class="text-muted">Добавьте счетчик для передачи показаний</p>
+                                            <button class="btn btn-primary" onclick="showAddMeterModal()">
+                                                <i class="bi bi-plus-circle"></i> Добавить первый счетчик
+                                            </button>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async renderReadings(container) {
+                const { data: meters } = await supabase
+                    .from('meters')
+                    .select('*')
+                    .eq('user_id', appState.currentUser.id)
+                    .eq('is_active', true);
+
+                const today = new Date().toISOString().split('T')[0];
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Передать показания</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="readingForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Выберите счетчик</label>
+                                            <select class="form-select" id="meterSelect" required>
+                                                <option value="">Выберите счетчик...</option>
+                                                ${meters?.map(meter => `
+                                                    <option value="${meter.id}">${meter.meter_number} (${meter.location || 'Без локации'})</option>
+                                                `).join('')}
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Предыдущие показания</label>
+                                                    <input type="number" step="0.01" class="form-control" 
+                                                           id="previousReading" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Текущие показания</label>
+                                                    <input type="number" step="0.01" class="form-control" 
+                                                           id="currentReading" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Дата показаний</label>
+                                            <input type="date" class="form-control" 
+                                                   id="readingDate" value="${today}" required>
+                                        </div>
+                                        
+                                        <div class="meter-reading mb-3">
+                                            <h6 class="text-center">Расчет</h6>
+                                            <div id="calculationResult" class="text-center">
+                                                Выберите счетчик и введите показания
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-check-circle"></i> Отправить показания
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">История показаний</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="readingsHistory">
+                                        Загрузка...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Загружаем историю
+                await this.loadReadingsHistory();
+
+                // Обработчики событий
+                document.getElementById('meterSelect').onchange = async (e) => {
+                    if (e.target.value) {
+                        await this.loadLastReading(e.target.value);
+                    }
+                };
+
+                document.getElementById('currentReading').oninput = (e) => {
+                    this.calculateConsumption();
+                };
+
+                document.getElementById('readingForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    await this.submitReading();
+                };
+            }
+
+            async loadLastReading(meterId) {
+                const { data: lastReading } = await supabase
+                    .from('meter_readings')
+                    .select('*')
+                    .eq('meter_id', meterId)
+                    .order('reading_date', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                const prevInput = document.getElementById('previousReading');
+                prevInput.value = lastReading?.current_reading || 0;
+                
+                this.calculateConsumption();
+            }
+
+            calculateConsumption() {
+                const previous = parseFloat(document.getElementById('previousReading').value) || 0;
+                const current = parseFloat(document.getElementById('currentReading').value) || 0;
+                
+                if (current >= previous) {
+                    const consumption = current - previous;
+                    const resultDiv = document.getElementById('calculationResult');
+                    
+                    // Пример расчета по вашему тарифу
+                    const loss = consumption * 0.036;
+                    let cost = 0;
+                    
+                    if (consumption <= 100) {
+                        cost = consumption * 6.1;
+                    } else {
+                        cost = 100 * 6.1 + (consumption - 100) * 7.3;
+                    }
+                    
+                    const total = loss + cost;
+                    
+                    resultDiv.innerHTML = `
+                        <p><strong>Расход:</strong> ${consumption.toFixed(2)} кВт·ч</p>
+                        <p><strong>Потери (3.6%):</strong> ${loss.toFixed(2)} кВт·ч</p>
+                        <p><strong>Стоимость:</strong> ${total.toFixed(2)} ₽</p>
+                    `;
+                }
+            }
+
+            async submitReading() {
+                const meterId = document.getElementById('meterSelect').value;
+                const previous = document.getElementById('previousReading').value;
+                const current = document.getElementById('currentReading').value;
+                const date = document.getElementById('readingDate').value;
+
+                if (parseFloat(current) <= parseFloat(previous)) {
+                    alert('Текущие показания должны быть больше предыдущих');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('meter_readings')
+                    .insert({
+                        meter_id: meterId,
+                        user_id: appState.currentUser.id,
+                        previous_reading: previous,
+                        current_reading: current,
+                        reading_date: date
+                    });
+
+                if (error) {
+                    alert('Ошибка при сохранении: ' + error.message);
+                } else {
+                    alert('Показания успешно сохранены!');
+                    document.getElementById('readingForm').reset();
+                    await this.loadReadingsHistory();
+                }
+            }
+
+            async loadReadingsHistory() {
+                const { data: readings } = await supabase
+                    .from('meter_readings')
+                    .select(`
+                        *,
+                        meters (meter_number, location)
+                    `)
+                    .eq('user_id', appState.currentUser.id)
+                    .order('reading_date', { ascending: false })
+                    .limit(10);
+
+                const container = document.getElementById('readingsHistory');
+                if (!container) return;
+
+                if (readings?.length) {
+                    container.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Счетчик</th>
+                                        <th>Показания</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${readings.map(r => `
+                                        <tr>
+                                            <td>${new Date(r.reading_date).toLocaleDateString()}</td>
+                                            <td>${r.meters?.meter_number || 'N/A'}</td>
+                                            <td>${r.current_reading}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<p class="text-center text-muted">Нет истории показаний</p>';
+                }
+            }
+
+            async renderInvoices(container) {
+                const { data: invoices } = await supabase
+                    .from('invoices')
+                    .select('*')
+                    .eq('user_id', appState.currentUser.id)
+                    .order('invoice_date', { ascending: false });
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Мои счета</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${invoices?.length ? `
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Дата</th>
+                                                        <th>Электроэнергия</th>
+                                                        <th>Членские (зарплата)</th>
+                                                        <th>Членские (содержание)</th>
+                                                        <th>Целевые 1</th>
+                                                        <th>Целевые 2</th>
+                                                        <th>Итого</th>
+                                                        <th>Статус</th>
+                                                        <th>Действия</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${invoices.map(invoice => `
+                                                        <tr>
+                                                            <td>${new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                                            <td>${invoice.electricity_amount}₽</td>
+                                                            <td>${invoice.membership_salary_amount}₽</td>
+                                                            <td>${invoice.membership_maintenance_amount}₽</td>
+                                                            <td>${invoice.target_1_amount}₽</td>
+                                                            <td>${invoice.target_2_amount}₽</td>
+                                                            <td><strong>${invoice.total_amount}₽</strong></td>
+                                                            <td>
+                                                                <span class="badge ${invoice.is_paid ? 'bg-success' : 'bg-warning'}">
+                                                                    ${invoice.is_paid ? 'Оплачен' : 'Ожидает оплаты'}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-receipt"></i> Квитанция
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div class="row mt-4">
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h6>Общая сумма задолженности:</h6>
+                                                        <h3 class="text-danger">
+                                                            ${invoices.filter(i => !i.is_paid).reduce((sum, i) => sum + i.total_amount, 0)}₽
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h6>Следующий платеж:</h6>
+                                                        <h3 class="text-success">
+                                                            ${(appState.currentUser.plots_count * 939 + appState.currentUser.area * 8.77).toFixed(2)}₽
+                                                        </h3>
+                                                        <small class="text-muted">Членские взносы за ${new Date().toLocaleString('ru', { month: 'long' })}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-receipt display-1 text-muted"></i>
+                                            <h4 class="mt-3">Нет счетов</h4>
+                                            <p class="text-muted">Счета будут сгенерированы в конце месяца</p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async renderProfile(container) {
+                container.innerHTML = `
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Мой профиль</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="profileForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Email</label>
+                                                    <input type="email" class="form-control" 
+                                                           value="${appState.currentUser.email}" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">ФИО</label>
+                                                    <input type="text" class="form-control" id="fullName"
+                                                           value="${appState.currentUser.full_name || ''}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Телефон</label>
+                                                    <input type="tel" class="form-control" id="phone"
+                                                           value="${appState.currentUser.phone || ''}">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Количество участков</label>
+                                                    <input type="number" class="form-control" id="plotsCount"
+                                                           value="${appState.currentUser.plots_count || 1}" min="1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Соток</label>
+                                                    <input type="number" step="0.01" class="form-control" id="area"
+                                                           value="${appState.currentUser.area || 4}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Сменить пароль</label>
+                                            <input type="password" class="form-control" id="newPassword"
+                                                   placeholder="Оставьте пустым, если не нужно менять">
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-circle"></i> Сохранить изменения
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="router.navigate('dashboard')">
+                                                Отмена
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Статистика</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <h3>${appState.currentUser.plots_count * 939}</h3>
+                                            <p class="text-muted">Членские (зарплата)</p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h3>${(appState.currentUser.area * 8.77).toFixed(2)}</h3>
+                                            <p class="text-muted">Членские (содержание)</p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h3>${(appState.currentUser.plots_count * 939 + appState.currentUser.area * 8.77).toFixed(2)}</h3>
+                                            <p class="text-muted">Итого в месяц</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('profileForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    
+                    const updates = {
+                        full_name: document.getElementById('fullName').value,
+                        phone: document.getElementById('phone').value,
+                        plots_count: parseInt(document.getElementById('plotsCount').value),
+                        area: parseFloat(document.getElementById('area').value)
+                    };
+
+                    const newPassword = document.getElementById('newPassword').value;
+                    
+                    try {
+                        // Обновляем профиль
+                        const { error } = await supabase
+                            .from('profiles')
+                            .update(updates)
+                            .eq('id', appState.currentUser.id);
+
+                        if (error) throw error;
+
+                        // Обновляем пароль если нужно
+                        if (newPassword) {
+                            const { error: pwdError } = await supabase.auth.updateUser({
+                                password: newPassword
+                            });
+                            if (pwdError) throw pwdError;
+                        }
+
+                        // Обновляем состояние
+                        appState.currentUser = { ...appState.currentUser, ...updates };
+                        alert('Профиль успешно обновлен!');
+                        router.navigate('dashboard');
+                    } catch (error) {
+                        alert('Ошибка при обновлении: ' + error.message);
+                    }
+                };
+            }
+
+            async renderAdminUsers(container) {
+                const { data: users } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Управление пользователями</h5>
+                                    <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">
+                                        <i class="bi bi-person-plus"></i> Добавить пользователя
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Email</th>
+                                                    <th>ФИО</th>
+                                                    <th>Телефон</th>
+                                                    <th>Участки/Сотки</th>
+                                                    <th>Роль</th>
+                                                    <th>Дата регистрации</th>
+                                                    <th>Действия</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${users?.map(user => `
+                                                    <tr>
+                                                        <td>${user.id.substring(0, 8)}...</td>
+                                                        <td>${user.email}</td>
+                                                        <td>${user.full_name || '-'}</td>
+                                                        <td>${user.phone || '-'}</td>
+                                                        <td>${user.plots_count} / ${user.area}</td>
+                                                        <td>
+                                                            <span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">
+                                                                ${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                                                            </span>
+                                                        </td>
+                                                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-primary" onclick="editUser('${user.id}')">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user.id}')">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async renderAdminTariffs(container) {
+                const { data: tariffs } = await supabase
+                    .from('tariffs')
+                    .select('*')
+                    .order('start_date', { ascending: false });
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Управление тарифами</h5>
+                                    <button class="btn btn-primary btn-sm" onclick="showAddTariffModal()">
+                                        <i class="bi bi-plus-circle"></i> Добавить тариф
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-4">
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <h6>Текущие тарифы</h6>
+                                                    <p class="mb-1"><strong>Электричество:</strong></p>
+                                                    <p class="mb-1">- Потери: 0.036 ₽/кВт·ч</p>
+                                                    <p class="mb-1">- До 100 кВт·ч: 6.10 ₽</p>
+                                                    <p>- Свыше 100 кВт·ч: 7.30 ₽</p>
+                                                    <hr>
+                                                    <p class="mb-1"><strong>Членские взносы:</strong></p>
+                                                    <p class="mb-1">- За участок: 939.00 ₽</p>
+                                                    <p>- За сотку: 8.77 ₽</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Тип</th>
+                                                            <th>Название</th>
+                                                            <th>Значение</th>
+                                                            <th>Начало действия</th>
+                                                            <th>Конец действия</th>
+                                                            <th>Действия</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${tariffs?.map(tariff => `
+                                                            <tr>
+                                                                <td>${tariff.tariff_type}</td>
+                                                                <td>${tariff.name}</td>
+                                                                <td>${tariff.value} ₽</td>
+                                                                <td>${new Date(tariff.start_date).toLocaleDateString()}</td>
+                                                                <td>${tariff.end_date ? new Date(tariff.end_date).toLocaleDateString() : 'Бессрочно'}</td>
+                                                                <td>
+                                                                    <button class="btn btn-sm btn-outline-primary" onclick="editTariff('${tariff.id}')">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async renderAdminImport(container) {
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Импорт данных</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="importForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Тип данных</label>
+                                            <select class="form-select" id="importType">
+                                                <option value="users">Пользователи</option>
+                                                <option value="meters">Счетчики</option>
+                                                <option value="readings">Показания</option>
+                                                <option value="invoices">Счета</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Формат файла</label>
+                                            <select class="form-select" id="importFormat">
+                                                <option value="csv">CSV</option>
+                                                <option value="json">JSON</option>
+                                                <option value="excel">Excel</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Выберите файл</label>
+                                            <input type="file" class="form-control" id="importFile" accept=".csv,.json,.xlsx,.xls">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="updateExisting">
+                                                <label class="form-check-label" for="updateExisting">
+                                                    Обновлять существующие записи
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-upload"></i> Импортировать
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Экспорт данных</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="exportForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Тип данных</label>
+                                            <select class="form-select" id="exportType">
+                                                <option value="all_users">Все пользователи</option>
+                                                <option value="all_meters">Все счетчики</option>
+                                                <option value="all_readings">Все показания</option>
+                                                <option value="all_invoices">Все счета</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Дата с</label>
+                                                <input type="date" class="form-control" id="exportDateFrom">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Дата по</label>
+                                                <input type="date" class="form-control" id="exportDateTo">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Формат</label>
+                                            <select class="form-select" id="exportFormat">
+                                                <option value="csv">CSV</option>
+                                                <option value="json">JSON</option>
+                                                <option value="excel">Excel</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="bi bi-download"></i> Экспортировать
+                                        </button>
+                                    </form>
+                                    
+                                    <hr>
+                                    
+                                    <div class="mt-3">
+                                        <h6>Быстрый экспорт</h6>
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-outline-primary" onclick="exportData('current_month_readings')">
+                                                Показания за текущий месяц
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="exportData('unpaid_invoices')">
+                                                Неоплаченные счета
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="exportData('user_statistics')">
+                                                Статистика пользователей
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Журнал импорта/экспорта</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата</th>
+                                                    <th>Тип операции</th>
+                                                    <th>Тип данных</th>
+                                                    <th>Количество записей</th>
+                                                    <th>Статус</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="importExportLog">
+                                                <!-- Будет заполняться динамически -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         }
 
-        // Вызываем функцию при загрузке страницы
-        window.onload = logVisit;
+        // Сервис аутентификации
+        class AuthService {
+            async login(email, password) {
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+
+                    if (error) throw error;
+
+                    // Проверяем, есть ли профиль
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    if (!profile) {
+                        // Создаем профиль если его нет
+                        const { error: profileError } = await supabase
+                            .from('profiles')
+                            .insert({
+                                id: data.user.id,
+                                email: data.user.email,
+                                role: 'user'
+                            });
+
+                        if (profileError) throw profileError;
+                    }
+
+                    router.navigate('dashboard');
+                } catch (error) {
+                    alert('Ошибка входа: ' + error.message);
+                }
+            }
+
+            async logout() {
+                await supabase.auth.signOut();
+                appState.currentUser = null;
+                document.querySelector('.sidebar')?.remove();
+                router.navigate('login');
+            }
+        }
+
+        // Инициализация приложения
+        const router = new AppRouter();
+        const authService = new AuthService();
+
+        // Глобальные функции для кнопок
+        window.router = router;
+        window.authService = authService;
+
+        // Функции для модальных окон
+        function showAddMeterModal() {
+            const modals = document.getElementById('modalsContainer');
+            modals.innerHTML = `
+                <div class="modal fade" id="addMeterModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Добавить счетчик</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addMeterForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Номер счетчика</label>
+                                        <input type="text" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Тип счетчика</label>
+                                        <select class="form-select">
+                                            <option value="electricity">Электричество</option>
+                                            <option value="water">Вода</option>
+                                            <option value="gas">Газ</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Место установки</label>
+                                        <input type="text" class="form-control" placeholder="Например: Дом, Баня, Гараж">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" form="addMeterForm" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('addMeterModal'));
+            modal.show();
+        }
+
+        function showAddUserModal() {
+            const modals = document.getElementById('modalsContainer');
+            modals.innerHTML = `
+                <div class="modal fade" id="addUserModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Добавить пользователя</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addUserForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Email (логин)</label>
+                                        <input type="email" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Пароль</label>
+                                        <input type="password" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">ФИО</label>
+                                        <input type="text" class="form-control">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Количество участков</label>
+                                                <input type="number" class="form-control" value="1" min="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Соток</label>
+                                                <input type="number" step="0.01" class="form-control" value="4">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Роль</label>
+                                        <select class="form-select">
+                                            <option value="user">Пользователь</option>
+                                            <option value="admin">Администратор</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" form="addUserForm" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+            modal.show();
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Проверяем сессию
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                router.navigate('dashboard');
+            } else {
+                router.navigate('login');
+            }
+            
+            // Слушаем изменения авторизации
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN') {
+                    router.navigate('dashboard');
+                } else if (event === 'SIGNED_OUT') {
+                    router.navigate('login');
+                }
+            });
+        });
+
+        // Глобальные утилиты
+        function exportData(type) {
+            alert('Экспорт ' + type + ' начат...');
+            // Здесь будет логика экспорта
+        }
+
+        function showPasswordReset() {
+            const email = prompt('Введите ваш email для сброса пароля:');
+            if (email) {
+                supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin
+                }).then(() => {
+                    alert('Инструкция по сбросу пароля отправлена на ' + email);
+                });
+            }
+        }
     </script>
-</head>
-<body>
-    <h1>Testing Supabase Connection from GitHub</h1>
-    <div id="status">
-        <p>Attempting to connect to Supabase...</p>
-    </div>
 </body>
 </html>
