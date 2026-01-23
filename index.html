@@ -3,47 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase Test Page</title>
-    <!-- Подключаем библиотеку Supabase -->
+    <title>Test Supabase Integration</title>
+    <!-- Подключаем клиентскую библиотеку Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-</head>
-<body>
-    <h1>Тест отправки данных в Supabase</h1>
-    <button id="sendButton">Отправить тестовые данные</button>
-    <p id="message"></p>
+    <script type="text/javascript">
+        // !!! ВАЖНО: ЗАМЕНИТЕ ЭТИ ЗНАЧЕНИЯ НА СВОИ !!!
+        const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co'; // Ваш Project URL
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo'; // Ваш anon/public key
 
-    <script>
-        // 1. Инициализация клиента Supabase с вашими ключами
-        const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co'; // Ваш URL проекта
-        const supabaseKey = 'sb_publishable_a2KMGHyJtHw0M0hF3vG5Hw_X7KH5mHk'; // Замените на ваш публикуемый ключ!
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        // Создаем клиент Supabase
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-        document.getElementById('sendButton').addEventListener('click', async () => {
-            const messageElement = document.getElementById('message');
-            messageElement.textContent = 'Отправка...';
-            messageElement.style.color = 'black';
-
-            // 2. Отправка данных в таблицу 'test_table'
+        // Функция для отправки тестовых данных
+        async function logVisit() {
             const { data, error } = await supabaseClient
-                .from('test_table') // Название таблицы в базе данных
+                .from('test_data') // Имя вашей таблицы
                 .insert([
                     { 
-                        message: 'Привет из GitHub Pages!', 
-                        page_url: window.location.href,
-                        created_at: new Date().toISOString()
+                        some_text: 'Page visited from GitHub repo', 
+                        user_ip: null // Supabase может получить IP автоматически через контекст, если настроить триггер
                     }
                 ]);
 
             if (error) {
-                console.error('Ошибка:', error);
-                messageElement.textContent = 'Ошибка: ' + error.message;
-                messageElement.style.color = 'red';
+                console.error('Error inserting data:', error);
+                document.getElementById('status').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
             } else {
-                console.log('Данные сохранены:', data);
-                messageElement.textContent = '✅ Данные успешно отправлены в Supabase!';
-                messageElement.style.color = 'green';
+                console.log('Data inserted successfully:', data);
+                document.getElementById('status').innerHTML = `<p style="color:green;">✅ Test data saved to Supabase successfully! Check your Table Editor.</p>`;
             }
-        });
+        }
+
+        // Вызываем функцию при загрузке страницы
+        window.onload = logVisit;
     </script>
+</head>
+<body>
+    <h1>Testing Supabase Connection from GitHub</h1>
+    <div id="status">
+        <p>Attempting to connect to Supabase...</p>
+    </div>
 </body>
 </html>
