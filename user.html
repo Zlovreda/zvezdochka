@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - ЭнергоУчет</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            background: #f8f9fa;
+            min-height: 100vh;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .main-content {
+            background: #fff;
+        }
+        .counter-card {
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+        .counter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .debt-card {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Сайдбар -->
+            <nav class="col-md-3 col-lg-2 sidebar d-md-block p-3">
+                <div class="position-sticky">
+                    <h4 class="text-primary mb-4">
+                        <i class="bi bi-lightning-charge"></i> ЭнергоУчет
+                    </h4>
+                    
+                    <div class="user-info mb-4 p-3 bg-white rounded shadow-sm">
+                        <h6 id="userName">Пользователь</h6>
+                        <small class="text-muted" id="userAddress"></small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">
+                                <i class="bi bi-speedometer2 me-2"></i> Обзор
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addReadingModal">
+                                <i class="bi bi-plus-circle me-2"></i> Подать показания
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#history">
+                                <i class="bi bi-clock-history me-2"></i> История
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#debt">
+                                <i class="bi bi-cash-coin me-2"></i> Задолженность
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <button class="btn btn-outline-danger w-100" onclick="logout()">
+                                <i class="bi bi-box-arrow-left me-2"></i> Выход
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Основной контент -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h2>Личный кабинет</h2>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <span class="badge bg-primary me-2" id="currentPeriod"></span>
+                    </div>
+                </div>
+
+                <!-- Статистика -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card counter-card p-3">
+                            <h6 class="text-muted">Участков</h6>
+                            <h3 id="plotCount">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card counter-card p-3">
+                            <h6 class="text-muted">Счетчиков</h6>
+                            <h3 id="meterCount">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card debt-card p-3">
+                            <h6>Общая задолженность</h6>
+                            <h3 id="totalDebt">0 руб</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Мои счетчики -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-speedometer me-2"></i> Мои счетчики
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="metersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Номер счетчика</th>
+                                        <th>Участок</th>
+                                        <th>Предыдущие</th>
+                                        <th>Текущие</th>
+                                        <th>Расход</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="metersBody">
+                                    <!-- Данные загружаются через JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Задолженность -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-stack me-2"></i> Детализация задолженности
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Электроэнергия:</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Расход до 100 кВт·ч</span>
+                                        <span id="consumption100">0 кВт·ч × 6.1 руб</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Расход свыше 100 кВт·ч</span>
+                                        <span id="consumptionOver100">0 кВт·ч × 7.3 руб</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Потери (3.6%)</span>
+                                        <span id="losses">0 руб</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Членские взносы:</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>За участок (939 руб/мес)</span>
+                                        <span id="membershipPlot">0 руб</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>За сотку (8.77 руб/сотка)</span>
+                                        <span id="membershipSotka">0 руб</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">Итого к оплате:</h6>
+                                    <h3 class="mb-0 text-center" id="totalAmount">0.00 руб</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Модальное окно для подачи показаний -->
+    <div class="modal fade" id="addReadingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Подать показания счетчика</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="readingForm">
+                        <div class="mb-3">
+                            <label class="form-label">Выберите счетчик</label>
+                            <select class="form-select" id="meterSelect" required>
+                                <!-- Заполняется через JS -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Текущие показания</label>
+                            <input type="number" class="form-control" id="currentReading" step="0.01" required>
+                            <div class="form-text">Предыдущие: <span id="prevReading">0</span> кВт·ч</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Дата снятия показаний</label>
+                            <input type="date" class="form-control" id="readingDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="submitReading()">
+                        <i class="bi bi-check-circle me-2"></i> Отправить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase и Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Инициализация
+        const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU'
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+        
+        let currentUser = null
+        let userMeters = []
+        
+        // Проверка авторизации
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userData = localStorage.getItem('user')
+            if (!userData) {
+                window.location.href = 'index.html'
+                return
+            }
+            
+            currentUser = JSON.parse(userData)
+            document.getElementById('userName').textContent = currentUser.name || currentUser.username
+            document.getElementById('userAddress').textContent = currentUser.address || ''
+            
+            // Устанавливаем текущий период
+            const now = new Date()
+            document.getElementById('currentPeriod').textContent = 
+                now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+            
+            // Загружаем данные пользователя
+            await loadUserData()
+            await loadMeters()
+            await calculateDebt()
+        })
+        
+        async function loadUserData() {
+            // Загрузка участков пользователя
+            const { data: plots, error } = await supabase
+                .from('plots')
+                .select('*')
+                .eq('user_id', currentUser.id)
+            
+            if (!error && plots) {
+                document.getElementById('plotCount').textContent = plots.length
+                // Расчет общего количества соток
+                const totalSotki = plots.reduce((sum, plot) => sum + (plot.sotki || 0), 0)
+                currentUser.totalSotki = totalSotki
+            }
+        }
+        
+        async function loadMeters() {
+            const { data: meters, error } = await supabase
+                .from('meters')
+                .select('*')
+                .eq('user_id', currentUser.id)
+            
+            if (error) {
+                console.error('Error loading meters:', error)
+                return
+            }
+            
+            userMeters = meters
+            document.getElementById('meterCount').textContent = meters.length
+            
+            // Заполняем таблицу
+            const tbody = document.getElementById('metersBody')
+            tbody.innerHTML = ''
+            
+            // Заполняем select в модальном окне
+            const select = document.getElementById('meterSelect')
+            select.innerHTML = '<option value="">Выберите счетчик</option>'
+            
+            meters.forEach(meter => {
+                // Таблица
+                const row = tbody.insertRow()
+                row.innerHTML = `
+                    <td>${meter.number || meter.id}</td>
+                    <td>${meter.plot_number || '-'}</td>
+                    <td>${meter.previous_reading || '0'}</td>
+                    <td>${meter.current_reading || 'Нет данных'}</td>
+                    <td>${calculateConsumption(meter)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editMeter(${meter.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </td>
+                `
+                
+                // Select в модалке
+                const option = document.createElement('option')
+                option.value = meter.id
+                option.textContent = `${meter.number || 'Счетчик'} (${meter.plot_number || 'без участка'})`
+                option.setAttribute('data-prev', meter.current_reading || meter.previous_reading || 0)
+                select.appendChild(option)
+            })
+        }
+        
+        function calculateConsumption(meter) {
+            const prev = parseFloat(meter.previous_reading) || 0
+            const current = parseFloat(meter.current_reading) || 0
+            return current > prev ? (current - prev).toFixed(2) + ' кВт·ч' : 'Нет новых'
+        }
+        
+        async function calculateDebt() {
+            // Расчет задолженности по сложному тарифу
+            let totalConsumption = 0
+            userMeters.forEach(meter => {
+                const prev = parseFloat(meter.previous_reading) || 0
+                const current = parseFloat(meter.current_reading) || 0
+                if (current > prev) {
+                    totalConsumption += current - prev
+                }
+            })
+            
+            // Расчет по тарифам (примерные значения)
+            const rateUpTo100 = 6.1
+            const rateOver100 = 7.3
+            const lossRate = 0.036
+            
+            const consumption100 = Math.min(totalConsumption, 100)
+            const consumptionOver100 = Math.max(totalConsumption - 100, 0)
+            const losses = totalConsumption * lossRate * rateUpTo100
+            
+            const electricityCost = 
+                (consumption100 * rateUpTo100) + 
+                (consumptionOver100 * rateOver100) + 
+                losses
+            
+            // Членские взносы
+            const plotCost = (currentUser.plotCount || 0) * 939
+            const sotkaCost = (currentUser.totalSotki || 0) * 8.77
+            const membershipCost = plotCost + sotkaCost
+            
+            // Общая сумма
+            const totalCost = electricityCost + membershipCost
+            
+            // Обновляем UI
+            document.getElementById('consumption100').textContent = 
+                `${consumption100.toFixed(2)} кВт·ч × ${rateUpTo100} руб`
+            document.getElementById('consumptionOver100').textContent = 
+                `${consumptionOver100.toFixed(2)} кВт·ч × ${rateOver100} руб`
+            document.getElementById('losses').textContent = losses.toFixed(2) + ' руб'
+            document.getElementById('membershipPlot').textContent = plotCost.toFixed(2) + ' руб'
+            document.getElementById('membershipSotka').textContent = sotkaCost.toFixed(2) + ' руб'
+            document.getElementById('totalDebt').textContent = totalCost.toFixed(2) + ' руб'
+            document.getElementById('totalAmount').textContent = totalCost.toFixed(2) + ' руб'
+        }
+        
+        function submitReading() {
+            const meterId = document.getElementById('meterSelect').value
+            const currentReading = parseFloat(document.getElementById('currentReading').value)
+            const readingDate = document.getElementById('readingDate').value
+            
+            if (!meterId || !currentReading || !readingDate) {
+                alert('Заполните все поля')
+                return
+            }
+            
+            // Находим выбранный счетчик
+            const meter = userMeters.find(m => m.id == meterId)
+            if (!meter) {
+                alert('Счетчик не найден')
+                return
+            }
+            
+            // Проверяем корректность показаний
+            const prevReading = parseFloat(meter.current_reading || meter.previous_reading || 0)
+            if (currentReading < prevReading) {
+                if (!confirm('Новые показания меньше предыдущих. Вы уверены?')) {
+                    return
+                }
+            }
+            
+            // Отправляем данные в Supabase
+            supabase
+                .from('meter_readings')
+                .insert([
+                    {
+                        meter_id: meterId,
+                        user_id: currentUser.id,
+                        previous_reading: prevReading,
+                        current_reading: currentReading,
+                        reading_date: readingDate,
+                        created_at: new Date().toISOString()
+                    }
+                ])
+                .then(({ error }) => {
+                    if (error) {
+                        alert('Ошибка сохранения: ' + error.message)
+                    } else {
+                        // Обновляем данные счетчика
+                        supabase
+                            .from('meters')
+                            .update({ current_reading: currentReading })
+                            .eq('id', meterId)
+                            .then(() => {
+                                alert('Показания успешно отправлены!')
+                                location.reload()
+                            })
+                    }
+                })
+        }
+        
+        function logout() {
+            localStorage.removeItem('user')
+            window.location.href = 'index.html'
+        }
+        
+        // Обновляем предыдущие показания при выборе счетчика
+        document.getElementById('meterSelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex]
+            const prevReading = selectedOption.getAttribute('data-prev')
+            document.getElementById('prevReading').textContent = prevReading
+        })
+        
+        // Устанавливаем сегодняшнюю дату по умолчанию
+        document.getElementById('readingDate').valueAsDate = new Date()
+    </script>
+</body>
+</html>
