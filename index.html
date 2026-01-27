@@ -3,83 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учет электроэнергии</title>
+    <title>Система учета электроэнергии</title>
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase JS -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         .hidden { display: none; }
-        .card { margin-bottom: 20px; }
+        .login-container { max-width: 400px; margin: 100px auto; }
+        .card { border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .nav-tabs .nav-link.active { font-weight: bold; }
+        .table th { background-color: #f8f9fa; }
+        .reading-input { max-width: 150px; }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <!-- Блок авторизации -->
-        <div id="auth-section" class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0">Вход в систему</h4>
+    <!-- Контейнер приложения -->
+    <div id="app">
+        <!-- Экран входа -->
+        <div id="login-screen">
+            <div class="login-container">
+                <div class="card p-4">
+                    <h3 class="text-center mb-4">Вход в систему</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Логин</label>
+                        <input type="text" id="login" class="form-control" placeholder="Введите логин">
                     </div>
-                    <div class="card-body">
-                        <div id="login-form">
-                            <div class="mb-3">
-                                <label for="login" class="form-label">Логин</label>
-                                <input type="text" class="form-control" id="login" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Пароль</label>
-                                <input type="password" class="form-control" id="password" required>
-                            </div>
-                            <button class="btn btn-primary w-100" onclick="login()">Войти</button>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Пароль</label>
+                        <input type="password" id="password" class="form-control" placeholder="Введите пароль">
                     </div>
+                    <button onclick="login()" class="btn btn-primary w-100">Войти</button>
+                    <div id="login-error" class="alert alert-danger mt-3 hidden"></div>
                 </div>
             </div>
         </div>
 
         <!-- Личный кабинет пользователя -->
-        <div id="user-dashboard" class="hidden">
-            <nav class="navbar navbar-light bg-light mb-4">
+        <div id="user-dashboard" class="hidden container mt-4">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
                 <div class="container-fluid">
                     <span class="navbar-brand">Личный кабинет</span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="logout()">Выйти</button>
+                    <button class="btn btn-outline-secondary" onclick="logout()">Выйти</button>
                 </div>
             </nav>
 
             <div class="row">
-                <!-- Счетчики -->
-                <div class="col-md-6">
-                    <div class="card">
+                <div class="col-md-8">
+                    <!-- Показания счетчиков -->
+                    <div class="card mb-4">
                         <div class="card-header">
                             <h5>Мои счетчики</h5>
                         </div>
                         <div class="card-body">
-                            <div id="meters-list"></div>
-                            <form id="meter-reading-form">
-                                <div class="mb-3">
-                                    <label class="form-label">Выберите счетчик</label>
-                                    <select class="form-select" id="meter-select"></select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Текущие показания</label>
-                                    <input type="number" step="0.01" class="form-control" id="current-reading" required>
-                                </div>
-                                <button type="submit" class="btn btn-success">Передать показания</button>
-                            </form>
+                            <div id="user-meters" class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>№ счетчика</th>
+                                            <th>Пред. показания</th>
+                                            <th>Тек. показания</th>
+                                            <th>Расход</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="meters-table-body"></tbody>
+                                </table>
+                            </div>
+                            <div id="no-meters" class="text-center py-4">
+                                <p>У вас нет зарегистрированных счетчиков</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- История показаний -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>История показаний</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Счетчик</th>
+                                        <th>Показания</th>
+                                        <th>Расход</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="readings-history"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
                 <!-- Задолженность -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
                             <h5>Моя задолженность</h5>
                         </div>
                         <div class="card-body">
                             <div id="debt-info">
-                                <p>Загрузка...</p>
+                                <p class="text-muted">Загрузка данных...</p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Тарифы -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Действующие тарифы</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="tariffs-info"></div>
                         </div>
                     </div>
                 </div>
@@ -87,116 +124,152 @@
         </div>
 
         <!-- Кабинет администратора -->
-        <div id="admin-dashboard" class="hidden">
-            <nav class="navbar navbar-light bg-light mb-4">
+        <div id="admin-dashboard" class="hidden container-fluid mt-4">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
                 <div class="container-fluid">
                     <span class="navbar-brand">Панель администратора</span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="logout()">Выйти</button>
+                    <div>
+                        <button class="btn btn-outline-light me-2" onclick="exportData()">Экспорт данных</button>
+                        <button class="btn btn-outline-light me-2" onclick="showImportModal()">Импорт</button>
+                        <button class="btn btn-outline-light" onclick="logout()">Выйти</button>
+                    </div>
                 </div>
             </nav>
 
+            <!-- Вкладки -->
             <ul class="nav nav-tabs" id="adminTabs">
                 <li class="nav-item">
-                    <button class="nav-link active" onclick="showAdminTab('tariffs')">Тарифы</button>
+                    <button class="nav-link active" onclick="showTab('users-tab')">Пользователи</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link" onclick="showAdminTab('users')">Пользователи</button>
+                    <button class="nav-link" onclick="showTab('meters-tab')">Счетчики</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link" onclick="showAdminTab('import-export')">Импорт/Экспорт</button>
+                    <button class="nav-link" onclick="showTab('tariffs-tab')">Тарифы</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showTab('payments-tab')">Начисления</button>
                 </li>
             </ul>
 
-            <!-- Тарифы -->
-            <div id="tariffs-tab" class="admin-tab">
-                <h4 class="my-3">Управление тарифами</h4>
-                
-                <div class="card">
-                    <div class="card-header">Членские взносы</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">За участок (руб)</label>
-                                    <input type="number" step="0.01" class="form-control" id="membership-per-plot" value="939.00">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">За сотку (руб)</label>
-                                    <input type="number" step="0.01" class="form-control" id="membership-per-hundred" value="8.77">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row" id="additional-fees"></div>
-                        <button class="btn btn-secondary" onclick="addFeeField()">+ Добавить сбор</button>
+            <!-- Содержимое вкладок -->
+            <div class="tab-content p-3 border border-top-0 rounded-bottom">
+                <!-- Вкладка пользователей -->
+                <div id="users-tab" class="tab-pane">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h4>Управление пользователями</h4>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">Добавить пользователя</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Логин</th>
+                                    <th>Участков</th>
+                                    <th>Соток</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table"></tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">Тарифы на электроэнергию</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Потери (руб/кВт·ч)</label>
-                                    <input type="number" step="0.001" class="form-control" id="loss-rate" value="0.036">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">До 100 кВт·ч (руб)</label>
-                                    <input type="number" step="0.01" class="form-control" id="rate-under-100" value="6.10">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Свыше 100 кВт·ч (руб)</label>
-                                    <input type="number" step="0.01" class="form-control" id="rate-over-100" value="7.30">
-                                </div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="saveTariffs()">Сохранить тарифы</button>
+                <!-- Вкладка счетчиков -->
+                <div id="meters-tab" class="tab-pane hidden">
+                    <h4>Управление счетчиками</h4>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Пользователь</th>
+                                    <th>№ счетчика</th>
+                                    <th>Пред. показания</th>
+                                    <th>Тек. показания</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-meters-table"></tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- Пользователи -->
-            <div id="users-tab" class="admin-tab" style="display: none;">
-                <h4 class="my-3">Управление пользователями</h4>
-                <button class="btn btn-success mb-3" onclick="showAddUserModal()">Добавить пользователя</button>
-                <div id="users-list"></div>
-            </div>
+                <!-- Вкладка тарифов -->
+                <div id="tariffs-tab" class="tab-pane hidden">
+                    <h4>Управление тарифами</h4>
+                    <form id="tariff-form" class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Тип тарифа</label>
+                            <select class="form-select" id="tariff-type">
+                                <option value="electricity">Электроэнергия</option>
+                                <option value="membership_plot">Членские (участок)</option>
+                                <option value="membership_area">Членские (сотка)</option>
+                                <option value="target1">Целевые 1</option>
+                                <option value="target2">Целевые 2</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Значение</label>
+                            <input type="number" step="0.01" class="form-control" id="tariff-value">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Действует с</label>
+                            <input type="date" class="form-control" id="tariff-date">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Сохранить тариф</button>
+                        </div>
+                    </form>
+                    
+                    <h5>История тарифов</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Значение</th>
+                                <th>Дата начала</th>
+                                <th>Действует</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tariffs-history"></tbody>
+                    </table>
+                </div>
 
-            <!-- Импорт/Экспорт -->
-            <div id="import-export-tab" class="admin-tab" style="display: none;">
-                <h4 class="my-3">Импорт/Экспорт данных</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">Экспорт данных</div>
-                            <div class="card-body">
-                                <button class="btn btn-primary me-2" onclick="exportData('readings')">Экспорт показаний</button>
-                                <button class="btn btn-primary" onclick="exportData('users')">Экспорт пользователей</button>
-                            </div>
+                <!-- Вкладка начислений -->
+                <div id="payments-tab" class="tab-pane hidden">
+                    <h4>Пакетные начисления</h4>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <button class="btn btn-primary me-2" onclick="calculateAllPayments()">Рассчитать все начисления</button>
+                            <button class="btn btn-success" onclick="exportPayments()">Экспорт начислений</button>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">Импорт данных</div>
-                            <div class="card-body">
-                                <input type="file" class="form-control mb-3" id="import-file" accept=".csv,.json">
-                                <button class="btn btn-success" onclick="importData()">Импортировать</button>
-                            </div>
-                        </div>
-                    </div>
+                    
+                    <h5>Последние начисления</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Пользователь</th>
+                                <th>Тип</th>
+                                <th>Сумма</th>
+                                <th>Период</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Модальные окна -->
+    
     <!-- Модальное окно добавления пользователя -->
-    <div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal fade" id="addUserModal">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -215,349 +288,864 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Количество участков</label>
-                            <input type="number" class="form-control" id="new-user-plots" value="1">
+                            <input type="number" class="form-control" id="new-user-plots" value="1" min="1">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Количество соток</label>
-                            <input type="number" step="0.01" class="form-control" id="new-user-hundreds">
+                            <label class="form-label">Площадь (соток)</label>
+                            <input type="number" step="0.01" class="form-control" id="new-user-area" value="6" min="0">
                         </div>
+                        <button type="submit" class="btn btn-primary">Создать</button>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" onclick="addUser()">Добавить</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Инициализация Supabase
-        const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co'
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU'
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-        
-        let currentUser = null
-        
-        // Авторизация
-        async function login() {
-            const login = document.getElementById('login').value
-            const password = document.getElementById('password').value
-            
-            // Проверка администратора (для примера, в реальной системе нужно хранить в БД)
-            if (login === 'admin' && password === 'admin123') {
-                currentUser = { id: 0, role: 'admin', login: 'admin' }
-                showAdminPanel()
-                return
-            }
-            
-            // Проверка обычного пользователя
-            const { data: users, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('login', login)
-                .eq('password', password)
-                .single()
-            
-            if (error || !users) {
-                alert('Неверный логин или пароль')
-                return
-            }
-            
-            currentUser = users
-            showUserPanel()
-            loadUserData()
-        }
-        
-        function logout() {
-            currentUser = null
-            document.getElementById('auth-section').classList.remove('hidden')
-            document.getElementById('user-dashboard').classList.add('hidden')
-            document.getElementById('admin-dashboard').classList.add('hidden')
-        }
-        
-        function showUserPanel() {
-            document.getElementById('auth-section').classList.add('hidden')
-            document.getElementById('user-dashboard').classList.remove('hidden')
-        }
-        
-        function showAdminPanel() {
-            document.getElementById('auth-section').classList.add('hidden')
-            document.getElementById('admin-dashboard').classList.remove('hidden')
-            showAdminTab('tariffs')
-        }
-        
-        // Личный кабинет
-        async function loadUserData() {
-            // Загрузка счетчиков пользователя
-            const { data: meters } = await supabase
-                .from('meters')
-                .select('*')
-                .eq('user_id', currentUser.id)
-            
-            const metersList = document.getElementById('meters-list')
-            const meterSelect = document.getElementById('meter-select')
-            
-            metersList.innerHTML = ''
-            meterSelect.innerHTML = ''
-            
-            if (meters && meters.length > 0) {
-                meters.forEach(meter => {
-                    metersList.innerHTML += `
-                        <div class="border p-2 mb-2">
-                            <strong>${meter.name || 'Счетчик'}</strong><br>
-                            Последние показания: ${meter.last_reading || 'нет данных'}<br>
-                            Дата: ${meter.last_reading_date || '—'}
-                        </div>
-                    `
-                    
-                    const option = document.createElement('option')
-                    option.value = meter.id
-                    option.textContent = meter.name || `Счетчик #${meter.id}`
-                    meterSelect.appendChild(option)
-                })
-            } else {
-                metersList.innerHTML = '<p>Нет зарегистрированных счетчиков</p>'
-            }
-            
-            // Загрузка задолженности
-            await calculateDebt()
-        }
-        
-        async function calculateDebt() {
-            // Расчет задолженности по формуле из задания
-            const { data: tariff } = await supabase
-                .from('tariffs')
-                .select('*')
-                .eq('type', 'electricity')
-                .single()
-            
-            const { data: meters } = await supabase
-                .from('meters')
-                .select('*')
-                .eq('user_id', currentUser.id)
-            
-            let totalElectricity = 0
-            
-            if (meters && tariff) {
-                meters.forEach(meter => {
-                    if (meter.last_reading && meter.previous_reading) {
-                        const consumption = meter.last_reading - meter.previous_reading
-                        let cost = 0
-                        
-                        if (consumption > 100) {
-                            cost = (consumption - 100) * tariff.rate_over_100 + 100 * tariff.rate_under_100
-                        } else {
-                            cost = consumption * tariff.rate_under_100
-                        }
-                        
-                        // Добавляем потери
-                        cost += meter.previous_reading * tariff.loss_rate
-                        
-                        totalElectricity += cost
-                    }
-                })
-            }
-            
-            // Расчет членских взносов
-            const membershipFee = (currentUser.plots || 0) * 939.00 + (currentUser.hundreds || 0) * 8.77
-            
-            document.getElementById('debt-info').innerHTML = `
-                <p><strong>Электроэнергия:</strong> ${totalElectricity.toFixed(2)} руб.</p>
-                <p><strong>Членские взносы:</strong> ${membershipFee.toFixed(2)} руб.</p>
-                <p><strong>Итого:</strong> ${(totalElectricity + membershipFee).toFixed(2)} руб.</p>
-            `
-        }
-        
-        // Передача показаний
-        document.getElementById('meter-reading-form').addEventListener('submit', async (e) => {
-            e.preventDefault()
-            
-            const meterId = document.getElementById('meter-select').value
-            const reading = parseFloat(document.getElementById('current-reading').value)
-            
-            // Обновляем показания в базе
-            const { data: meter } = await supabase
-                .from('meters')
-                .select('*')
-                .eq('id', meterId)
-                .single()
-            
-            await supabase
-                .from('meter_readings')
-                .insert({
-                    meter_id: meterId,
-                    reading: reading,
-                    date: new Date().toISOString()
-                })
-            
-            await supabase
-                .from('meters')
-                .update({
-                    previous_reading: meter.last_reading,
-                    last_reading: reading,
-                    last_reading_date: new Date().toISOString()
-                })
-                .eq('id', meterId)
-            
-            alert('Показания успешно переданы!')
-            document.getElementById('current-reading').value = ''
-            loadUserData()
-        })
-        
-        // Администратор
-        function showAdminTab(tabName) {
-            document.querySelectorAll('.admin-tab').forEach(tab => {
-                tab.style.display = 'none'
-            })
-            document.getElementById(`${tabName}-tab`).style.display = 'block'
-            
-            document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
-                link.classList.remove('active')
-            })
-            event.target.classList.add('active')
-            
-            if (tabName === 'users') {
-                loadUsersList()
-            }
-        }
-        
-        async function saveTariffs() {
-            const tariffs = {
-                membership_per_plot: parseFloat(document.getElementById('membership-per-plot').value),
-                membership_per_hundred: parseFloat(document.getElementById('membership-per-hundred').value),
-                loss_rate: parseFloat(document.getElementById('loss-rate').value),
-                rate_under_100: parseFloat(document.getElementById('rate-under-100').value),
-                rate_over_100: parseFloat(document.getElementById('rate-over-100').value),
-                updated_at: new Date().toISOString()
-            }
-            
-            const { error } = await supabase
-                .from('tariffs')
-                .upsert({ type: 'electricity', ...tariffs })
-            
-            if (error) {
-                alert('Ошибка сохранения: ' + error.message)
-            } else {
-                alert('Тарифы сохранены!')
-            }
-        }
-        
-        async function loadUsersList() {
-            const { data: users } = await supabase
-                .from('users')
-                .select('*')
-                .neq('login', 'admin')
-            
-            let html = '<table class="table"><thead><tr><th>Логин</th><th>Участки</th><th>Сотки</th><th>Действия</th></tr></thead><tbody>'
-            
-            users.forEach(user => {
-                html += `
-                    <tr>
-                        <td>${user.login}</td>
-                        <td>${user.plots || 0}</td>
-                        <td>${user.hundreds || 0}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick="editUser(${user.id})">Изменить</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Удалить</button>
-                        </td>
-                    </tr>
-                `
-            })
-            
-            html += '</tbody></table>'
-            document.getElementById('users-list').innerHTML = html
-        }
-        
-        function showAddUserModal() {
-            const modal = new bootstrap.Modal(document.getElementById('addUserModal'))
-            modal.show()
-        }
-        
-        async function addUser() {
-            const userData = {
-                login: document.getElementById('new-user-login').value,
-                password: document.getElementById('new-user-password').value,
-                plots: parseInt(document.getElementById('new-user-plots').value),
-                hundreds: parseFloat(document.getElementById('new-user-hundreds').value),
-                role: 'user'
-            }
-            
-            const { error } = await supabase
-                .from('users')
-                .insert([userData])
-            
-            if (error) {
-                alert('Ошибка: ' + error.message)
-            } else {
-                alert('Пользователь добавлен!')
-                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide()
-                loadUsersList()
-            }
-        }
-        
-        // Импорт/экспорт
-        async function exportData(type) {
-            let data, filename
-            
-            if (type === 'readings') {
-                const { data: readings } = await supabase
-                    .from('meter_readings')
-                    .select(`
-                        *,
-                        meters (name, user_id),
-                        users (login)
-                    `)
-                data = readings
-                filename = 'readings.json'
-            } else {
-                const { data: users } = await supabase
-                    .from('users')
-                    .select('*')
-                data = users
-                filename = 'users.json'
-            }
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = filename
-            a.click()
-        }
-        
-        function addFeeField() {
-            const container = document.getElementById('additional-fees')
-            const id = Date.now()
-            container.innerHTML += `
-                <div class="col-md-6" id="fee-${id}">
-                    <div class="mb-3">
-                        <label class="form-label">Название сбора</label>
-                        <input type="text" class="form-control" placeholder="Например: Ремонт дороги">
-                        <label class="form-label mt-2">Сумма (руб)</label>
-                        <input type="number" step="0.01" class="form-control" value="0">
-                        <button class="btn btn-sm btn-danger mt-2" onclick="document.getElementById('fee-${id}').remove()">Удалить</button>
-                    </div>
+    <!-- Модальное окно редактирования показаний -->
+    <div class="modal fade" id="editReadingModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Внести показания</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-            `
-        }
+                <div class="modal-body">
+                    <form id="edit-reading-form">
+                        <input type="hidden" id="edit-meter-id">
+                        <div class="mb-3">
+                            <label class="form-label">Текущие показания</label>
+                            <input type="number" step="0.001" class="form-control" id="edit-current-reading" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно импорта -->
+    <div class="modal fade" id="importModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Импорт данных</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Выберите тип данных</label>
+                        <select class="form-select" id="import-type">
+                            <option value="users">Пользователи</option>
+                            <option value="meters">Счетчики</option>
+                            <option value="readings">Показания</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Файл CSV</label>
+                        <input type="file" class="form-control" id="import-file" accept=".csv">
+                    </div>
+                    <button onclick="importData()" class="btn btn-primary">Импортировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Конфигурация Supabase
+        const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+        
+        // Инициализация Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentUser = null;
+        let currentUserRole = 'user';
         
         // Проверка авторизации при загрузке
-        window.onload = function() {
-            // Проверяем, есть ли сохраненная сессия
-            const savedUser = localStorage.getItem('currentUser')
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            
+            // Обработчики форм
+            document.getElementById('add-user-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewUser();
+            });
+            
+            document.getElementById('edit-reading-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitReading();
+            });
+            
+            document.getElementById('tariff-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveTariff();
+            });
+        });
+        
+        // Проверка авторизации
+        async function checkAuth() {
+            const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser)
-                if (currentUser.role === 'admin') {
-                    showAdminPanel()
+                currentUser = JSON.parse(savedUser);
+                currentUserRole = currentUser.role || 'user';
+                
+                if (currentUserRole === 'admin') {
+                    showAdminDashboard();
+                    loadAdminData();
                 } else {
-                    showUserPanel()
-                    loadUserData()
+                    showUserDashboard();
+                    loadUserData();
                 }
             }
         }
+        
+        // Вход в систему
+        async function login() {
+            const loginInput = document.getElementById('login').value;
+            const passwordInput = document.getElementById('password').value;
+            
+            try {
+                // В реальном приложении здесь будет проверка через Supabase Auth
+                // Для демо используем простую проверку
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('login', loginInput)
+                    .eq('password', passwordInput);
+                
+                if (error) throw error;
+                
+                if (users.length > 0) {
+                    currentUser = users[0];
+                    currentUserRole = currentUser.role;
+                    
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    if (currentUserRole === 'admin') {
+                        showAdminDashboard();
+                        loadAdminData();
+                    } else {
+                        showUserDashboard();
+                        loadUserData();
+                    }
+                } else {
+                    showError('Неверный логин или пароль');
+                }
+            } catch (error) {
+                console.error('Ошибка входа:', error);
+                showError('Ошибка при входе в систему');
+            }
+        }
+        
+        // Выход из системы
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            showLoginScreen();
+        }
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            if (!currentUser) return;
+            
+            // Загрузка счетчиков пользователя
+            const { data: meters, error } = await supabase
+                .from('meters')
+                .select('*')
+                .eq('user_id', currentUser.id);
+            
+            if (!error && meters) {
+                displayUserMeters(meters);
+            }
+            
+            // Загрузка задолженности
+            loadUserDebt();
+            
+            // Загрузка тарифов
+            loadTariffs();
+            
+            // Загрузка истории показаний
+            loadReadingsHistory();
+        }
+        
+        // Отображение счетчиков пользователя
+        function displayUserMeters(meters) {
+            const tbody = document.getElementById('meters-table-body');
+            const noMeters = document.getElementById('no-meters');
+            
+            if (meters.length === 0) {
+                tbody.innerHTML = '';
+                noMeters.classList.remove('hidden');
+                return;
+            }
+            
+            noMeters.classList.add('hidden');
+            tbody.innerHTML = '';
+            
+            meters.forEach(meter => {
+                const consumption = meter.current_reading - meter.previous_reading;
+                const row = `
+                    <tr>
+                        <td>${meter.meter_number}</td>
+                        <td>${meter.previous_reading.toFixed(3)}</td>
+                        <td>${meter.current_reading.toFixed(3)}</td>
+                        <td>${consumption.toFixed(3)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="showEditReadingModal('${meter.id}', ${meter.current_reading})">
+                                Внести показания
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        // Загрузка задолженности пользователя
+        async function loadUserDebt() {
+            if (!currentUser) return;
+            
+            // Расчет задолженности
+            const { data: meters } = await supabase
+                .from('meters')
+                .select('current_reading, previous_reading')
+                .eq('user_id', currentUser.id);
+            
+            const { data: tariffs } = await supabase
+                .from('tariffs')
+                .select('*')
+                .order('start_date', { ascending: false });
+            
+            let totalDebt = 0;
+            let electricityCost = 0;
+            
+            // Расчет стоимости электроэнергии по сложному тарифу
+            if (meters && meters.length > 0 && tariffs) {
+                const electricityTariff = tariffs.find(t => t.type === 'electricity_complex');
+                
+                meters.forEach(meter => {
+                    const consumption = meter.current_reading - meter.previous_reading;
+                    
+                    if (electricityTariff && consumption > 0) {
+                        // Пример сложного расчета как в задании
+                        const losses = consumption * 0.036;
+                        const first100 = Math.min(consumption, 100) * 6.1;
+                        const above100 = Math.max(consumption - 100, 0) * 7.3;
+                        electricityCost = losses + first100 + above100;
+                    }
+                });
+            }
+            
+            // Расчет членских взносов
+            let membershipCost = 0;
+            const plotTariff = tariffs?.find(t => t.type === 'membership_plot');
+            const areaTariff = tariffs?.find(t => t.type === 'membership_area');
+            
+            if (plotTariff) {
+                membershipCost += currentUser.plots_count * plotTariff.value;
+            }
+            if (areaTariff) {
+                membershipCost += currentUser.area * areaTariff.value;
+            }
+            
+            totalDebt = electricityCost + membershipCost;
+            
+            const debtInfo = document.getElementById('debt-info');
+            debtInfo.innerHTML = `
+                <h4 class="text-danger">${totalDebt.toFixed(2)} руб.</h4>
+                <hr>
+                <p><strong>Электроэнергия:</strong> ${electricityCost.toFixed(2)} руб.</p>
+                <p><strong>Членские взносы:</strong> ${membershipCost.toFixed(2)} руб.</p>
+                <p><strong>Участков:</strong> ${currentUser.plots_count}</p>
+                <p><strong>Площадь:</strong> ${currentUser.area} сот.</p>
+            `;
+        }
+        
+        // Загрузка тарифов
+        async function loadTariffs() {
+            const { data: tariffs, error } = await supabase
+                .from('tariffs')
+                .select('*')
+                .order('start_date', { ascending: false })
+                .limit(5);
+            
+            if (!error && tariffs) {
+                const userTariffs = document.getElementById('tariffs-info');
+                const adminHistory = document.getElementById('tariffs-history');
+                
+                let userHtml = '';
+                let adminHtml = '';
+                
+                tariffs.forEach(tariff => {
+                    const typeNames = {
+                        'electricity_complex': 'Электроэнергия (сложный тариф)',
+                        'membership_plot': 'Членские (за участок)',
+                        'membership_area': 'Членские (за сотку)',
+                        'target1': 'Целевые взносы 1',
+                        'target2': 'Целевые взносы 2'
+                    };
+                    
+                    const isActive = new Date(tariff.start_date) <= new Date();
+                    
+                    userHtml += `
+                        <p><strong>${typeNames[tariff.type]}:</strong> ${tariff.value} руб.
+                        <small class="text-muted">(с ${new Date(tariff.start_date).toLocaleDateString()})</small></p>
+                    `;
+                    
+                    adminHtml += `
+                        <tr>
+                            <td>${typeNames[tariff.type]}</td>
+                            <td>${tariff.value} руб.</td>
+                            <td>${new Date(tariff.start_date).toLocaleDateString()}</td>
+                            <td>${isActive ? '✅' : '⏱️'}</td>
+                        </tr>
+                    `;
+                });
+                
+                if (userTariffs) userTariffs.innerHTML = userHtml;
+                if (adminHistory) adminHistory.innerHTML = adminHtml;
+            }
+        }
+        
+        // Загрузка истории показаний
+        async function loadReadingsHistory() {
+            if (!currentUser) return;
+            
+            const { data: readings, error } = await supabase
+                .from('readings')
+                .select(`
+                    *,
+                    meters (meter_number)
+                `)
+                .eq('user_id', currentUser.id)
+                .order('reading_date', { ascending: false })
+                .limit(10);
+            
+            if (!error && readings) {
+                const tbody = document.getElementById('readings-history');
+                tbody.innerHTML = '';
+                
+                readings.forEach(reading => {
+                    const row = `
+                        <tr>
+                            <td>${new Date(reading.reading_date).toLocaleDateString()}</td>
+                            <td>${reading.meters?.meter_number || 'N/A'}</td>
+                            <td>${reading.value.toFixed(3)}</td>
+                            <td>${reading.consumption?.toFixed(3) || ''}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+        
+        // Показать модальное окно для внесения показаний
+        function showEditReadingModal(meterId, currentReading) {
+            document.getElementById('edit-meter-id').value = meterId;
+            document.getElementById('edit-current-reading').value = currentReading;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editReadingModal'));
+            modal.show();
+        }
+        
+        // Отправка показаний
+        async function submitReading() {
+            const meterId = document.getElementById('edit-meter-id').value;
+            const currentReading = parseFloat(document.getElementById('edit-current-reading').value);
+            
+            try {
+                // Получение текущих данных счетчика
+                const { data: meter, error: meterError } = await supabase
+                    .from('meters')
+                    .select('*')
+                    .eq('id', meterId)
+                    .single();
+                
+                if (meterError) throw meterError;
+                
+                // Сохранение старого показания в историю
+                await supabase.from('readings').insert({
+                    meter_id: meterId,
+                    user_id: currentUser.id,
+                    value: currentReading,
+                    consumption: currentReading - meter.current_reading,
+                    reading_date: new Date().toISOString()
+                });
+                
+                // Обновление счетчика
+                const { error: updateError } = await supabase
+                    .from('meters')
+                    .update({
+                        previous_reading: meter.current_reading,
+                        current_reading: currentReading,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', meterId);
+                
+                if (updateError) throw updateError;
+                
+                // Закрытие модального окна
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editReadingModal'));
+                modal.hide();
+                
+                // Обновление данных
+                loadUserData();
+                
+                alert('Показания успешно сохранены!');
+            } catch (error) {
+                console.error('Ошибка сохранения показаний:', error);
+                alert('Ошибка при сохранении показаний');
+            }
+        }
+        
+        // АДМИНСКИЕ ФУНКЦИИ
+        
+        // Загрузка данных для админа
+        async function loadAdminData() {
+            loadUsers();
+            loadAdminMeters();
+            loadTariffs();
+            loadPayments();
+        }
+        
+        // Загрузка пользователей
+        async function loadUsers() {
+            const { data: users, error } = await supabase
+                .from('users')
+                .select('*')
+                .order('login');
+            
+            if (!error && users) {
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const row = `
+                        <tr>
+                            <td>${user.id.substring(0, 8)}...</td>
+                            <td>${user.login}</td>
+                            <td>${user.plots_count}</td>
+                            <td>${user.area}</td>
+                            <td><span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-success'}">${user.role}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editUser('${user.id}')">Изменить</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+        
+        // Загрузка счетчиков для админа
+        async function loadAdminMeters() {
+            const { data: meters, error } = await supabase
+                .from('meters')
+                .select(`
+                    *,
+                    users (login)
+                `);
+            
+            if (!error && meters) {
+                const tbody = document.getElementById('admin-meters-table');
+                tbody.innerHTML = '';
+                
+                meters.forEach(meter => {
+                    const row = `
+                        <tr>
+                            <td>${meter.id.substring(0, 8)}...</td>
+                            <td>${meter.users?.login || 'N/A'}</td>
+                            <td>${meter.meter_number}</td>
+                            <td>${meter.previous_reading.toFixed(3)}</td>
+                            <td>${meter.current_reading.toFixed(3)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning" onclick="editMeter('${meter.id}')">Изменить</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+        
+        // Загрузка платежей
+        async function loadPayments() {
+            const { data: payments, error } = await supabase
+                .from('payments')
+                .select(`
+                    *,
+                    users (login)
+                `)
+                .order('period', { ascending: false })
+                .limit(20);
+            
+            if (!error && payments) {
+                const tbody = document.getElementById('payments-table');
+                tbody.innerHTML = '';
+                
+                payments.forEach(payment => {
+                    const row = `
+                        <tr>
+                            <td>${payment.users?.login || 'N/A'}</td>
+                            <td>${payment.type}</td>
+                            <td>${payment.amount.toFixed(2)} руб.</td>
+                            <td>${new Date(payment.period).toLocaleDateString()}</td>
+                            <td><span class="badge ${payment.paid ? 'bg-success' : 'bg-warning'}">${payment.paid ? 'Оплачено' : 'Не оплачено'}</span></td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+        }
+        
+        // Добавление нового пользователя
+        async function addNewUser() {
+            const login = document.getElementById('new-user-login').value;
+            const password = document.getElementById('new-user-password').value;
+            const plots = parseInt(document.getElementById('new-user-plots').value);
+            const area = parseFloat(document.getElementById('new-user-area').value);
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert({
+                        login: login,
+                        password: password, // В реальном приложении пароль нужно хэшировать!
+                        plots_count: plots,
+                        area: area,
+                        role: 'user',
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                modal.hide();
+                
+                // Очистка формы
+                document.getElementById('add-user-form').reset();
+                
+                // Обновление списка пользователей
+                loadUsers();
+                
+                alert('Пользователь успешно добавлен!');
+            } catch (error) {
+                console.error('Ошибка добавления пользователя:', error);
+                alert('Ошибка при добавлении пользователя');
+            }
+        }
+        
+        // Сохранение тарифа
+        async function saveTariff() {
+            const type = document.getElementById('tariff-type').value;
+            const value = parseFloat(document.getElementById('tariff-value').value);
+            const date = document.getElementById('tariff-date').value;
+            
+            try {
+                const { error } = await supabase
+                    .from('tariffs')
+                    .insert({
+                        type: type === 'electricity' ? 'electricity_complex' : type,
+                        value: value,
+                        start_date: date,
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                
+                // Очистка формы
+                document.getElementById('tariff-form').reset();
+                
+                // Обновление тарифов
+                loadTariffs();
+                
+                alert('Тариф успешно сохранен!');
+            } catch (error) {
+                console.error('Ошибка сохранения тарифа:', error);
+                alert('Ошибка при сохранении тарифа');
+            }
+        }
+        
+        // Расчет всех начислений
+        async function calculateAllPayments() {
+            if (!confirm('Рассчитать начисления для всех пользователей?')) return;
+            
+            try {
+                // Получение всех пользователей
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*');
+                
+                if (usersError) throw usersError;
+                
+                // Получение текущих тарифов
+                const { data: tariffs, error: tariffsError } = await supabase
+                    .from('tariffs')
+                    .select('*')
+                    .order('start_date', { ascending: false });
+                
+                if (tariffsError) throw tariffsError;
+                
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+                
+                // Расчет для каждого пользователя
+                for (const user of users) {
+                    if (user.role === 'admin') continue;
+                    
+                    let totalAmount = 0;
+                    
+                    // Расчет электроэнергии
+                    const { data: meters } = await supabase
+                        .from('meters')
+                        .select('current_reading, previous_reading')
+                        .eq('user_id', user.id);
+                    
+                    if (meters && meters.length > 0) {
+                        const electricityTariff = tariffs.find(t => t.type === 'electricity_complex');
+                        
+                        meters.forEach(meter => {
+                            const consumption = meter.current_reading - meter.previous_reading;
+                            
+                            if (electricityTariff && consumption > 0) {
+                                const losses = consumption * 0.036;
+                                const first100 = Math.min(consumption, 100) * 6.1;
+                                const above100 = Math.max(consumption - 100, 0) * 7.3;
+                                totalAmount += losses + first100 + above100;
+                            }
+                        });
+                    }
+                    
+                    // Расчет членских взносов
+                    const plotTariff = tariffs.find(t => t.type === 'membership_plot');
+                    const areaTariff = tariffs.find(t => t.type === 'membership_area');
+                    
+                    if (plotTariff) {
+                        totalAmount += user.plots_count * plotTariff.value;
+                    }
+                    if (areaTariff) {
+                        totalAmount += user.area * areaTariff.value;
+                    }
+                    
+                    // Сохранение начисления
+                    if (totalAmount > 0) {
+                        await supabase.from('payments').insert({
+                            user_id: user.id,
+                            type: 'Ежемесячное начисление',
+                            amount: totalAmount,
+                            period: currentMonth + '-01',
+                            paid: false,
+                            created_at: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                alert('Начисления успешно рассчитаны!');
+                loadPayments();
+            } catch (error) {
+                console.error('Ошибка расчета начислений:', error);
+                alert('Ошибка при расчете начислений');
+            }
+        }
+        
+        // Экспорт данных
+        async function exportData() {
+            try {
+                // Экспорт пользователей
+                const { data: users } = await supabase
+                    .from('users')
+                    .select('*');
+                
+                // Экспорт счетчиков
+                const { data: meters } = await supabase
+                    .from('meters')
+                    .select('*');
+                
+                // Экспорт показаний
+                const { data: readings } = await supabase
+                    .from('readings')
+                    .select('*');
+                
+                // Создание ZIP-архива с данными
+                const data = {
+                    users: users,
+                    meters: meters,
+                    readings: readings,
+                    export_date: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Ошибка экспорта:', error);
+                alert('Ошибка при экспорте данных');
+            }
+        }
+        
+        // Импорт данных
+        async function importData() {
+            const fileInput = document.getElementById('import-file');
+            const importType = document.getElementById('import-type').value;
+            
+            if (!fileInput.files.length) {
+                alert('Выберите файл для импорта');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const content = e.target.result;
+                    const data = JSON.parse(content);
+                    
+                    // В зависимости от типа импорта
+                    switch (importType) {
+                        case 'users':
+                            await supabase.from('users').upsert(data);
+                            break;
+                        case 'meters':
+                            await supabase.from('meters').upsert(data);
+                            break;
+                        case 'readings':
+                            await supabase.from('readings').upsert(data);
+                            break;
+                    }
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                    modal.hide();
+                    
+                    alert('Данные успешно импортированы!');
+                    
+                    // Обновление данных
+                    if (currentUserRole === 'admin') {
+                        loadAdminData();
+                    }
+                } catch (error) {
+                    console.error('Ошибка импорта:', error);
+                    alert('Ошибка при импорте данных');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Экспорт начислений
+        async function exportPayments() {
+            try {
+                const { data: payments } = await supabase
+                    .from('payments')
+                    .select(`
+                        *,
+                        users (login)
+                    `)
+                    .order('period', { ascending: false });
+                
+                // Создание CSV
+                let csv = 'Пользователь,Тип,Сумма,Период,Статус\n';
+                
+                payments.forEach(payment => {
+                    csv += `"${payment.users?.login || ''}","${payment.type}",${payment.amount},"${new Date(payment.period).toLocaleDateString()}","${payment.paid ? 'Оплачено' : 'Не оплачено'}"\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `payments_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Ошибка экспорта начислений:', error);
+                alert('Ошибка при экспорте начислений');
+            }
+        }
+        
+        // Вспомогательные функции
+        
+        function showLoginScreen() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('user-dashboard').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+        }
+        
+        function showUserDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('user-dashboard').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+        }
+        
+        function showAdminDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('user-dashboard').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+        }
+        
+        function showTab(tabId) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-pane').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Удалить активный класс у всех кнопок
+            document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Добавить активный класс к нажатой кнопке
+            event.target.classList.add('active');
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+        
+        function showAddUserModal() {
+            const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+            modal.show();
+        }
+        
+        function showImportModal() {
+            const modal = new bootstrap.Modal(document.getElementById('importModal'));
+            modal.show();
+        }
+        
+        function editUser(userId) {
+            alert('Редактирование пользователя ' + userId);
+            // Здесь можно реализовать редактирование
+        }
+        
+        function editMeter(meterId) {
+            alert('Редактирование счетчика ' + meterId);
+            // Здесь можно реализовать редактирование
+        }
+        
+        // Инициализация даты для тарифа (текущая дата)
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('tariff-date');
+            if (dateInput) {
+                dateInput.value = today;
+            }
+        });
     </script>
 </body>
 </html>
