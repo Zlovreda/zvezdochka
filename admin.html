@@ -588,5 +588,74 @@
             window.location.href = 'index.html'
         }
     </script>
+    <script type="module">
+    import { supabase } from './config.js';
+    
+    // Функции администратора
+    async function addUser() {
+        const email = document.getElementById('newUserEmail').value;
+        const password = document.getElementById('newUserPassword').value;
+        const fullName = document.getElementById('newUserName').value;
+        
+        const { data, error } = await supabase.auth.admin.createUser({
+            email: email,
+            password: password,
+            email_confirm: true
+        });
+        
+        if (data.user) {
+            // Добавление профиля пользователя
+            await supabase.from('user_profiles').insert({
+                id: data.user.id,
+                full_name: fullName,
+                plots_count: document.getElementById('newUserPlots').value || 1,
+                acres: document.getElementById('newUserAcres').value || 4.00
+            });
+            alert('Пользователь добавлен!');
+        }
+    }
+    
+    async function updateTariff() {
+        const tariffData = {
+            tariff_type: document.getElementById('tariffType').value,
+            name: document.getElementById('tariffName').value,
+            rate: parseFloat(document.getElementById('tariffRate').value),
+            valid_from: document.getElementById('tariffFrom').value
+        };
+        
+        await supabase.from('tariffs').insert(tariffData);
+        alert('Тариф обновлен!');
+    }
+    
+    // Экспорт данных
+    async function exportData() {
+        const { data: users } = await supabase.from('user_profiles').select(`
+            *,
+            electricity_meters(*),
+            payments(*)
+        `);
+        
+        const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `snt_data_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    }
+    
+    // Импорт данных
+    async function importData(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
+            const data = JSON.parse(e.target.result);
+            // Реализация импорта в базу данных
+            alert(`Загружено ${data.length} записей`);
+        };
+        
+        reader.readAsText(file);
+    }
+</script>
 </body>
 </html>
