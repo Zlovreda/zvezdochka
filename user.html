@@ -3,132 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет</title>
+    <title>Личный кабинет - ЭнергоУчет СНТ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body { background: #f0f2f5; }
+        .card-header { font-weight: bold; }
+        .debt-badge { font-size: 1.3rem; }
+        .meter-card { border-left: 4px solid #0d6efd; }
+    </style>
 </head>
 <body>
     <div class="container py-4">
+        <!-- Шапка -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-house-door"></i> Личный кабинет</h2>
-            <button id="logoutBtn" class="btn btn-outline-danger">Выйти</button>
+            <div>
+                <span id="userName" class="me-3 fw-bold"></span>
+                <button id="logoutBtn" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+            </div>
         </div>
-        <div class="row">
+
+        <!-- Блок с общей суммой долга -->
+        <div class="row mb-4">
             <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">Передать показания</div>
+                <div class="card text-white bg-danger">
                     <div class="card-body">
-                        <label>Счётчик</label>
-                        <select id="meterSelect" class="form-select mb-2"></select>
-                        <label>Месяц</label><input type="month" id="readingMonth" class="form-control mb-2">
-                        <label>Показания (кВт·ч)</label><input type="number" step="0.01" id="readingValue" class="form-control mb-2">
-                        <button id="submitReadingBtn" class="btn btn-success w-100">Отправить</button>
-                        <div id="readingMsg"></div>
+                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Общая задолженность</h5>
+                        <h2 id="totalDebt" class="display-6">0.00 ₽</h2>
+                        <p class="card-text">Неоплаченные счета (электричество + взносы)</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">Мои долги</div>
+                <div class="card text-white bg-info">
                     <div class="card-body">
-                        <h5>За электричество: <span id="debtElectricity" class="text-danger">0.00 ₽</span></h5>
-                        <h5>Членские взносы: <span id="debtFees" class="text-danger">0.00 ₽</span></h5>
-                        <h5>Общий долг: <span id="totalDebt" class="text-danger">0.00 ₽</span></h5>
+                        <h5 class="card-title"><i class="bi bi-info-circle"></i> Ваши данные</h5>
+                        <p id="userInfo" class="card-text">Участков: --, Соток: --</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header bg-secondary text-white">История показаний</div>
-            <div class="card-body">
-                <table class="table table-striped" id="historyTable"><thead><tr><th>Счётчик</th><th>Месяц</th><th>Показания</th><th>Начислено за эл.</th><th>Оплачено</th></tr></thead><tbody id="historyBody"><tr><td colspan="5">Загрузка...</td></tr></tbody></table>
+
+        <!-- Вкладки: Счета и Передача показаний -->
+        <ul class="nav nav-tabs mb-3" id="userTabs">
+            <li class="nav-item"><a class="nav-link active" data-tab="invoicesTab">Мои счета</a></li>
+            <li class="nav-item"><a class="nav-link" data-tab="metersTab">Мои счётчики и показания</a></li>
+        </ul>
+
+        <!-- Вкладка: Счета -->
+        <div id="invoicesTab" class="tab-pane active">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span>История начислений</span>
+                    <div>
+                        <select id="invoiceFilterPaid" class="form-select form-select-sm w-auto d-inline-block me-2">
+                            <option value="">Все счета</option>
+                            <option value="false">Только неоплаченные</option>
+                            <option value="true">Оплаченные</option>
+                        </select>
+                        <button id="refreshInvoicesBtn" class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat"></i> Обновить</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr><th>Месяц</th><th>Электричество (₽)</th><th>Взнос за участок</th><th>Взнос за сотки</th><th>Итого (₽)</th><th>Статус</th></tr>
+                            </thead>
+                            <tbody id="invoicesBody">
+                                <tr><td colspan="6" class="text-center">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Счётчики и показания -->
+        <div id="metersTab" class="tab-pane" style="display:none">
+            <div class="row" id="metersContainer">
+                <!-- Сюда будут динамически подгружаться карточки счётчиков -->
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно для передачи показаний -->
+    <div class="modal fade" id="readingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Передать показания</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="readingMeterId">
+                    <p>Счётчик: <strong id="readingMeterName"></strong></p>
+                    <label class="form-label">Месяц (первое число)</label>
+                    <input type="month" id="readingMonth" class="form-control mb-3" required>
+                    <label class="form-label">Текущие показания (кВт·ч)</label>
+                    <input type="number" step="0.01" id="readingValue" class="form-control mb-3" placeholder="например 1250.5">
+                    <div id="readingMsg" class="small text-muted"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" id="submitReadingBtn" class="btn btn-primary">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
+        // Конфигурация Supabase (используем ваш новый anon ключ)
         const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null;
 
+        // --- Проверка авторизации ---
         async function checkAuth() {
             const userStr = localStorage.getItem('currentUser');
-            if (!userStr) return window.location.href = 'index.html';
+            if (!userStr) {
+                window.location.href = 'index.html';
+                return false;
+            }
             currentUser = JSON.parse(userStr);
-            if (currentUser.role !== 'user') window.location.href = 'admin.html';
+            if (currentUser.role !== 'user') {
+                window.location.href = 'admin.html';
+                return false;
+            }
+            return true;
         }
 
-        async function loadMeters() {
-            const { data: meters } = await supabaseClient.from('meters').select('*').eq('user_id', currentUser.id);
-            const select = document.getElementById('meterSelect');
-            select.innerHTML = meters.map(m => `<option value="${m.id}">${m.meter_name}</option>`).join('');
-            if (meters.length) loadDebt();
+        // --- Загрузка информации о пользователе ---
+        async function loadUserInfo() {
+            document.getElementById('userName').innerText = currentUser.full_name || currentUser.username;
+            document.getElementById('userInfo').innerHTML = `Участков: ${currentUser.plots_count || 1}, Соток: ${currentUser.area_sotok || 0}`;
         }
 
-        async function loadDebt() {
-            // Долг по электричеству (неоплаченные показания)
-            const { data: unpaidElectric } = await supabaseClient.from('readings').select('amount_electricity').eq('user_id', currentUser.id).eq('paid_electricity', false);
-            const debtEl = unpaidElectric.reduce((s,r)=>s+(r.amount_electricity||0),0);
-            // Долг по взносам
-            const { data: unpaidFees } = await supabaseClient.from('fees').select('amount_plot, amount_area').eq('user_id', currentUser.id).eq('paid_fees', false);
-            const debtFees = unpaidFees.reduce((s,f)=>s+(f.amount_plot||0)+(f.amount_area||0),0);
-            document.getElementById('debtElectricity').innerText = debtEl.toFixed(2)+' ₽';
-            document.getElementById('debtFees').innerText = debtFees.toFixed(2)+' ₽';
-            document.getElementById('totalDebt').innerText = (debtEl+debtFees).toFixed(2)+' ₽';
+        // --- Загрузка счетов с фильтрацией ---
+        async function loadInvoices() {
+            const filterPaid = document.getElementById('invoiceFilterPaid').value;
+            let query = supabaseClient
+                .from('invoices')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('year_month', { ascending: false });
+            if (filterPaid !== '') query = query.eq('paid', filterPaid === 'true');
+            const { data, error } = await query;
+            if (error) {
+                console.error(error);
+                document.getElementById('invoicesBody').innerHTML = '<tr><td colspan="6" class="text-danger">Ошибка загрузки счетов</td></tr>';
+                return;
+            }
+            const tbody = document.getElementById('invoicesBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет счетов</td></tr>';
+                document.getElementById('totalDebt').innerText = '0.00 ₽';
+                return;
+            }
+            let totalDebt = 0;
+            tbody.innerHTML = data.map(inv => {
+                if (!inv.paid) totalDebt += Number(inv.total);
+                const monthName = new Date(inv.year_month).toLocaleDateString('ru', { month: 'long', year: 'numeric' });
+                return `
+                    <tr class="${!inv.paid ? 'table-warning' : ''}">
+                        <td>${monthName}</td>
+                        <td>${inv.electricity_amount.toFixed(2)}</td>
+                        <td>${inv.plot_fee.toFixed(2)}</td>
+                        <td>${inv.area_fee.toFixed(2)}</td>
+                        <td><strong>${inv.total.toFixed(2)}</strong></td>
+                        <td>${inv.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>'}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('totalDebt').innerText = totalDebt.toFixed(2) + ' ₽';
         }
 
-        async function loadHistory() {
-            const { data: readings } = await supabaseClient.from('readings').select('*, meters(meter_name)').eq('user_id', currentUser.id).order('reading_date', { ascending: false });
-            const tbody = document.getElementById('historyBody');
-            if (!readings.length) { tbody.innerHTML = '<tr><td colspan="5">Нет показаний</td></tr>'; return; }
-            tbody.innerHTML = readings.map(r => `<tr>
-                <td>${r.meters?.meter_name || '?'}</td>
-                <td>${new Date(r.reading_date).toLocaleDateString()}</td>
-                <td>${r.value}</td>
-                <td>${r.amount_electricity ? r.amount_electricity+' ₽' : '—'}</td>
-                <td>${r.paid_electricity ? '✅' : '❌'}</td>
-            </tr>`).join('');
+        // --- Загрузка счётчиков пользователя и истории показаний ---
+        async function loadMetersAndReadings() {
+            // Получаем все счётчики пользователя
+            const { data: meters, error } = await supabaseClient
+                .from('meters')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('id');
+            if (error) {
+                console.error(error);
+                document.getElementById('metersContainer').innerHTML = '<div class="alert alert-danger">Ошибка загрузки счётчиков</div>';
+                return;
+            }
+            if (!meters.length) {
+                document.getElementById('metersContainer').innerHTML = '<div class="alert alert-info">У вас нет ни одного счётчика. Обратитесь к администратору.</div>';
+                return;
+            }
+            // Для каждого счётчика получаем последние показания и историю
+            let html = '';
+            for (const meter of meters) {
+                // Последнее показание
+                const { data: lastReading } = await supabaseClient
+                    .from('readings')
+                    .select('*')
+                    .eq('meter_id', meter.id)
+                    .order('reading_date', { ascending: false })
+                    .limit(1);
+                const lastValue = lastReading && lastReading.length ? lastReading[0].value : 'Нет данных';
+                const lastDate = lastReading && lastReading.length ? new Date(lastReading[0].reading_date).toLocaleDateString('ru') : '—';
+                // История показаний (последние 5)
+                const { data: history } = await supabaseClient
+                    .from('readings')
+                    .select('reading_date, value')
+                    .eq('meter_id', meter.id)
+                    .order('reading_date', { ascending: false })
+                    .limit(5);
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card meter-card h-100">
+                            <div class="card-header bg-light">
+                                <i class="bi bi-speedometer2"></i> ${meter.name}
+                                <button class="btn btn-sm btn-primary float-end add-reading" data-meter-id="${meter.id}" data-meter-name="${meter.name}">
+                                    <i class="bi bi-plus-circle"></i> Передать показания
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Последнее показание:</strong> ${lastValue} кВт·ч (${lastDate})</p>
+                                <p><strong>История (последние 5):</strong></p>
+                                <ul class="small">
+                                    ${history && history.length ? history.map(h => `<li>${new Date(h.reading_date).toLocaleDateString('ru')}: ${h.value} кВт·ч</li>`).join('') : '<li>Нет показаний</li>'}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('metersContainer').innerHTML = html;
+            // Навешиваем обработчики на кнопки "Передать показания"
+            document.querySelectorAll('.add-reading').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('readingMeterId').value = btn.dataset.meterId;
+                    document.getElementById('readingMeterName').innerText = btn.dataset.meterName;
+                    // Устанавливаем месяц по умолчанию – текущий, но разрешаем выбирать только прошедшие
+                    const now = new Date();
+                    const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                    document.getElementById('readingMonth').value = currentMonth;
+                    document.getElementById('readingValue').value = '';
+                    document.getElementById('readingMsg').innerHTML = '';
+                    new bootstrap.Modal(document.getElementById('readingModal')).show();
+                });
+            });
         }
 
+        // --- Передача показаний (с проверкой, расчётом потребления и созданием/обновлением счёта) ---
         async function submitReading() {
-            const meterId = document.getElementById('meterSelect').value;
+            const meterId = document.getElementById('readingMeterId').value;
             const month = document.getElementById('readingMonth').value;
             const value = parseFloat(document.getElementById('readingValue').value);
-            if (!meterId || !month || isNaN(value)) { alert('Заполните все поля'); return; }
-            const readingDate = month+'-01';
-            // Получить предыдущее показание
-            const { data: prev } = await supabaseClient.from('readings').select('value').eq('meter_id', meterId).lt('reading_date', readingDate).order('reading_date', { ascending: false }).limit(1);
-            let consumption = value;
-            if (prev.length) consumption = value - prev[0].value;
-            if (consumption < 0) { alert('Новое показание меньше предыдущего'); return; }
-            // Получить тарифы
-            const { data: tariffs } = await supabaseClient.from('settings').select('value').in('key', ['tariff_T1','tariff_T2','tariff_T3']);
-            const t1 = parseFloat(tariffs.find(t=>t.key==='tariff_T1').value);
-            const t2 = parseFloat(tariffs.find(t=>t.key==='tariff_T2').value);
-            const t3 = parseFloat(tariffs.find(t=>t.key==='tariff_T3').value);
-            let amount = consumption*t3 + Math.min(consumption,100)*t1;
-            if (consumption>100) amount += (consumption-100)*t2;
-            const { error } = await supabaseClient.from('readings').insert({
-                meter_id: meterId, reading_date: readingDate, value: value,
-                amount_electricity: amount, paid_electricity: false
-            });
-            if (error) alert('Ошибка: '+error.message);
-            else {
-                alert('Показания переданы');
-                document.getElementById('readingValue').value = '';
-                loadDebt();
-                loadHistory();
+            if (!month || isNaN(value)) {
+                document.getElementById('readingMsg').innerHTML = '<span class="text-danger">Заполните месяц и показания</span>';
+                return;
             }
+            const readingDate = month + '-01'; // формат YYYY-MM-DD
+            const targetDate = new Date(readingDate);
+            if (targetDate > new Date()) {
+                document.getElementById('readingMsg').innerHTML = '<span class="text-danger">Нельзя передавать показания за будущие месяцы</span>';
+                return;
+            }
+
+            // 1. Проверяем, нет ли уже показания за этот месяц для этого счётчика
+            const { data: existing } = await supabaseClient
+                .from('readings')
+                .select('id')
+                .eq('meter_id', meterId)
+                .eq('reading_date', readingDate)
+                .single();
+            if (existing) {
+                document.getElementById('readingMsg').innerHTML = '<span class="text-danger">Показания за этот месяц уже переданы. Отредактируйте их через администратора.</span>';
+                return;
+            }
+
+            // 2. Получаем предыдущее показание (за предыдущий месяц)
+            const prevDate = new Date(targetDate);
+            prevDate.setMonth(prevDate.getMonth() - 1);
+            const prevDateStr = prevDate.toISOString().slice(0,10);
+            const { data: prevReading } = await supabaseClient
+                .from('readings')
+                .select('value')
+                .eq('meter_id', meterId)
+                .eq('reading_date', prevDateStr)
+                .single();
+            const prevValue = prevReading ? prevReading.value : 0;
+            const consumption = value - prevValue;
+            if (consumption < 0) {
+                document.getElementById('readingMsg').innerHTML = '<span class="text-danger">Новое показание не может быть меньше предыдущего</span>';
+                return;
+            }
+
+            // 3. Сохраняем показание
+            const { error: insertError } = await supabaseClient
+                .from('readings')
+                .insert({
+                    meter_id: meterId,
+                    reading_date: readingDate,
+                    value: value
+                });
+            if (insertError) {
+                document.getElementById('readingMsg').innerHTML = '<span class="text-danger">Ошибка сохранения: ' + insertError.message + '</span>';
+                return;
+            }
+
+            // 4. Пересчитываем счёт для этого пользователя за этот месяц
+            await recalculateInvoiceForUserMonth(currentUser.id, readingDate);
+
+            document.getElementById('readingMsg').innerHTML = '<span class="text-success">Показания успешно переданы! Счёт обновлён.</span>';
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('readingModal')).hide();
+                loadInvoices();          // обновляем счета
+                loadMetersAndReadings(); // обновляем историю показаний
+            }, 1500);
         }
 
-        document.getElementById('logoutBtn').addEventListener('click', ()=>{ localStorage.removeItem('currentUser'); window.location.href='index.html'; });
-        document.getElementById('submitReadingBtn').addEventListener('click', submitReading);
+        // --- Пересчёт счёта для конкретного пользователя за конкретный месяц (первое число) ---
+        async function recalculateInvoiceForUserMonth(userId, yearMonthDate) {
+            // Получаем все счётчики пользователя
+            const { data: meters } = await supabaseClient.from('meters').select('id').eq('user_id', userId);
+            if (!meters || meters.length === 0) return;
 
+            // Получаем настройки тарифов
+            const { data: settingsRows } = await supabaseClient.from('fee_settings').select('*');
+            const settings = Object.fromEntries(settingsRows.map(s => [s.key, s.value]));
+            const t1Rate = parseFloat(settings.tariff_t1_rate || 6.2);
+            const t2Rate = parseFloat(settings.tariff_t2_rate || 7.42);
+            const t3Rate = parseFloat(settings.tariff_t3_rate || 0.36);
+            const t1Limit = parseFloat(settings.tariff_t1_limit || 100);
+            const plotFeeRate = parseFloat(settings.plot_fee_rate || 939);
+            const areaFeeRate = parseFloat(settings.area_fee_rate || 44);
+
+            // Суммарное потребление за месяц по всем счётчикам
+            let totalConsumption = 0;
+            for (const meter of meters) {
+                // Показание за этот месяц
+                const { data: current } = await supabaseClient
+                    .from('readings')
+                    .select('value')
+                    .eq('meter_id', meter.id)
+                    .eq('reading_date', yearMonthDate)
+                    .single();
+                if (!current) continue;
+
+                // Предыдущее показание (месяц назад)
+                const prevDate = new Date(yearMonthDate);
+                prevDate.setMonth(prevDate.getMonth() - 1);
+                const prevDateStr = prevDate.toISOString().slice(0,10);
+                const { data: prev } = await supabaseClient
+                    .from('readings')
+                    .select('value')
+                    .eq('meter_id', meter.id)
+                    .eq('reading_date', prevDateStr)
+                    .single();
+                const prevValue = prev ? prev.value : 0;
+                const consumption = current.value - prevValue;
+                if (consumption > 0) totalConsumption += consumption;
+            }
+
+            // Расчёт суммы за электроэнергию по трёхсоставному тарифу
+            let electricityAmount = 0;
+            if (totalConsumption > 0) {
+                const t3Part = totalConsumption * t3Rate;
+                let t1Part = 0, t2Part = 0;
+                if (totalConsumption <= t1Limit) {
+                    t1Part = totalConsumption * t1Rate;
+                } else {
+                    t1Part = t1Limit * t1Rate;
+                    t2Part = (totalConsumption - t1Limit) * t2Rate;
+                }
+                electricityAmount = t3Part + t1Part + t2Part;
+            }
+
+            // Получаем данные пользователя (участки, сотки)
+            const { data: user } = await supabaseClient.from('users').select('plots_count, area_sotok').eq('id', userId).single();
+            const plotFee = (user.plots_count || 1) * plotFeeRate;
+            const areaFee = (user.area_sotok || 0) * areaFeeRate;
+            const total = electricityAmount + plotFee + areaFee;
+
+            // Сохраняем или обновляем счёт
+            await supabaseClient.from('invoices').upsert({
+                user_id: userId,
+                year_month: yearMonthDate,
+                electricity_amount: electricityAmount,
+                plot_fee: plotFee,
+                area_fee: areaFee,
+                total: total,
+                paid: false
+            }, { onConflict: 'user_id,year_month' });
+        }
+
+        // --- Переключение вкладок ---
+        function initTabs() {
+            document.querySelectorAll('[data-tab]').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetId = tab.dataset.tab;
+                    document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
+                    document.getElementById(targetId).style.display = 'block';
+                    document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    if (targetId === 'invoicesTab') loadInvoices();
+                    if (targetId === 'metersTab') loadMetersAndReadings();
+                });
+            });
+        }
+
+        // --- Обработчики событий ---
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        });
+        document.getElementById('refreshInvoicesBtn').addEventListener('click', () => loadInvoices());
+        document.getElementById('submitReadingBtn').addEventListener('click', submitReading);
+        document.getElementById('invoiceFilterPaid').addEventListener('change', () => loadInvoices());
+
+        // --- Старт ---
         (async () => {
-            await checkAuth();
-            await loadMeters();
-            await loadHistory();
+            const ok = await checkAuth();
+            if (!ok) return;
+            await loadUserInfo();
+            await loadInvoices();      // активная вкладка по умолчанию
+            initTabs();
         })();
     </script>
 </body>
