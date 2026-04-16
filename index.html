@@ -2,96 +2,261 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Supabase + GitHub Pages</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Менеджер элементов - Supabase + GitHub Pages</title>
+    <!-- Подключение Supabase JS клиента через CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: system-ui; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
-        .form-group { margin-bottom: 1rem; }
-        input, button { padding: 0.5rem; font-size: 1rem; }
-        input { width: 70%; }
-        button { background-color: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; }
-        button:hover { background-color: #2563eb; }
-        .message-list { margin-top: 2rem; list-style: none; padding: 0; }
-        .message-list li { background: #f3f4f6; margin: 0.5rem 0; padding: 0.75rem; border-radius: 0.5rem; }
-        .error { color: #dc2626; }
-        .loading { color: #6b7280; }
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); padding: 24px; }
+        h1 { margin-top: 0; color: #1a1a2e; text-align: center; }
+        .form-group { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .form-group input, .form-group textarea { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .form-group textarea { min-width: 200px; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        .delete-btn { background: #ef4444; margin-left: 10px; }
+        .delete-btn:hover { background: #dc2626; }
+        .items-list { list-style: none; padding: 0; }
+        .item-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 6px; color: #0f172a; }
+        .item-desc { color: #475569; font-size: 0.9rem; }
+        .item-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 8px; }
+        .error { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .loading { text-align: center; color: #64748b; padding: 20px; display: none; }
     </style>
 </head>
 <body>
-    <h1>📦 Работа с Supabase</h1>
-    <div class="form-group">
-        <input type="text" id="messageInput" placeholder="Введите текст...">
-        <button id="addButton">➕ Добавить</button>
-    </div>
-    <div id="errorMsg" class="error"></div>
-    <h2>Сохранённые записи</h2>
+<div class="container">
+    <h1>📦 Мои элементы</h1>
+    
+    <div id="errorMessage" class="error"></div>
     <div id="loadingIndicator" class="loading">Загрузка...</div>
-    <ul id="messagesList" class="message-list"></ul>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const supabaseUrl = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
-        
-        // Переименовали переменную, чтобы избежать конфликта
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+    <!-- Форма для добавления нового элемента -->
+    <div class="form-group">
+        <input type="text" id="itemName" placeholder="Название (обязательно)" autocomplete="off">
+        <textarea id="itemDesc" placeholder="Описание" rows="1"></textarea>
+        <button id="createBtn">➕ Добавить</button>
+    </div>
 
-        const messageInput = document.getElementById('messageInput');
-        const addButton = document.getElementById('addButton');
-        const messagesList = document.getElementById('messagesList');
-        const errorDiv = document.getElementById('errorMsg');
-        const loadingIndicator = document.getElementById('loadingIndicator');
+    <!-- Список элементов будет отображаться здесь -->
+    <ul id="itemsList" class="items-list"></ul>
+    <div id="emptyMessage" style="text-align: center; color: #94a3b8; padding: 20px;">Нет элементов. Добавьте первый!</div>
+</div>
 
-        async function loadMessages() {
-            try {
-                errorDiv.textContent = '';
-                loadingIndicator.style.display = 'block';
-                const { data, error } = await supabaseClient
-                    .from('messages')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                if (error) throw error;
-                messagesList.innerHTML = '';
-                if (!data || data.length === 0) {
-                    messagesList.innerHTML = '<li>Нет записей. Добавьте первую!</li>';
-                } else {
-                    data.forEach(msg => {
-                        const li = document.createElement('li');
-                        li.textContent = msg.content;
-                        messagesList.appendChild(li);
-                    });
-                }
-            } catch (err) {
-                errorDiv.textContent = 'Ошибка загрузки: ' + err.message;
-            } finally {
-                loadingIndicator.style.display = 'none';
+<script>
+    // !!! ВАЖНО: Замените эти значения на данные из вашего проекта Supabase !!!
+    const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_a2KMGHyJtHw0M0hF3vG5Hw_X7KH5mHk';
+
+    // Инициализация клиента Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // DOM элементы
+    const itemsListEl = document.getElementById('itemsList');
+    const emptyMessageEl = document.getElementById('emptyMessage');
+    const errorMessageEl = document.getElementById('errorMessage');
+    const loadingIndicatorEl = document.getElementById('loadingIndicator');
+    const createBtn = document.getElementById('createBtn');
+    const itemNameInput = document.getElementById('itemName');
+    const itemDescInput = document.getElementById('itemDesc');
+
+    // Функция для отображения ошибок
+    function showError(message) {
+        errorMessageEl.textContent = message;
+        errorMessageEl.style.display = 'block';
+        setTimeout(() => { errorMessageEl.style.display = 'none'; }, 5000);
+    }
+
+    // Функция для показа/скрытия индикатора загрузки
+    function setLoading(isLoading) {
+        loadingIndicatorEl.style.display = isLoading ? 'block' : 'none';
+    }
+
+    // === Функция SELECT (чтение всех элементов) ===
+    async function fetchItems() {
+        setLoading(true);
+        try {
+            // Выполняем запрос к таблице 'items', выбираем все колонки и сортируем по id
+            const { data, error } = await supabase
+                .from('items')
+                .select('*')
+                .order('id', { ascending: false }); // Новые элементы сверху
+            
+            if (error) throw error;
+
+            // Отображаем список или сообщение "нет элементов"
+            if (data && data.length > 0) {
+                renderItems(data);
+                emptyMessageEl.style.display = 'none';
+            } else {
+                itemsListEl.innerHTML = '';
+                emptyMessageEl.style.display = 'block';
             }
+        } catch (error) {
+            console.error('Ошибка при загрузке:', error);
+            showError('Не удалось загрузить элементы: ' + error.message);
+            itemsListEl.innerHTML = '';
+            emptyMessageEl.style.display = 'block';
+        } finally {
+            setLoading(false);
         }
+    }
 
-        async function addMessage() {
-            const content = messageInput.value.trim();
-            if (!content) {
-                errorDiv.textContent = 'Введите текст';
-                return;
-            }
-            errorDiv.textContent = '';
-            addButton.disabled = true;
-            addButton.textContent = 'Отправка...';
-            try {
-                const { error } = await supabaseClient.from('messages').insert([{ content }]);
-                if (error) throw error;
-                messageInput.value = '';
-                await loadMessages();
-            } catch (err) {
-                errorDiv.textContent = 'Ошибка: ' + err.message;
-            } finally {
-                addButton.disabled = false;
-                addButton.textContent = '➕ Добавить';
-            }
+    // Функция для отображения элементов на странице
+    function renderItems(items) {
+        itemsListEl.innerHTML = '';
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'item-card';
+            // Форматируем дату, если она есть
+            const date = item.created_at ? new Date(item.created_at).toLocaleString() : 'не указана';
+            li.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${escapeHtml(item.name)}</div>
+                    <div class="item-desc">${escapeHtml(item.description || '—')}</div>
+                    <div class="item-meta">ID: ${item.id} | Создан: ${date}</div>
+                </div>
+                <div>
+                    <button class="edit-btn" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-desc="${escapeHtml(item.description || '')}">✏️ Редактировать</button>
+                    <button class="delete-btn" data-id="${item.id}">🗑️ Удалить</button>
+                </div>
+            `;
+            itemsListEl.appendChild(li);
+        });
+
+        // Добавляем обработчики для кнопок "Редактировать" и "Удалить"
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                const name = btn.dataset.name;
+                const desc = btn.dataset.desc;
+                editItemPrompt(id, name, desc);
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                deleteItem(id);
+            });
+        });
+    }
+
+    // Простая защита от XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // === Функция INSERT (создание нового элемента) ===
+    async function createItem(name, description) {
+        if (!name || name.trim() === '') {
+            showError('Название элемента не может быть пустым');
+            return false;
         }
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('items')
+                .insert([{ name: name.trim(), description: description?.trim() || null }])
+                .select(); // .select() возвращает созданную запись
 
-        addButton.addEventListener('click', addMessage);
-        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addMessage(); });
-        loadMessages();
-    </script>
+            if (error) throw error;
+            
+            // Обновляем список элементов
+            await fetchItems();
+            // Очищаем поля формы
+            itemNameInput.value = '';
+            itemDescInput.value = '';
+            return true;
+        } catch (error) {
+            console.error('Ошибка при создании:', error);
+            showError('Не удалось создать элемент: ' + error.message);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // === Функция UPDATE (обновление существующего элемента) ===
+    async function updateItem(id, name, description) {
+        if (!name || name.trim() === '') {
+            showError('Название не может быть пустым');
+            return false;
+        }
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('items')
+                .update({ name: name.trim(), description: description?.trim() || null })
+                .eq('id', id); // Обновляем запись с конкретным id
+
+            if (error) throw error;
+            
+            await fetchItems();
+            return true;
+        } catch (error) {
+            console.error('Ошибка при обновлении:', error);
+            showError('Не удалось обновить элемент: ' + error.message);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Функция для отображения диалога редактирования (используем стандартный prompt для простоты)
+    function editItemPrompt(id, currentName, currentDesc) {
+        const newName = prompt('Введите новое название:', currentName);
+        if (newName === null) return; // Отмена
+        const newDesc = prompt('Введите новое описание:', currentDesc);
+        updateItem(id, newName, newDesc);
+    }
+
+    // === Функция DELETE (удаление элемента) ===
+    async function deleteItem(id) {
+        if (!confirm('Вы уверены, что хотите удалить этот элемент?')) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('items')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            await fetchItems();
+        } catch (error) {
+            console.error('Ошибка при удалении:', error);
+            showError('Не удалось удалить элемент: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Обработчик кнопки "Создать"
+    createBtn.addEventListener('click', () => {
+        createItem(itemNameInput.value, itemDescInput.value);
+    });
+
+    // Также позволяем создать элемент по нажатию Enter в поле "Название"
+    itemNameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            createItem(itemNameInput.value, itemDescInput.value);
+        }
+    });
+
+    // Загружаем элементы при загрузке страницы
+    fetchItems();
+</script>
 </body>
 </html>
