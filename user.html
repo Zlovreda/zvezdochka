@@ -3,127 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет - ЭнергоУчет</title>
+    <title>Личный кабинет - СНТ Звёздочка</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
 </head>
 <body>
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-house-door"></i> Личный кабинет</h2>
-        <button id="logoutBtn" class="btn btn-outline-danger">Выйти</button>
-    </div>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-house-door"></i> Личный кабинет</h2>
+            <button id="logoutBtn" class="btn btn-outline-danger">Выйти</button>
+        </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">Передать показания</div>
-                <div class="card-body">
-                    <label>Счётчик</label>
-                    <select id="meterSelect" class="form-control mb-2"></select>
-                    <label>Месяц (первое число)</label>
-                    <input type="month" id="readingMonth" class="form-control mb-2">
-                    <label>Показания (кВт·ч)</label>
-                    <input type="number" step="0.01" id="readingValue" class="form-control mb-2">
-                    <button id="submitReadingBtn" class="btn btn-success w-100">Отправить</button>
-                    <div id="readingMsg" class="mt-2"></div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">Передать показания</div>
+                    <div class="card-body">
+                        <div id="metersList"></div>
+                        <button id="submitReadingBtn" class="btn btn-success mt-2">Отправить показания</button>
+                        <div id="readingMsg" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">Мой долг (неоплаченные счета)</div>
+                    <div class="card-body">
+                        <h3 id="debtAmount" class="text-danger">0.00 ₽</h3>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">Мой долг</div>
-                <div class="card-body">
-                    <h3 id="debtAmount" class="text-danger">0.00 ₽</h3>
-                    <p class="text-muted">Сумма неоплаченных счетов</p>
-                </div>
+
+        <div class="card">
+            <div class="card-header bg-secondary text-white">История счетов</div>
+            <div class="card-body">
+                <table class="table table-striped" id="invoicesTable">
+                    <thead><tr><th>Месяц</th><th>Электричество</th><th>Взнос (участок)</th><th>Взнос (сотки)</th><th>Доп. сборы</th><th>Итого</th><th>Статус</th></tr></thead>
+                    <tbody id="invoicesBody"><tr><td colspan="7">Загрузка...</td></tr></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header bg-secondary text-white">Мои счета</div>
-        <div class="card-body">
-            <table class="table table-striped" id="invoicesTable">
-                <thead><tr><th>Месяц</th><th>Электричество</th><th>Взнос участок</th><th>Взнос сотки</th><th>Доп. взносы</th><th>Итого</th><th>Статус</th></tr></thead>
-                <tbody id="invoicesBody"><tr><td colspan="7">Загрузка...</td></tr></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentUser = null;
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-    const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let currentUser = null;
+        async function checkAuth() {
+            const userStr = localStorage.getItem('currentUser');
+            if (!userStr) return window.location.href = 'index.html';
+            currentUser = JSON.parse(userStr);
+            if (currentUser.role !== 'user') window.location.href = 'admin.html';
+        }
 
-    async function checkAuth() {
-        const userStr = localStorage.getItem('currentUser');
-        if (!userStr) return window.location.href = 'index.html';
-        currentUser = JSON.parse(userStr);
-        if (currentUser.role !== 'user') window.location.href = 'admin.html';
-    }
+        async function loadMeters() {
+            const { data: meters } = await supabaseClient.from('meters').select('*').eq('user_id', currentUser.id);
+            const container = document.getElementById('metersList');
+            if (!meters.length) { container.innerHTML = '<p>Нет счётчиков</p>'; return; }
+            container.innerHTML = meters.map(m => `
+                <div class="mb-2">
+                    <label>${m.name}</label>
+                    <input type="number" step="0.01" class="form-control meter-reading" data-meter-id="${m.id}" placeholder="Текущее показание">
+                </div>
+            `).join('');
+        }
 
-    async function loadMeters() {
-        const { data, error } = await supabaseClient.from('meters').select('id, name').eq('user_id', currentUser.id);
-        if (error) return;
-        const select = document.getElementById('meterSelect');
-        select.innerHTML = data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-    }
+        async function loadDebt() {
+            const { data: invoices } = await supabaseClient.from('invoices').select('total').eq('user_id', currentUser.id).eq('paid', false);
+            const total = invoices.reduce((sum, i) => sum + (i.total || 0), 0);
+            document.getElementById('debtAmount').innerText = total.toFixed(2) + ' ₽';
+        }
 
-    async function loadDebt() {
-        const { data, error } = await supabaseClient.from('invoices').select('total').eq('user_id', currentUser.id).eq('paid', false);
-        if (error) return;
-        const total = data.reduce((sum, inv) => sum + inv.total, 0);
-        document.getElementById('debtAmount').innerText = total.toFixed(2) + ' ₽';
-    }
+        async function loadInvoices() {
+            const { data } = await supabaseClient.from('invoices').select('*').eq('user_id', currentUser.id).order('year_month', { ascending: false });
+            const tbody = document.getElementById('invoicesBody');
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="7">Нет счетов</td></tr>'; return; }
+            tbody.innerHTML = data.map(i => `
+                <tr>
+                    <td>${i.year_month.slice(0,7)}</td>
+                    <td>${i.electricity_amount.toFixed(2)}</td>
+                    <td>${i.plot_fee.toFixed(2)}</td>
+                    <td>${i.area_fee.toFixed(2)}</td>
+                    <td>${i.extra_charges_total.toFixed(2)}</td>
+                    <td>${i.total.toFixed(2)}</td>
+                    <td>${i.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>'}</td>
+                </tr>
+            `).join('');
+        }
 
-    async function loadInvoices() {
-        const { data, error } = await supabaseClient.from('invoices').select('*').eq('user_id', currentUser.id).order('year_month', { ascending: false });
-        if (error) return;
-        const tbody = document.getElementById('invoicesBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="7">Нет счетов</td></tr>'; return; }
-        tbody.innerHTML = data.map(inv => `
-            <tr>
-                <td>${inv.year_month.slice(0,7)}</td>
-                <td>${inv.electricity_amount}</td>
-                <td>${inv.plot_fee}</td>
-                <td>${inv.area_fee}</td>
-                <td>${inv.custom_fees_total}</td>
-                <td>${inv.total}</td>
-                <td>${inv.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>'}</td>
-            </tr>
-        `).join('');
-    }
+        async function submitReadings() {
+            const readings = [];
+            document.querySelectorAll('.meter-reading').forEach(input => {
+                const meterId = input.dataset.meterId;
+                const value = parseFloat(input.value);
+                if (!isNaN(value) && value > 0) {
+                    readings.push({ meter_id: meterId, value });
+                }
+            });
+            if (readings.length === 0) { showMsg('readingMsg', 'Введите хотя бы одно показание', 'danger'); return; }
+            const currentMonth = new Date().toISOString().slice(0,7) + '-01';
+            for (const r of readings) {
+                const { error } = await supabaseClient.from('readings').upsert({
+                    meter_id: r.meter_id,
+                    reading_date: currentMonth,
+                    value: r.value
+                }, { onConflict: 'meter_id,reading_date' });
+                if (error) { showMsg('readingMsg', 'Ошибка: ' + error.message, 'danger'); return; }
+            }
+            showMsg('readingMsg', 'Показания сохранены!', 'success');
+            // Очищаем поля
+            document.querySelectorAll('.meter-reading').forEach(i => i.value = '');
+            // После передачи показаний администратор пересчитает счета позже
+        }
 
-    async function submitReading() {
-        const meterId = document.getElementById('meterSelect').value;
-        const month = document.getElementById('readingMonth').value;
-        const value = parseFloat(document.getElementById('readingValue').value);
-        if (!meterId || !month || isNaN(value)) { showMsg('readingMsg', 'Заполните все поля', 'danger'); return; }
-        const readingDate = month + '-01';
-        const { error } = await supabaseClient.from('readings').insert({ meter_id: meterId, reading_date: readingDate, value: value });
-        if (error) { if (error.code === '23505') showMsg('readingMsg', 'Показания за этот месяц уже переданы', 'danger'); else showMsg('readingMsg', 'Ошибка: ' + error.message, 'danger'); }
-        else { showMsg('readingMsg', 'Показания сохранены', 'success'); document.getElementById('readingValue').value = ''; }
-    }
+        function showMsg(elId, msg, type) {
+            const div = document.getElementById(elId);
+            div.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+            setTimeout(() => div.innerHTML = '', 3000);
+        }
 
-    function showMsg(elId, msg, type) {
-        const div = document.getElementById(elId);
-        div.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-        setTimeout(() => div.innerHTML = '', 3000);
-    }
+        document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.href = 'index.html'; });
+        document.getElementById('submitReadingBtn').addEventListener('click', submitReadings);
 
-    document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = 'index.html'; };
-    document.getElementById('submitReadingBtn').onclick = submitReading;
-
-    (async () => {
-        await checkAuth();
-        await loadMeters();
-        await loadDebt();
-        await loadInvoices();
-    })();
-</script>
+        (async () => {
+            await checkAuth();
+            await loadMeters();
+            await loadDebt();
+            await loadInvoices();
+        })();
+    </script>
 </body>
 </html>
