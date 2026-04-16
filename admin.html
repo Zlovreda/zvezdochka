@@ -3,91 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель администратора</title>
+    <title>Админ-панель СНТ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .nav-tabs .nav-link.active { font-weight: bold; }
+        .table-sm td, .table-sm th { vertical-align: middle; }
+    </style>
 </head>
 <body>
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-shield-lock"></i> Администрирование</h2>
-            <div>
-                <button id="refreshBtn" class="btn btn-secondary me-2"><i class="bi bi-arrow-repeat"></i> Обновить</button>
-                <button id="logoutBtn" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+    <div class="container-fluid py-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-shield-lock"></i> Администрирование СНТ</h2>
+            <button id="logoutBtn" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+        </div>
+
+        <!-- Вкладки -->
+        <ul class="nav nav-tabs mb-3" id="adminTabs">
+            <li class="nav-item"><button class="nav-link active" data-tab="users">Пользователи</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="tariffs">Тарифы и взносы</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="fees">Начисление взносов</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="import">Импорт/Экспорт</button></li>
+        </ul>
+
+        <!-- Вкладка: Пользователи -->
+        <div id="tab-users" class="tab-content active">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <span>Список участков</span>
+                    <button id="refreshUsersBtn" class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat"></i> Обновить</button>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr><th>Участок</th><th>ФИО</th><th>Сотки</th><th>Логин</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="usersBody"><tr><td colspan="5">Загрузка...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header bg-dark text-white">Тариф (₽/кВт·ч)</div>
-                    <div class="card-body">
-                        <div class="input-group">
-                            <input type="number" step="0.1" id="tariffInput" class="form-control">
-                            <button id="setTariffBtn" class="btn btn-primary">Сохранить</button>
+        <!-- Вкладка: Тарифы и взносы -->
+        <div id="tab-tariffs" class="tab-content" style="display:none;">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">Тарифы на электроэнергию (₽/кВт·ч)</div>
+                        <div class="card-body">
+                            <div class="mb-2"><label>Т1 (до 100 кВт·ч):</label> <input type="number" step="0.01" id="tariffT1" class="form-control"></div>
+                            <div class="mb-2"><label>Т2 (свыше 100 кВт·ч):</label> <input type="number" step="0.01" id="tariffT2" class="form-control"></div>
+                            <div class="mb-2"><label>Т3 (льготный, на весь объём):</label> <input type="number" step="0.01" id="tariffT3" class="form-control"></div>
+                            <button id="saveTariffsBtn" class="btn btn-primary mt-2">Сохранить тарифы</button>
+                            <div id="tariffMsg" class="mt-2"></div>
                         </div>
-                        <div id="tariffMsg" class="mt-2"></div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header bg-dark text-white">Быстрые действия</div>
-                    <div class="card-body">
-                        <button id="showAllReadingsBtn" class="btn btn-info">Показать все показания</button>
-                        <button id="showDebtorsBtn" class="btn btn-warning ms-2">Должники</button>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">Членские взносы</div>
+                        <div class="card-body">
+                            <div class="mb-2"><label>Фиксированный взнос за участок (₽):</label> <input type="number" step="0.01" id="feeFixed" class="form-control"></div>
+                            <div class="mb-2"><label>Взнос за сотку (₽/сотка):</label> <input type="number" step="0.01" id="feePerSotka" class="form-control"></div>
+                            <button id="saveFeesBtn" class="btn btn-primary mt-2">Сохранить взносы</button>
+                            <div id="feeMsg" class="mt-2"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header bg-primary text-white">Пользователи СНТ</div>
-            <div class="card-body">
-                <table class="table table-bordered" id="usersTable">
-                    <thead><tr><th>Участок</th><th>ФИО</th><th>Логин</th><th>Действия</th></tr></thead>
-                    <tbody id="usersBody"><tr><td colspan="4">Загрузка...</td></tr></tbody>
-                </table>
+        <!-- Вкладка: Начисление взносов -->
+        <div id="tab-fees" class="tab-content" style="display:none;">
+            <div class="card">
+                <div class="card-header bg-success text-white">Начислить членские взносы за месяц</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label>Месяц (первое число):</label>
+                            <input type="month" id="feeMonth" class="form-control">
+                        </div>
+                        <div class="col-md-4 align-self-end">
+                            <button id="generateFeesBtn" class="btn btn-warning">Сформировать начисления для всех</button>
+                        </div>
+                    </div>
+                    <div id="feeGenMsg" class="mt-3"></div>
+                </div>
             </div>
         </div>
 
-        <!-- Модальное окно для просмотра/редактирования показаний пользователя -->
-        <div class="modal fade" id="readingsModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Показания: <span id="modalUserName"></span></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Вкладка: Импорт/Экспорт -->
+        <div id="tab-import" class="tab-content" style="display:none;">
+            <div class="card">
+                <div class="card-header bg-info text-white">Импорт / Экспорт данных</div>
+                <div class="card-body">
+                    <button id="exportReadingsBtn" class="btn btn-secondary me-2">Экспорт показаний (CSV)</button>
+                    <button id="exportFeesBtn" class="btn btn-secondary me-2">Экспорт взносов (CSV)</button>
+                    <button id="exportDebtorsBtn" class="btn btn-secondary">Экспорт должников (CSV)</button>
+                    <hr>
+                    <h6>Импорт показаний (CSV: user_id,reading_date,value,paid)</h6>
+                    <input type="file" id="importReadingsFile" accept=".csv" class="form-control mb-2">
+                    <button id="importReadingsBtn" class="btn btn-success">Импортировать</button>
+                    <div id="importMsg" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для управления показаниями и взносами пользователя -->
+    <div class="modal fade" id="userDetailsModal" tabindex="-1" style="z-index:1050">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Управление: <span id="modalUserName"></span> (уч. <span id="modalPlot"></span>)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="userSubTabs">
+                        <li class="nav-item"><button class="nav-link active" data-subtab="electricity">Электричество</button></li>
+                        <li class="nav-item"><button class="nav-link" data-subtab="fees">Членские взносы</button></li>
+                    </ul>
+                    <!-- Электричество -->
+                    <div id="user-electricity" class="subtab-content mt-3">
+                        <div class="mb-2">
+                            <button id="addReadingBtn" class="btn btn-sm btn-success">+ Добавить показание</button>
+                        </div>
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>Месяц</th><th>Показания</th><th>Расход</th><th>Сумма (₽)</th><th>Оплачено</th><th>Действие</th></tr></thead>
+                            <tbody id="readingsList"></tbody>
+                        </table>
                     </div>
-                    <div class="modal-body">
-                        <button id="addReadingModalBtn" class="btn btn-success mb-3">+ Добавить показание</button>
-                        <table class="table table-sm">
-                            <thead><tr><th>Месяц</th><th>Показания</th><th>Сумма</th><th>Оплачено</th><th>Действие</th></tr></thead>
-                            <tbody id="modalReadingsBody"></tbody>
+                    <!-- Членские взносы -->
+                    <div id="user-fees" class="subtab-content mt-3" style="display:none;">
+                        <div class="mb-2">
+                            <button id="addFeeBtn" class="btn btn-sm btn-success">+ Начислить взнос вручную</button>
+                        </div>
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>Месяц</th><th>Сумма (₽)</th><th>Оплачено</th><th>Действие</th></tr></thead>
+                            <tbody id="feesList"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Модальное окно добавления/редактирования показания -->
-        <div class="modal fade" id="readingFormModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Показание</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="month" id="editMonth" class="form-control mb-2" placeholder="Месяц">
-                        <input type="number" step="0.01" id="editValue" class="form-control mb-2" placeholder="Показания (кВт·ч)">
-                        <div class="form-check mb-2">
-                            <input type="checkbox" id="editPaid" class="form-check-input">
-                            <label class="form-check-label">Оплачено</label>
-                        </div>
-                        <input type="hidden" id="editReadingId">
-                        <button id="saveReadingBtn" class="btn btn-primary">Сохранить</button>
-                    </div>
+    <!-- Модальное окно добавления/редактирования показания -->
+    <div class="modal fade" id="readingFormModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5>Показание счётчика</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="month" id="readingMonth" class="form-control mb-2" placeholder="Месяц">
+                    <input type="number" step="0.01" id="readingValue" class="form-control mb-2" placeholder="Показания (кВт·ч)">
+                    <div class="form-check mb-2"><input type="checkbox" id="readingPaid" class="form-check-input"> <label>Оплачено</label></div>
+                    <input type="hidden" id="readingId">
+                    <button id="saveReadingModalBtn" class="btn btn-primary">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления взноса -->
+    <div class="modal fade" id="feeFormModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5>Начисление членского взноса</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="month" id="feeMonthModal" class="form-control mb-2" placeholder="Месяц">
+                    <input type="number" step="0.01" id="feeAmount" class="form-control mb-2" placeholder="Сумма (₽)">
+                    <div class="form-check mb-2"><input type="checkbox" id="feePaid" class="form-check-input"> <label>Оплачено</label></div>
+                    <input type="hidden" id="feeId">
+                    <button id="saveFeeModalBtn" class="btn btn-primary">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -97,12 +185,14 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
+        const SUPABASE_ANON_KEY = 'ВАШ_АНОН_КЛЮЧ'; // ЗАМЕНИТЕ НА АКТУАЛЬНЫЙ
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentAdmin = null;
-        let currentUserIdForModal = null;
-        let readingsModal, readingFormModal;
+        let currentUserId = null;
+        let currentUserArea = 0;
+        let readingsModal, readingFormModal, feeFormModal;
 
+        // ========== ОБЩИЕ ФУНКЦИИ ==========
         async function checkAuth() {
             const userStr = localStorage.getItem('currentUser');
             if (!userStr) return window.location.href = 'index.html';
@@ -112,176 +202,308 @@
 
         async function loadUsers() {
             const { data: users, error } = await supabaseClient.from('users').select('*').neq('role', 'admin');
-            if (error) return alert('Ошибка загрузки пользователей');
+            if (error) return alert('Ошибка загрузки');
             const tbody = document.getElementById('usersBody');
-            if (!users.length) {
-                tbody.innerHTML = '<tr><td colspan="4">Нет пользователей</td></tr>';
-                return;
-            }
+            if (!users.length) { tbody.innerHTML = '<tr><td colspan="5">Нет пользователей</td></tr>'; return; }
             tbody.innerHTML = users.map(u => `
                 <tr>
                     <td>${u.plot_number || '—'}</td>
                     <td>${u.full_name || u.username}</td>
+                    <td>${u.area_sotki || 0}</td>
                     <td>${u.username}</td>
-                    <td><button class="btn btn-sm btn-info" onclick="showReadings(${u.id}, '${u.full_name || u.username}')">Показания</button></td>
+                    <td><button class="btn btn-sm btn-primary" onclick="openUserDetails(${u.id}, '${u.full_name || u.username}', '${u.plot_number || ''}', ${u.area_sotki || 0})">Управление</button></td>
                 </tr>
             `).join('');
         }
 
-        window.showReadings = async (userId, userName) => {
-            currentUserIdForModal = userId;
+        window.openUserDetails = async (userId, userName, plot, area) => {
+            currentUserId = userId;
+            currentUserArea = area;
             document.getElementById('modalUserName').innerText = userName;
-            const { data: readings } = await supabaseClient
-                .from('readings')
-                .select('*')
-                .eq('user_id', userId)
-                .order('reading_date', { ascending: false });
-            const tbody = document.getElementById('modalReadingsBody');
-            if (!readings || readings.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">Нет показаний</td></tr>';
-            } else {
-                tbody.innerHTML = readings.map(r => `
-                    <tr>
-                        <td>${new Date(r.reading_date).toLocaleDateString('ru')}</td>
-                        <td>${r.value}</td>
-                        <td>${r.amount ? r.amount + ' ₽' : '—'}</td>
-                        <td>${r.paid ? 'Да' : 'Нет'}</td>
-                        <td><button class="btn btn-sm btn-warning" onclick="editReading(${r.id}, '${r.reading_date}', ${r.value}, ${r.paid})">✏️</button></td>
-                    </tr>
-                `).join('');
-            }
+            document.getElementById('modalPlot').innerText = plot;
+            await loadReadings(userId);
+            await loadFees(userId);
             readingsModal.show();
         };
 
+        async function loadReadings(userId) {
+            const { data, error } = await supabaseClient.from('readings').select('*').eq('user_id', userId).order('reading_date', { ascending: false });
+            if (error) throw error;
+            const tbody = document.getElementById('readingsList');
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">Нет показаний</td></tr>'; return; }
+            // Для расчёта расхода нужно предыдущее показание
+            const sorted = [...data].sort((a,b) => new Date(a.reading_date) - new Date(b.reading_date));
+            tbody.innerHTML = data.map((r, idx) => {
+                let consumption = '';
+                const prev = sorted.find(p => new Date(p.reading_date) < new Date(r.reading_date));
+                if (prev) consumption = (r.value - prev.value).toFixed(2);
+                else consumption = '—';
+                return `
+                    <tr>
+                        <td>${new Date(r.reading_date).toLocaleDateString('ru')}</td>
+                        <td>${r.value}</td>
+                        <td>${consumption}</td>
+                        <td>${r.amount ? r.amount + ' ₽' : '—'}</td>
+                        <td>${r.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-warning">Нет</span>'}</td>
+                        <td><button class="btn btn-sm btn-warning" onclick="editReading(${r.id}, '${r.reading_date}', ${r.value}, ${r.paid})">✏️</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         window.editReading = (id, date, value, paid) => {
-            const month = date.slice(0, 7);
-            document.getElementById('editMonth').value = month;
-            document.getElementById('editValue').value = value;
-            document.getElementById('editPaid').checked = paid;
-            document.getElementById('editReadingId').value = id;
+            document.getElementById('readingId').value = id;
+            document.getElementById('readingMonth').value = date.slice(0,7);
+            document.getElementById('readingValue').value = value;
+            document.getElementById('readingPaid').checked = paid;
             readingFormModal.show();
         };
 
-        async function saveReading() {
-            const id = document.getElementById('editReadingId').value;
-            const month = document.getElementById('editMonth').value;
-            const value = parseFloat(document.getElementById('editValue').value);
-            const paid = document.getElementById('editPaid').checked;
-            if (!month || isNaN(value)) return alert('Заполните все поля');
+        async function saveReadingFromModal() {
+            const id = document.getElementById('readingId').value;
+            const month = document.getElementById('readingMonth').value;
+            const value = parseFloat(document.getElementById('readingValue').value);
+            const paid = document.getElementById('readingPaid').checked;
+            if (!month || isNaN(value)) return alert('Заполните поля');
             const readingDate = new Date(month + '-01');
-            let amount = null;
+            
             if (id === '') {
-                const { data: tariffData } = await supabaseClient.from('settings').select('value').eq('key', 'tariff').single();
-                const tariff = parseFloat(tariffData?.value || 4);
-                const { data: prev } = await supabaseClient
-                    .from('readings')
-                    .select('value')
-                    .eq('user_id', currentUserIdForModal)
-                    .lt('reading_date', readingDate.toISOString())
-                    .order('reading_date', { ascending: false })
-                    .limit(1);
+                // Новое показание – нужно получить предыдущее и рассчитать сумму по трёхсоставному
+                const { data: prev } = await supabaseClient.from('readings').select('value').eq('user_id', currentUserId).lt('reading_date', readingDate.toISOString()).order('reading_date', { ascending: false }).limit(1);
                 let consumption = 0;
                 if (prev && prev.length) consumption = value - prev[0].value;
-                if (consumption > 0) amount = consumption * tariff;
-                const { error } = await supabaseClient.from('readings').insert({
-                    user_id: currentUserIdForModal,
-                    reading_date: readingDate.toISOString(),
-                    value: value,
-                    amount: amount,
-                    paid: paid
-                });
+                if (consumption < 0) return alert('Показание не может быть меньше предыдущего');
+                // Вызываем функцию расчёта суммы на сервере (или продублируем логику)
+                const { data: tariffT1 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T1').single();
+                const { data: tariffT2 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T2').single();
+                const { data: tariffT3 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T3').single();
+                const t1 = parseFloat(tariffT1?.value || 6.2);
+                const t2 = parseFloat(tariffT2?.value || 7.42);
+                const t3 = parseFloat(tariffT3?.value || 0.36);
+                let amount = consumption * t3;
+                if (consumption > 0) amount += Math.min(consumption, 100) * t1;
+                if (consumption > 100) amount += (consumption - 100) * t2;
+                amount = Math.round(amount * 100) / 100;
+                const { error } = await supabaseClient.from('readings').insert({ user_id: currentUserId, reading_date: readingDate.toISOString(), value, amount, paid });
                 if (error) return alert('Ошибка: ' + error.message);
             } else {
                 const { error } = await supabaseClient.from('readings').update({ value, paid }).eq('id', id);
                 if (error) return alert('Ошибка: ' + error.message);
             }
             readingFormModal.hide();
-            showReadings(currentUserIdForModal, document.getElementById('modalUserName').innerText);
+            loadReadings(currentUserId);
         }
 
-        async function loadTariff() {
-            const { data } = await supabaseClient.from('settings').select('value').eq('key', 'tariff').single();
-            if (data) document.getElementById('tariffInput').value = data.value;
+        async function loadFees(userId) {
+            const { data, error } = await supabaseClient.from('fee_charges').select('*').eq('user_id', userId).order('charge_date', { ascending: false });
+            if (error) throw error;
+            const tbody = document.getElementById('feesList');
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="4">Нет начислений</td></tr>'; return; }
+            tbody.innerHTML = data.map(f => `
+                <tr>
+                    <td>${new Date(f.charge_date).toLocaleDateString('ru')}</td>
+                    <td>${f.total_amount} ₽</td>
+                    <td>${f.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-warning">Нет</span>'}</td>
+                    <td><button class="btn btn-sm btn-warning" onclick="editFee(${f.id}, '${f.charge_date}', ${f.total_amount}, ${f.paid})">✏️</button></td>
+                </tr>
+            `).join('');
         }
 
-        async function setTariff() {
-            const newTariff = parseFloat(document.getElementById('tariffInput').value);
-            if (isNaN(newTariff)) return;
-            const { error } = await supabaseClient.from('settings').upsert({ key: 'tariff', value: newTariff.toString() });
-            if (error) showTariffMsg('Ошибка сохранения', 'danger');
-            else showTariffMsg('Тариф обновлён', 'success');
+        window.editFee = (id, date, amount, paid) => {
+            document.getElementById('feeId').value = id;
+            document.getElementById('feeMonthModal').value = date.slice(0,7);
+            document.getElementById('feeAmount').value = amount;
+            document.getElementById('feePaid').checked = paid;
+            feeFormModal.show();
+        };
+
+        async function saveFeeFromModal() {
+            const id = document.getElementById('feeId').value;
+            const month = document.getElementById('feeMonthModal').value;
+            const amount = parseFloat(document.getElementById('feeAmount').value);
+            const paid = document.getElementById('feePaid').checked;
+            if (!month || isNaN(amount)) return alert('Заполните поля');
+            const chargeDate = new Date(month + '-01');
+            if (id === '') {
+                const { error } = await supabaseClient.from('fee_charges').insert({ user_id: currentUserId, charge_date: chargeDate.toISOString(), fixed_amount: 0, per_sotka_amount: amount, paid });
+                if (error) return alert('Ошибка: ' + error.message);
+            } else {
+                // Обновляем только paid и сумму (но сумма хранится вычисляемой, поэтому лучше пересоздать)
+                const { error } = await supabaseClient.from('fee_charges').update({ paid }).eq('id', id);
+                if (error) return alert('Ошибка: ' + error.message);
+            }
+            feeFormModal.hide();
+            loadFees(currentUserId);
         }
 
-        function showTariffMsg(msg, type) {
-            const div = document.getElementById('tariffMsg');
+        // ========== НАСТРОЙКИ ==========
+        async function loadTariffs() {
+            const { data: t1 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T1').single();
+            const { data: t2 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T2').single();
+            const { data: t3 } = await supabaseClient.from('settings').select('value').eq('key', 'tariff_T3').single();
+            if (t1) document.getElementById('tariffT1').value = t1.value;
+            if (t2) document.getElementById('tariffT2').value = t2.value;
+            if (t3) document.getElementById('tariffT3').value = t3.value;
+        }
+        async function loadFeesSettings() {
+            const { data: fixed } = await supabaseClient.from('settings').select('value').eq('key', 'fee_fixed_per_plot').single();
+            const { data: perSotka } = await supabaseClient.from('settings').select('value').eq('key', 'fee_per_sotka').single();
+            if (fixed) document.getElementById('feeFixed').value = fixed.value;
+            if (perSotka) document.getElementById('feePerSotka').value = perSotka.value;
+        }
+        async function saveTariffs() {
+            const t1 = document.getElementById('tariffT1').value;
+            const t2 = document.getElementById('tariffT2').value;
+            const t3 = document.getElementById('tariffT3').value;
+            await supabaseClient.from('settings').upsert([{key:'tariff_T1', value:t1},{key:'tariff_T2', value:t2},{key:'tariff_T3', value:t3}]);
+            showMsg('tariffMsg', 'Тарифы сохранены', 'success');
+        }
+        async function saveFeesSettings() {
+            const fixed = document.getElementById('feeFixed').value;
+            const per = document.getElementById('feePerSotka').value;
+            await supabaseClient.from('settings').upsert([{key:'fee_fixed_per_plot', value:fixed},{key:'fee_per_sotka', value:per}]);
+            showMsg('feeMsg', 'Ставки взносов сохранены', 'success');
+        }
+
+        // ========== ГЕНЕРАЦИЯ ВЗНОСОВ ==========
+        async function generateFees() {
+            const month = document.getElementById('feeMonth').value;
+            if (!month) return alert('Выберите месяц');
+            const chargeDate = new Date(month + '-01');
+            const { data: users } = await supabaseClient.from('users').select('id, area_sotki').neq('role', 'admin');
+            const { data: fixedSetting } = await supabaseClient.from('settings').select('value').eq('key', 'fee_fixed_per_plot').single();
+            const { data: perSotkaSetting } = await supabaseClient.from('settings').select('value').eq('key', 'fee_per_sotka').single();
+            const fixed = parseFloat(fixedSetting?.value || 939);
+            const perSotka = parseFloat(perSotkaSetting?.value || 44);
+            let inserted = 0;
+            for (const user of users) {
+                const amount = fixed + (user.area_sotki || 0) * perSotka;
+                const { error } = await supabaseClient.from('fee_charges').upsert({
+                    user_id: user.id,
+                    charge_date: chargeDate.toISOString(),
+                    fixed_amount: fixed,
+                    per_sotka_amount: (user.area_sotki || 0) * perSotka,
+                    paid: false
+                }, { onConflict: 'user_id, charge_date' });
+                if (!error) inserted++;
+            }
+            showMsg('feeGenMsg', `Начислено взносов для ${inserted} участков`, 'success');
+        }
+
+        // ========== ЭКСПОРТ CSV ==========
+        async function exportReadings() {
+            const { data } = await supabaseClient.from('readings').select('*, users(plot_number, full_name)');
+            if (!data) return;
+            const csv = ['user_id,plot,full_name,reading_date,value,amount,paid'];
+            data.forEach(r => {
+                csv.push(`${r.user_id},${r.users?.plot_number||''},${r.users?.full_name||''},${r.reading_date},${r.value},${r.amount||0},${r.paid}`);
+            });
+            downloadCSV(csv.join('\n'), 'readings.csv');
+        }
+        async function exportFees() {
+            const { data } = await supabaseClient.from('fee_charges').select('*, users(plot_number, full_name)');
+            if (!data) return;
+            const csv = ['user_id,plot,full_name,charge_date,total_amount,paid'];
+            data.forEach(f => {
+                csv.push(`${f.user_id},${f.users?.plot_number||''},${f.users?.full_name||''},${f.charge_date},${f.total_amount},${f.paid}`);
+            });
+            downloadCSV(csv.join('\n'), 'fees.csv');
+        }
+        async function exportDebtors() {
+            // Должники по электричеству + взносам
+            const { data: elec } = await supabaseClient.from('readings').select('*, users(plot_number, full_name)').eq('paid', false).gt('amount', 0);
+            const { data: fees } = await supabaseClient.from('fee_charges').select('*, users(plot_number, full_name)').eq('paid', false);
+            let lines = ['Тип,Участок,ФИО,Дата,Сумма'];
+            elec.forEach(r => lines.push(`Электричество,${r.users?.plot_number},${r.users?.full_name},${r.reading_date},${r.amount}`));
+            fees.forEach(f => lines.push(`Взносы,${f.users?.plot_number},${f.users?.full_name},${f.charge_date},${f.total_amount}`));
+            downloadCSV(lines.join('\n'), 'debtors.csv');
+        }
+        function downloadCSV(content, filename) {
+            const blob = new Blob(["\uFEFF" + content], {type: 'text/csv;charset=utf-8;'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // ========== ИМПОРТ ==========
+        async function importReadings(file) {
+            const text = await file.text();
+            const lines = text.split('\n').slice(1);
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                const [user_id, reading_date, value, paid] = line.split(',');
+                if (!user_id || !reading_date || !value) continue;
+                const { error } = await supabaseClient.from('readings').insert({ user_id: parseInt(user_id), reading_date: new Date(reading_date).toISOString(), value: parseFloat(value), paid: paid === 'true' });
+                if (error) console.error(error);
+            }
+            showMsg('importMsg', 'Импорт завершён', 'success');
+        }
+
+        function showMsg(elId, msg, type) {
+            const div = document.getElementById(elId);
             div.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-            setTimeout(() => div.innerHTML = '', 2000);
+            setTimeout(() => div.innerHTML = '', 3000);
         }
 
-        async function showAllReadings() {
-            const { data, error } = await supabaseClient
-                .from('readings')
-                .select('*, users(full_name, plot_number)')
-                .order('reading_date', { ascending: false });
-            if (error) return alert('Ошибка');
-            let html = '<div class="card mt-3"><div class="card-header">Все показания</div><div class="card-body"><table class="table table-sm">' +
-                '<thead><tr><th>Участок</th><th>ФИО</th><th>Месяц</th><th>Показания</th><th>Сумма</th><th>Оплата</th></tr></thead><tbody>';
-            data.forEach(r => {
-                html += `<tr>
-                    <td>${r.users?.plot_number || '?'}</td>
-                    <td>${r.users?.full_name || '?'}</td>
-                    <td>${new Date(r.reading_date).toLocaleDateString()}</td>
-                    <td>${r.value}</td>
-                    <td>${r.amount ? r.amount + ' ₽' : '—'}</td>
-                    <td>${r.paid ? '✅' : '❌'}</td>
-                </tr>`;
+        // ========== НАВИГАЦИЯ ПО ВКЛАДКАМ ==========
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+                document.getElementById(`tab-${tab}`).style.display = 'block';
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                btn.classList.add('active');
             });
-            html += '</tbody></table></div></div>';
-            document.querySelector('.card-body').insertAdjacentHTML('afterend', html);
-            setTimeout(() => document.querySelector('.extra-table')?.remove(), 5000);
-        }
-
-        async function showDebtors() {
-            const { data, error } = await supabaseClient
-                .from('readings')
-                .select('*, users(full_name, plot_number)')
-                .eq('paid', false)
-                .gt('amount', 0);
-            if (error) return alert('Ошибка');
-            let html = '<div class="card mt-3 bg-light"><div class="card-header">Должники</div><div class="card-body"><ul>';
-            data.forEach(r => {
-                html += `<li>Уч. ${r.users?.plot_number} — ${r.users?.full_name} : долг ${r.amount} ₽ (${new Date(r.reading_date).toLocaleDateString()})</li>`;
+        });
+        document.querySelectorAll('[data-subtab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const subtab = btn.getAttribute('data-subtab');
+                document.getElementById('user-electricity').style.display = subtab === 'electricity' ? 'block' : 'none';
+                document.getElementById('user-fees').style.display = subtab === 'fees' ? 'block' : 'none';
+                document.querySelectorAll('#userSubTabs .nav-link').forEach(l => l.classList.remove('active'));
+                btn.classList.add('active');
             });
-            html += '</ul></div></div>';
-            document.querySelector('.card-body').insertAdjacentHTML('afterend', html);
-            setTimeout(() => document.querySelector('.extra-table')?.remove(), 5000);
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('currentUser');
-            window.location.href = 'index.html';
         });
-        document.getElementById('refreshBtn').addEventListener('click', () => loadUsers());
-        document.getElementById('setTariffBtn').addEventListener('click', setTariff);
-        document.getElementById('showAllReadingsBtn').addEventListener('click', showAllReadings);
-        document.getElementById('showDebtorsBtn').addEventListener('click', showDebtors);
-        document.getElementById('addReadingModalBtn').addEventListener('click', () => {
-            document.getElementById('editReadingId').value = '';
-            document.getElementById('editMonth').value = '';
-            document.getElementById('editValue').value = '';
-            document.getElementById('editPaid').checked = false;
-            readingFormModal.show();
-        });
-        document.getElementById('saveReadingBtn').addEventListener('click', saveReading);
 
-        readingsModal = new bootstrap.Modal(document.getElementById('readingsModal'));
-        readingFormModal = new bootstrap.Modal(document.getElementById('readingFormModal'));
-
-        (async () => {
+        // Инициализация
+        window.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
             await loadUsers();
-            await loadTariff();
-        })();
+            await loadTariffs();
+            await loadFeesSettings();
+            readingsModal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+            readingFormModal = new bootstrap.Modal(document.getElementById('readingFormModal'));
+            feeFormModal = new bootstrap.Modal(document.getElementById('feeFormModal'));
+            document.getElementById('refreshUsersBtn').addEventListener('click', loadUsers);
+            document.getElementById('saveTariffsBtn').addEventListener('click', saveTariffs);
+            document.getElementById('saveFeesBtn').addEventListener('click', saveFeesSettings);
+            document.getElementById('generateFeesBtn').addEventListener('click', generateFees);
+            document.getElementById('exportReadingsBtn').addEventListener('click', exportReadings);
+            document.getElementById('exportFeesBtn').addEventListener('click', exportFees);
+            document.getElementById('exportDebtorsBtn').addEventListener('click', exportDebtors);
+            document.getElementById('importReadingsBtn').addEventListener('click', () => {
+                const file = document.getElementById('importReadingsFile').files[0];
+                if (file) importReadings(file);
+            });
+            document.getElementById('saveReadingModalBtn').addEventListener('click', saveReadingFromModal);
+            document.getElementById('saveFeeModalBtn').addEventListener('click', saveFeeFromModal);
+            document.getElementById('addReadingBtn').addEventListener('click', () => {
+                document.getElementById('readingId').value = '';
+                document.getElementById('readingMonth').value = '';
+                document.getElementById('readingValue').value = '';
+                document.getElementById('readingPaid').checked = false;
+                readingFormModal.show();
+            });
+            document.getElementById('addFeeBtn').addEventListener('click', () => {
+                document.getElementById('feeId').value = '';
+                document.getElementById('feeMonthModal').value = '';
+                document.getElementById('feeAmount').value = '';
+                document.getElementById('feePaid').checked = false;
+                feeFormModal.show();
+            });
+            document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.href = 'index.html'; });
+        });
     </script>
 </body>
 </html>
