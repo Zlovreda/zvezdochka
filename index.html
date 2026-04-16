@@ -2,368 +2,155 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Звёздочка — v.0.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase + GitHub Pages</title>
+    <!-- Простой CSS для оформления -->
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
-        }
         body {
-            background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 48px;
-            padding: 32px 24px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow: 0 25px 45px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2);
-            transition: all 0.2s ease;
-        }
-        h1 {
-            text-align: center;
-            color: #FFE6A7;
-            font-size: 2.4rem;
-            margin-top: 0;
-            margin-bottom: 8px;
-            letter-spacing: 2px;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .sub {
-            text-align: center;
-            color: #ccddee;
-            margin-bottom: 32px;
-            font-size: 0.9rem;
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
-        label {
-            display: block;
-            color: #FFECB3;
-            margin-bottom: 8px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
+        input, button {
+            padding: 0.5rem;
+            font-size: 1rem;
         }
         input {
-            width: 100%;
-            padding: 14px 18px;
-            border: none;
-            border-radius: 60px;
-            background: #2e3b2e;
-            background: rgba(30,40,35,0.8);
-            color: white;
-            font-size: 1rem;
-            border: 1px solid rgba(255,215,150,0.5);
-            transition: 0.2s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #F9B81B;
-            background: #1f2a25;
-            box-shadow: 0 0 0 3px rgba(249,184,27,0.3);
+            width: 70%;
         }
         button {
-            width: 100%;
-            padding: 14px;
-            border-radius: 60px;
-            border: none;
-            font-size: 1.1rem;
-            font-weight: bold;
-            background: #F9B81B;
-            color: #1e2a2a;
             cursor: pointer;
-            transition: 0.2s;
-            margin-top: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
         }
         button:hover {
-            background: #ffcf4a;
-            transform: scale(0.98);
+            background-color: #2563eb;
         }
-        .toggle-buttons {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 28px;
+        .message-list {
+            margin-top: 2rem;
+            list-style: none;
+            padding: 0;
         }
-        .toggle-btn {
-            background: rgba(255,255,200,0.15);
-            box-shadow: none;
-            margin-top: 0;
-            color: #FFE6A7;
-        }
-        .toggle-btn.active {
-            background: #F9B81B;
-            color: #1f2a1f;
-        }
-        .message {
-            margin-top: 20px;
-            padding: 12px;
-            border-radius: 60px;
-            text-align: center;
-            font-size: 0.85rem;
-            background: rgba(0,0,0,0.5);
-            color: #FFD966;
+        .message-list li {
+            background: #f3f4f6;
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            word-break: break-word;
         }
         .error {
-            color: #FFB3A7;
-            background: rgba(180,40,30,0.3);
+            color: #dc2626;
+            margin-top: 0.5rem;
         }
-        .success {
-            color: #B8F2B0;
-            background: rgba(40,120,40,0.4);
-        }
-        .status {
-            font-size: 0.8rem;
-            text-align: center;
-            margin-top: 16px;
-            color: #bbccdd;
-        }
-        footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 0.7rem;
-            color: #8899aa;
+        .loading {
+            color: #6b7280;
         }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>⭐ Звёздочка</h1>
-    <div class="sub">семейный трекер</div>
-
-    <div class="toggle-buttons">
-        <button id="loginTabBtn" class="toggle-btn active">Вход</button>
-        <button id="registerTabBtn" class="toggle-btn">Регистрация</button>
+    <h1>📦 Работа с Supabase</h1>
+    <div class="form-group">
+        <input type="text" id="messageInput" placeholder="Введите текст..." />
+        <button id="addButton">➕ Добавить</button>
     </div>
+    <div id="errorMsg" class="error"></div>
+    <h2>Сохранённые записи</h2>
+    <div id="loadingIndicator" class="loading">Загрузка...</div>
+    <ul id="messagesList" class="message-list"></ul>
 
-    <!-- Форма входа -->
-    <div id="loginForm">
-        <div class="form-group">
-            <label>📧 Email</label>
-            <input type="email" id="loginEmail" placeholder="example@mail.ru">
-        </div>
-        <div class="form-group">
-            <label>🔒 Пароль</label>
-            <input type="password" id="loginPassword" placeholder="••••••">
-        </div>
-        <button id="doLoginBtn">✨ Войти</button>
-    </div>
+    <!-- Подключаем Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ⚠️ ВАЖНО: замените URL и anonKey на данные из вашего проекта Supabase!
+        // Если вы используете проект, к которому относится присланный anonKey:
+        const supabaseUrl = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+        
+        // Для другого проекта (ihydjzxctlguvflswzhg) возьмите URL и anonKey в настройках API.
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    <!-- Форма регистрации (скрыта по умолчанию) -->
-    <div id="registerForm" style="display: none;">
-        <div class="form-group">
-            <label>📧 Email</label>
-            <input type="email" id="regEmail" placeholder="email@example.com">
-        </div>
-        <div class="form-group">
-            <label>🔒 Пароль (мин. 6 символов)</label>
-            <input type="password" id="regPassword" placeholder="минимум 6 символов">
-        </div>
-        <button id="doRegisterBtn">📝 Зарегистрироваться</button>
-    </div>
+        // Элементы DOM
+        const messageInput = document.getElementById('messageInput');
+        const addButton = document.getElementById('addButton');
+        const messagesList = document.getElementById('messagesList');
+        const errorDiv = document.getElementById('errorMsg');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
-    <div id="messageBox" class="message"></div>
-    <div id="connectionStatus" class="status">🔄 Проверка соединения...</div>
-    <footer>Звёздочка · безопасный вход через Supabase</footer>
-</div>
-
-<script>
-    // ======================== НАСТРОЙКИ SUPABASE ========================
-    // ⚠️ ВСТАВЬТЕ СВОИ ДАННЫЕ ИЗ ПРОЕКТА SUPABASE:
-    const SUPABASE_URL = "https://ваш_проект.supabase.co";      // ЗАМЕНИТЕ!
-    const SUPABASE_ANON_KEY = "ваш_анонимный_ключ";            // ЗАМЕНИТЕ!
-    // ===================================================================
-
-    // Глобальная переменная для клиента Supabase
-    let supabaseClient = null;
-
-    // Функция инициализации клиента (ПРАВИЛЬНАЯ)
-    async function initSupabase() {
-        // Проверяем, что глобальный объект supabase существует (загружен CDN)
-        if (typeof supabase === 'undefined') {
-            showMessage("❌ Библиотека Supabase не загружена. Проверьте интернет или CDN.", "error");
-            updateStatus("Ошибка: supabase js не найден");
-            return false;
-        }
-
-        try {
-            // Правильное создание клиента — используем createClient из глобального supabase
-            const { createClient } = supabase;
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
-            // Проверяем, что клиент создался и имеет метод .from
-            if (!supabaseClient || typeof supabaseClient.from !== 'function') {
-                throw new Error("Клиент создан, но метод from отсутствует — неверная инициализация");
-            }
-            
-            updateStatus("✅ Клиент Supabase инициализирован");
-            return true;
-        } catch (err) {
-            console.error("Ошибка инициализации Supabase:", err);
-            showMessage("Ошибка подключения к Supabase: " + err.message, "error");
-            updateStatus("❌ Не удалось создать клиент Supabase");
-            return false;
-        }
-    }
-
-    // Функция проверки реального соединения с БД
-    async function checkConnection() {
-        if (!supabaseClient) {
-            updateStatus("⚠️ Клиент не инициализирован");
-            return false;
-        }
-        try {
-            // Пытаемся прочитать любую существующую таблицу, например 'users'
-            // Если таблицы 'users' нет, замените на название своей таблицы (например 'profiles')
-            // Это просто проверка доступа — ошибка не страшна, если таблицы нет, но метод from работает
-            const { data, error } = await supabaseClient.from('users').select('count', { count: 'exact', head: true });
-            if (error) {
-                // Ошибка "relation does not exist" — это нормально для проверки соединения,
-                // главное что клиент работает и может слать запросы
-                if (error.message.includes('does not exist')) {
-                    updateStatus("✅ Соединение с Supabase установлено (таблица users пока не создана)");
-                    return true;
+        // Функция загрузки всех сообщений
+        async function loadMessages() {
+            try {
+                errorDiv.textContent = '';
+                loadingIndicator.style.display = 'block';
+                const { data, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                // Отрисовка списка
+                messagesList.innerHTML = '';
+                if (!data || data.length === 0) {
+                    messagesList.innerHTML = '<li>Нет записей. Добавьте первую!</li>';
+                } else {
+                    data.forEach(msg => {
+                        const li = document.createElement('li');
+                        li.textContent = msg.content;
+                        messagesList.appendChild(li);
+                    });
                 }
-                throw error;
+            } catch (err) {
+                errorDiv.textContent = 'Ошибка загрузки: ' + err.message;
+                console.error(err);
+            } finally {
+                loadingIndicator.style.display = 'none';
             }
-            updateStatus("✅ Соединение с Supabase работает");
-            return true;
-        } catch (err) {
-            console.warn("Проверка соединения:", err);
-            updateStatus("⚠️ Соединение есть, но возможны ограничения RLS или нет таблицы");
-            // Возвращаем true, потому что ошибка не критичная для работы auth
-            return true;
         }
-    }
 
-    // Вспомогательные функции UI
-    function showMessage(text, type = "info") {
-        const msgDiv = document.getElementById('messageBox');
-        msgDiv.textContent = text;
-        msgDiv.className = `message ${type === 'error' ? 'error' : (type === 'success' ? 'success' : '')}`;
-        setTimeout(() => {
-            if (msgDiv.textContent === text) {
-                msgDiv.textContent = '';
-                msgDiv.className = 'message';
+        // Функция добавления нового сообщения
+        async function addMessage() {
+            const content = messageInput.value.trim();
+            if (!content) {
+                errorDiv.textContent = 'Введите текст перед добавлением';
+                return;
             }
-        }, 4000);
-    }
+            errorDiv.textContent = '';
+            addButton.disabled = true;
+            addButton.textContent = 'Отправка...';
+            
+            try {
+                const { error } = await supabase
+                    .from('messages')
+                    .insert([{ content }]);
+                
+                if (error) throw error;
+                
+                messageInput.value = '';
+                await loadMessages(); // обновляем список
+            } catch (err) {
+                errorDiv.textContent = 'Ошибка добавления: ' + err.message;
+                console.error(err);
+            } finally {
+                addButton.disabled = false;
+                addButton.textContent = '➕ Добавить';
+            }
+        }
 
-    function updateStatus(text) {
-        const statusDiv = document.getElementById('connectionStatus');
-        if (statusDiv) statusDiv.innerHTML = text;
-    }
-
-    // Функции аутентификации
-    async function signUp(email, password) {
-        if (!supabaseClient) {
-            showMessage("Клиент не инициализирован. Подождите или обновите страницу.", "error");
-            return;
-        }
-        try {
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: email,
-                password: password,
-            });
-            if (error) throw error;
-            showMessage(`✅ Регистрация успешна! Проверьте почту ${email} для подтверждения.`, "success");
-            console.log("SignUp success:", data);
-        } catch (err) {
-            showMessage(`❌ Ошибка регистрации: ${err.message}`, "error");
-            console.error(err);
-        }
-    }
-
-    async function signIn(email, password) {
-        if (!supabaseClient) {
-            showMessage("Клиент не инициализирован.", "error");
-            return;
-        }
-        try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-            if (error) throw error;
-            showMessage(`✨ Добро пожаловать, ${email}! Вы вошли в систему.`, "success");
-            // Здесь можно перенаправить на главную страницу или показать интерфейс звёздочки
-            console.log("SignIn success:", data);
-            // Пример: через 2 секунды редирект на dashboard (если есть)
-            // setTimeout(() => { window.location.href = "/dashboard.html"; }, 1500);
-        } catch (err) {
-            showMessage(`❌ Ошибка входа: ${err.message}`, "error");
-            console.error(err);
-        }
-    }
-
-    // Переключение между формами
-    function setActiveTab(tab) {
-        const loginDiv = document.getElementById('loginForm');
-        const regDiv = document.getElementById('registerForm');
-        const loginBtn = document.getElementById('loginTabBtn');
-        const regBtn = document.getElementById('registerTabBtn');
-        if (tab === 'login') {
-            loginDiv.style.display = 'block';
-            regDiv.style.display = 'none';
-            loginBtn.classList.add('active');
-            regBtn.classList.remove('active');
-        } else {
-            loginDiv.style.display = 'none';
-            regDiv.style.display = 'block';
-            loginBtn.classList.remove('active');
-            regBtn.classList.add('active');
-        }
-    }
-
-    // Обработчики событий
-    document.getElementById('doLoginBtn').addEventListener('click', () => {
-        const email = document.getElementById('loginEmail').value.trim();
-        const pwd = document.getElementById('loginPassword').value;
-        if (!email || !pwd) {
-            showMessage("Введите email и пароль", "error");
-            return;
-        }
-        signIn(email, pwd);
-    });
-
-    document.getElementById('doRegisterBtn').addEventListener('click', () => {
-        const email = document.getElementById('regEmail').value.trim();
-        const pwd = document.getElementById('regPassword').value;
-        if (!email || !pwd) {
-            showMessage("Заполните email и пароль", "error");
-            return;
-        }
-        if (pwd.length < 6) {
-            showMessage("Пароль должен быть минимум 6 символов", "error");
-            return;
-        }
-        signUp(email, pwd);
-    });
-
-    document.getElementById('loginTabBtn').addEventListener('click', () => setActiveTab('login'));
-    document.getElementById('registerTabBtn').addEventListener('click', () => setActiveTab('register'));
-
-    // Запуск при загрузке страницы
-    window.addEventListener('DOMContentLoaded', async () => {
-        // Сначала инициализируем клиент
-        const initOk = await initSupabase();
-        if (initOk) {
-            await checkConnection();
-        } else {
-            updateStatus("❌ Не удалось инициализировать Supabase. Проверьте URL и ключ, а также подключение к CDN.");
-        }
-    });
-</script>
-<!-- Подключаем официальный CDN Supabase (гарантирует наличие глобального supabase) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        // Обработчики событий
+        addButton.addEventListener('click', addMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addMessage();
+        });
+        
+        // Первоначальная загрузка данных
+        loadMessages();
+    </script>
 </body>
 </html>
