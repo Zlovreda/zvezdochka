@@ -63,33 +63,38 @@
     </ul>
 
     <script>
-        // 1. ВАЖНО: ЗАМЕНИТЕ 'YOUR_PROJECT_URL' НА URL ВАШЕГО ПРОЕКТА!
+        // Убедимся, что библиотека загрузилась
+        if (!window.supabase) {
+            document.getElementById('itemsList').innerHTML = '<li class="error">Ошибка: библиотека Supabase не загрузилась. Проверьте интернет-соединение.</li>';
+            throw new Error('Supabase library not loaded');
+        }
+
+        // ВАЖНО: ЗАМЕНИТЕ 'YOUR_PROJECT_URL' НА URL ВАШЕГО ПРОЕКТА!
         // Пример: https://ihydjzxctlguvflswzhg.supabase.co
         const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co'; // <--- ЗАМЕНИТЕ ЭТО!
-        // Анонимный ключ (ПРАВИЛЬНЫЙ КЛЮЧ ДЛЯ ИСПОЛЬЗОВАНИЯ НА КЛИЕНТЕ)
+        // Анонимный ключ (используем только anon key, НЕ service role key!)
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
 
-        // Инициализируем клиент Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Создаём клиент Supabase (избегаем конфликта имён с глобальной переменной)
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- Функция для загрузки данных из таблицы 'items' ---
         async function loadItems() {
             const listElement = document.getElementById('itemsList');
-            listElement.innerHTML = '<li>Загрузка...</li>'; // Показываем индикатор загрузки
+            listElement.innerHTML = '<li>Загрузка...</li>';
 
             try {
                 // Делаем запрос к Supabase: выбираем всё из таблицы 'items'
-                let { data: items, error } = await supabase
+                let { data: items, error } = await supabaseClient
                     .from('items')
                     .select('*')
-                    .order('created_at', { ascending: false }); // Сортируем от новых к старым
+                    .order('created_at', { ascending: false });
 
                 if (error) {
                     throw error;
                 }
 
                 if (items && items.length > 0) {
-                    // Отображаем каждую запись как элемент списка
                     listElement.innerHTML = items.map(item => `
                         <li>
                             <strong>${escapeHtml(item.name)}</strong><br>
@@ -105,7 +110,7 @@
             }
         }
 
-        // --- Функция для добавления новой записи в таблицу 'items' ---
+        // --- Функция для добавления новой записи ---
         async function addItem(name) {
             if (!name.trim()) {
                 showMessage('addMessage', 'Введите название!', 'error');
@@ -113,19 +118,18 @@
             }
 
             try {
-                // Делаем запрос на вставку новой строки в таблицу 'items'
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('items')
                     .insert([{ name: name.trim() }])
-                    .select(); // .select() нужен, чтобы вернуть созданную запись
+                    .select();
 
                 if (error) {
                     throw error;
                 }
 
                 showMessage('addMessage', `Запись "${name}" успешно добавлена!`, 'success');
-                document.getElementById('itemName').value = ''; // Очищаем поле ввода
-                await loadItems(); // Перезагружаем список
+                document.getElementById('itemName').value = '';
+                await loadItems();
                 return true;
             } catch (err) {
                 console.error('Ошибка при добавлении:', err);
@@ -134,7 +138,6 @@
             }
         }
 
-        // Вспомогательная функция для отображения сообщений пользователю
         function showMessage(elementId, message, type) {
             const msgDiv = document.getElementById(elementId);
             msgDiv.textContent = message;
@@ -142,7 +145,6 @@
             setTimeout(() => { msgDiv.textContent = ''; }, 3000);
         }
 
-        // Простая функция для защиты от XSS-атак
         function escapeHtml(str) {
             return str.replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
@@ -152,9 +154,9 @@
             });
         }
 
-        // --- Навешиваем обработчики событий после загрузки страницы ---
+        // --- Запускаем всё после загрузки DOM ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadItems(); // Загружаем записи при старте
+            loadItems();
 
             const addButton = document.getElementById('addBtn');
             const nameInput = document.getElementById('itemName');
