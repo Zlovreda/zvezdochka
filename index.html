@@ -2,61 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supabase + GitHub Pages</title>
-    <!-- Простой CSS для оформления -->
     <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        input, button {
-            padding: 0.5rem;
-            font-size: 1rem;
-        }
-        input {
-            width: 70%;
-        }
-        button {
-            cursor: pointer;
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 0.25rem;
-        }
-        button:hover {
-            background-color: #2563eb;
-        }
-        .message-list {
-            margin-top: 2rem;
-            list-style: none;
-            padding: 0;
-        }
-        .message-list li {
-            background: #f3f4f6;
-            margin: 0.5rem 0;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            word-break: break-word;
-        }
-        .error {
-            color: #dc2626;
-            margin-top: 0.5rem;
-        }
-        .loading {
-            color: #6b7280;
-        }
+        body { font-family: system-ui; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        input, button { padding: 0.5rem; font-size: 1rem; }
+        input { width: 70%; }
+        button { background-color: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; }
+        button:hover { background-color: #2563eb; }
+        .message-list { margin-top: 2rem; list-style: none; padding: 0; }
+        .message-list li { background: #f3f4f6; margin: 0.5rem 0; padding: 0.75rem; border-radius: 0.5rem; }
+        .error { color: #dc2626; }
+        .loading { color: #6b7280; }
     </style>
 </head>
 <body>
     <h1>📦 Работа с Supabase</h1>
     <div class="form-group">
-        <input type="text" id="messageInput" placeholder="Введите текст..." />
+        <input type="text" id="messageInput" placeholder="Введите текст...">
         <button id="addButton">➕ Добавить</button>
     </div>
     <div id="errorMsg" class="error"></div>
@@ -64,38 +27,29 @@
     <div id="loadingIndicator" class="loading">Загрузка...</div>
     <ul id="messagesList" class="message-list"></ul>
 
-    <!-- Подключаем Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ⚠️ ВАЖНО: замените URL и anonKey на данные из вашего проекта Supabase!
-        // Если вы используете проект, к которому относится присланный anonKey:
         const supabaseUrl = 'https://chgbdbuiqzdmwiniyxrk.supabase.co';
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZ2JkYnVpcXpkbXdpbml5eHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
         
-        // Для другого проекта (ihydjzxctlguvflswzhg) возьмите URL и anonKey в настройках API.
-        
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+        // Переименовали переменную, чтобы избежать конфликта
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-        // Элементы DOM
         const messageInput = document.getElementById('messageInput');
         const addButton = document.getElementById('addButton');
         const messagesList = document.getElementById('messagesList');
         const errorDiv = document.getElementById('errorMsg');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
-        // Функция загрузки всех сообщений
         async function loadMessages() {
             try {
                 errorDiv.textContent = '';
                 loadingIndicator.style.display = 'block';
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('messages')
                     .select('*')
                     .order('created_at', { ascending: false });
-                
                 if (error) throw error;
-                
-                // Отрисовка списка
                 messagesList.innerHTML = '';
                 if (!data || data.length === 0) {
                     messagesList.innerHTML = '<li>Нет записей. Добавьте первую!</li>';
@@ -108,48 +62,35 @@
                 }
             } catch (err) {
                 errorDiv.textContent = 'Ошибка загрузки: ' + err.message;
-                console.error(err);
             } finally {
                 loadingIndicator.style.display = 'none';
             }
         }
 
-        // Функция добавления нового сообщения
         async function addMessage() {
             const content = messageInput.value.trim();
             if (!content) {
-                errorDiv.textContent = 'Введите текст перед добавлением';
+                errorDiv.textContent = 'Введите текст';
                 return;
             }
             errorDiv.textContent = '';
             addButton.disabled = true;
             addButton.textContent = 'Отправка...';
-            
             try {
-                const { error } = await supabase
-                    .from('messages')
-                    .insert([{ content }]);
-                
+                const { error } = await supabaseClient.from('messages').insert([{ content }]);
                 if (error) throw error;
-                
                 messageInput.value = '';
-                await loadMessages(); // обновляем список
+                await loadMessages();
             } catch (err) {
-                errorDiv.textContent = 'Ошибка добавления: ' + err.message;
-                console.error(err);
+                errorDiv.textContent = 'Ошибка: ' + err.message;
             } finally {
                 addButton.disabled = false;
                 addButton.textContent = '➕ Добавить';
             }
         }
 
-        // Обработчики событий
         addButton.addEventListener('click', addMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addMessage();
-        });
-        
-        // Первоначальная загрузка данных
+        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addMessage(); });
         loadMessages();
     </script>
 </body>
