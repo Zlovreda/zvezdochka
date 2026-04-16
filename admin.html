@@ -97,8 +97,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentAdmin = null;
         let currentUserIdForModal = null;
         let readingsModal, readingFormModal;
@@ -111,7 +111,7 @@
         }
 
         async function loadUsers() {
-            const { data: users, error } = await supabase.from('users').select('*').neq('role', 'admin');
+            const { data: users, error } = await supabaseClient.from('users').select('*').neq('role', 'admin');
             if (error) return alert('Ошибка загрузки пользователей');
             const tbody = document.getElementById('usersBody');
             if (!users.length) {
@@ -131,7 +131,7 @@
         window.showReadings = async (userId, userName) => {
             currentUserIdForModal = userId;
             document.getElementById('modalUserName').innerText = userName;
-            const { data: readings } = await supabase
+            const { data: readings } = await supabaseClient
                 .from('readings')
                 .select('*')
                 .eq('user_id', userId)
@@ -154,7 +154,7 @@
         };
 
         window.editReading = (id, date, value, paid) => {
-            const month = date.slice(0, 7); // YYYY-MM
+            const month = date.slice(0, 7);
             document.getElementById('editMonth').value = month;
             document.getElementById('editValue').value = value;
             document.getElementById('editPaid').checked = paid;
@@ -171,10 +171,9 @@
             const readingDate = new Date(month + '-01');
             let amount = null;
             if (id === '') {
-                // Новое показание – рассчитаем amount
-                const { data: tariffData } = await supabase.from('settings').select('value').eq('key', 'tariff').single();
+                const { data: tariffData } = await supabaseClient.from('settings').select('value').eq('key', 'tariff').single();
                 const tariff = parseFloat(tariffData?.value || 4);
-                const { data: prev } = await supabase
+                const { data: prev } = await supabaseClient
                     .from('readings')
                     .select('value')
                     .eq('user_id', currentUserIdForModal)
@@ -184,7 +183,7 @@
                 let consumption = 0;
                 if (prev && prev.length) consumption = value - prev[0].value;
                 if (consumption > 0) amount = consumption * tariff;
-                const { error } = await supabase.from('readings').insert({
+                const { error } = await supabaseClient.from('readings').insert({
                     user_id: currentUserIdForModal,
                     reading_date: readingDate.toISOString(),
                     value: value,
@@ -193,8 +192,7 @@
                 });
                 if (error) return alert('Ошибка: ' + error.message);
             } else {
-                // Обновление существующего
-                const { error } = await supabase.from('readings').update({ value, paid }).eq('id', id);
+                const { error } = await supabaseClient.from('readings').update({ value, paid }).eq('id', id);
                 if (error) return alert('Ошибка: ' + error.message);
             }
             readingFormModal.hide();
@@ -202,14 +200,14 @@
         }
 
         async function loadTariff() {
-            const { data } = await supabase.from('settings').select('value').eq('key', 'tariff').single();
+            const { data } = await supabaseClient.from('settings').select('value').eq('key', 'tariff').single();
             if (data) document.getElementById('tariffInput').value = data.value;
         }
 
         async function setTariff() {
             const newTariff = parseFloat(document.getElementById('tariffInput').value);
             if (isNaN(newTariff)) return;
-            const { error } = await supabase.from('settings').upsert({ key: 'tariff', value: newTariff.toString() });
+            const { error } = await supabaseClient.from('settings').upsert({ key: 'tariff', value: newTariff.toString() });
             if (error) showTariffMsg('Ошибка сохранения', 'danger');
             else showTariffMsg('Тариф обновлён', 'success');
         }
@@ -221,7 +219,7 @@
         }
 
         async function showAllReadings() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('readings')
                 .select('*, users(full_name, plot_number)')
                 .order('reading_date', { ascending: false });
@@ -244,7 +242,7 @@
         }
 
         async function showDebtors() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('readings')
                 .select('*, users(full_name, plot_number)')
                 .eq('paid', false)
