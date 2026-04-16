@@ -70,7 +70,7 @@
             // Инициализация Supabase
             const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co';
             const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
-            const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+            const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
             
             // Элементы DOM
             const statusElement = document.getElementById('supabaseStatus');
