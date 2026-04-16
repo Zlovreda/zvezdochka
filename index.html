@@ -20,6 +20,10 @@
             color: #667eea;
             font-weight: 700;
         }
+        .status-badge {
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -35,11 +39,11 @@
                     <form id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Логин</label>
-                            <input type="text" class="form-control" id="username" required>
+                            <input type="text" class="form-control" id="username" required autocomplete="username">
                         </div>
                         <div class="mb-4">
                             <label for="password" class="form-label">Пароль</label>
-                            <input type="password" class="form-control" id="password" required>
+                            <input type="password" class="form-control" id="password" required autocomplete="current-password">
                         </div>
                         <button type="submit" class="btn btn-primary w-100 mb-3">
                             <i class="bi bi-box-arrow-in-right me-2"></i>Войти
@@ -47,8 +51,11 @@
                         <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
                     </form>
                     
-                    <div class="text-center mt-4">
-                        <small class="text-muted">Версия 1.0 | Подключено к Supabase</small>
+                    <div class="text-center mt-4 d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Версия 1.0</small>
+                        <small class="text-muted status-badge" id="supabaseStatus">
+                            <i class="bi bi-question-circle-fill"></i> Проверка...
+                        </small>
                     </div>
                 </div>
             </div>
@@ -58,52 +65,85 @@
     <!-- Supabase SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-        // Инициализация Supabase
-        const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co'
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU'
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey)
-
-        // Обработка входа
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault()
+        // Избегаем конфликта переменных — используем IIFE или блок
+        (function() {
+            // Инициализация Supabase
+            const supabaseUrl = 'https://ihydjzxctlguvflswzhg.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzY5MzUsImV4cCI6MjA4NDU1MjkzNX0.KvpKM7FggBOWNuFR8gmL7cjk64tt6CCgAI-UlkP7ZXU';
+            const supabase = supabaseCreateClient(supabaseUrl, supabaseKey);
             
-            const username = document.getElementById('username').value
-            const password = document.getElementById('password').value
+            // Элементы DOM
+            const statusElement = document.getElementById('supabaseStatus');
+            const loginForm = document.getElementById('loginForm');
+            const errorDiv = document.getElementById('loginError');
             
-            try {
-                // Проверка учетных данных
-                const { data: users, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single()
-                
-                if (error) throw error
-                
-                if (users) {
-                    // Сохраняем данные пользователя
-                    localStorage.setItem('user', JSON.stringify(users))
+            // Функция обновления статуса подключения
+            async function checkConnection() {
+                try {
+                    // Простой тестовый запрос к таблице users (ограничим 1 записью)
+                    const { data, error } = await supabase
+                        .from('users')
+                        .select('id', { count: 'exact', head: true });
                     
-                    // Перенаправляем в зависимости от роли
-                    if (users.role === 'admin') {
-                        window.location.href = 'admin.html'
-                    } else {
-                        window.location.href = 'user.html'
-                    }
-                } else {
-                    showError('Неверный логин или пароль')
+                    if (error) throw error;
+                    
+                    statusElement.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Supabase OK';
+                    statusElement.classList.add('text-success');
+                } catch (err) {
+                    console.error('Ошибка подключения к Supabase:', err);
+                    statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> Ошибка подключения';
+                    statusElement.classList.add('text-danger');
                 }
-            } catch (error) {
-                showError('Ошибка входа: ' + error.message)
             }
-        })
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('loginError')
-            errorDiv.textContent = message
-            errorDiv.classList.remove('d-none')
-        }
+            
+            // Обработка входа
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                // Скрыть предыдущее сообщение об ошибке
+                errorDiv.classList.add('d-none');
+                errorDiv.textContent = '';
+                
+                try {
+                    // Поиск пользователя
+                    const { data: user, error } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('username', username)
+                        .eq('password', password)
+                        .maybeSingle();  // вместо .single() чтобы не было ошибки при отсутствии
+                    
+                    if (error) throw error;
+                    
+                    if (user) {
+                        // Сохраняем данные пользователя
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        // Перенаправление по роли
+                        if (user.role === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'user.html';
+                        }
+                    } else {
+                        showError('Неверный логин или пароль');
+                    }
+                } catch (err) {
+                    showError('Ошибка входа: ' + err.message);
+                }
+            });
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('d-none');
+            }
+            
+            // Запуск проверки подключения после загрузки страницы
+            checkConnection();
+        })();
     </script>
 </body>
 </html>
