@@ -379,100 +379,70 @@
         let extraFiltered = showUnpaid ? (window.extraData||[]).filter(e=>!e.paid) : (window.extraData||[]);
         const extraBody = document.getElementById('extraFeesBody');
         extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
-        
-        attachCheckboxEvents();
     }
 
-    function attachCheckboxEvents() {
-        // Индивидуальные чекбоксы электричества
-        document.querySelectorAll('.elec-paid-checkbox').forEach(cb => {
-            cb.removeEventListener('change', handleElecPaid);
-            cb.addEventListener('change', handleElecPaid);
-        });
+    // Глобальное делегирование событий для всех чекбоксов
+    document.addEventListener('change', async (e) => {
+        const target = e.target;
+        if (!target.matches('input[type="checkbox"]')) return;
 
-        // Групповые чекбоксы электричества
-        document.querySelectorAll('.elec-group-paid').forEach(cb => {
-            cb.removeEventListener('change', handleElecGroupPaid);
-            cb.addEventListener('change', handleElecGroupPaid);
-        });
-
-        // Членские взносы
-        document.querySelectorAll('.fee-plot-paid').forEach(cb => {
-            cb.removeEventListener('change', handleFeePlotPaid);
-            cb.addEventListener('change', handleFeePlotPaid);
-        });
-        document.querySelectorAll('.fee-area-paid').forEach(cb => {
-            cb.removeEventListener('change', handleFeeAreaPaid);
-            cb.addEventListener('change', handleFeeAreaPaid);
-        });
-        document.querySelectorAll('.fee-full-paid').forEach(cb => {
-            cb.removeEventListener('change', handleFeeFullPaid);
-            cb.addEventListener('change', handleFeeFullPaid);
-        });
-
-        // Доп. сборы
-        document.querySelectorAll('.extra-paid-checkbox').forEach(cb => {
-            cb.removeEventListener('change', handleExtraPaid);
-            cb.addEventListener('change', handleExtraPaid);
-        });
-    }
-
-    // Обработчики (вынесены для удобства удаления)
-    async function handleElecPaid(e) {
-        const id = e.target.dataset.id;
-        const paid = e.target.checked;
-        await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
-        loadElectricityInvoices(); loadTotalDebt();
-    }
-
-    async function handleElecGroupPaid(e) {
-        const month = e.target.dataset.month;
-        const paid = e.target.checked;
-        const { data: invoicesToUpdate } = await supabaseClient
-            .from('meter_invoices')
-            .select('id')
-            .in('meter_id', userMeters.map(m=>m.id))
-            .filter('year_month', 'like', month+'%');
-        if (invoicesToUpdate && invoicesToUpdate.length > 0) {
-            const ids = invoicesToUpdate.map(inv => inv.id);
-            await supabaseClient
-                .from('meter_invoices')
-                .update({ paid, paid_by: paid ? 'user' : null, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
-                .in('id', ids);
+        // Электричество индивидуальное
+        if (target.classList.contains('elec-paid-checkbox')) {
+            const id = target.dataset.id;
+            const paid = target.checked;
+            await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+            loadElectricityInvoices(); loadTotalDebt();
         }
-        loadElectricityInvoices(); loadTotalDebt();
-    }
-
-    async function handleFeePlotPaid(e) {
-        const month = e.target.dataset.month;
-        const paid = e.target.checked;
-        await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-        loadFeeInvoices(); loadTotalDebt();
-    }
-
-    async function handleFeeAreaPaid(e) {
-        const month = e.target.dataset.month;
-        const paid = e.target.checked;
-        await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-        loadFeeInvoices(); loadTotalDebt();
-    }
-
-    async function handleFeeFullPaid(e) {
-        const month = e.target.dataset.month;
-        const paid = e.target.checked;
-        await supabaseClient.from('invoices').update({
-            plot_fee_paid: paid, plot_fee_paid_by: paid?'user':null, plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null,
-            area_fee_paid: paid, area_fee_paid_by: paid?'user':null, area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
-        }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-        loadFeeInvoices(); loadTotalDebt();
-    }
-
-    async function handleExtraPaid(e) {
-        const id = e.target.dataset.id;
-        const paid = e.target.checked;
-        await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
-        loadExtraFees(); loadTotalDebt();
-    }
+        // Электричество групповое
+        else if (target.classList.contains('elec-group-paid')) {
+            const month = target.dataset.month;
+            const paid = target.checked;
+            const { data: invoicesToUpdate } = await supabaseClient
+                .from('meter_invoices')
+                .select('id')
+                .in('meter_id', userMeters.map(m=>m.id))
+                .filter('year_month', 'like', month+'%');
+            if (invoicesToUpdate && invoicesToUpdate.length > 0) {
+                const ids = invoicesToUpdate.map(inv => inv.id);
+                await supabaseClient
+                    .from('meter_invoices')
+                    .update({ paid, paid_by: paid ? 'user' : null, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
+                    .in('id', ids);
+            }
+            loadElectricityInvoices(); loadTotalDebt();
+        }
+        // Взносы: участок
+        else if (target.classList.contains('fee-plot-paid')) {
+            const month = target.dataset.month;
+            const paid = target.checked;
+            await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            loadFeeInvoices(); loadTotalDebt();
+        }
+        // Взносы: сотки
+        else if (target.classList.contains('fee-area-paid')) {
+            const month = target.dataset.month;
+            const paid = target.checked;
+            await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            loadFeeInvoices(); loadTotalDebt();
+        }
+        // Взносы: полная оплата
+        else if (target.classList.contains('fee-full-paid')) {
+            const month = target.dataset.month;
+            const paid = target.checked;
+            await supabaseClient.from('invoices').update({
+                plot_fee_paid: paid, plot_fee_paid_by: paid?'user':null, plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null,
+                area_fee_paid: paid, area_fee_paid_by: paid?'user':null, area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
+            }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            loadFeeInvoices(); loadTotalDebt();
+        }
+        // Доп. сборы
+        else if (target.classList.contains('extra-paid-checkbox')) {
+            const id = target.dataset.id;
+            const paid = target.checked;
+            await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+            loadExtraFees(); loadTotalDebt();
+        }
+    });
 
     async function submitReadings() {
         const month = document.getElementById('readingMonth').value;
