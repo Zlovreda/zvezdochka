@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет - ЭнергоУчет</title>
+    <title>Личный кабинет - ЭнергоУчет СНТ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
         .debt-card { background: linear-gradient(135deg, #ff6b6b, #c92a2a); color: white; }
-        .info-card { background: #f8f9fa; }
+        .section-card { margin-bottom: 1.5rem; }
+        .badge-paid { background-color: #28a745; }
+        .badge-unpaid { background-color: #dc3545; }
     </style>
 </head>
 <body>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-house-heart"></i> Личный кабинет СНТ "Звёздочка"</h2>
+        <h2><i class="bi bi-house-heart"></i> Личный кабинет</h2>
         <button id="logoutBtn" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Выйти</button>
     </div>
 
@@ -24,23 +26,25 @@
                 <div class="card-body">
                     <h5>Общая задолженность</h5>
                     <h2 id="totalDebt">0 ₽</h2>
-                    <small>Включая электричество и взносы</small>
+                    <small>Электричество + взносы + доп. сборы</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-8 info-card card">
-            <div class="card-body">
-                <h5>Мои данные</h5>
-                <p><strong>ФИО:</strong> <span id="userFullName"></span><br>
-                <strong>Участок (доля):</strong> <span id="userPlots"></span><br>
-                <strong>Соток:</strong> <span id="userArea"></span></p>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Мои данные</h5>
+                    <p><strong>ФИО:</strong> <span id="userFullName"></span><br>
+                    <strong>Участок (доля):</strong> <span id="userPlots"></span><br>
+                    <strong>Соток:</strong> <span id="userArea"></span></p>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-md-5">
-            <div class="card mb-4">
+            <div class="card section-card">
                 <div class="card-header bg-primary text-white">Передать показания</div>
                 <div class="card-body">
                     <select id="meterSelect" class="form-select mb-2"></select>
@@ -52,7 +56,7 @@
                     <div id="readingMsg" class="mt-2"></div>
                 </div>
             </div>
-            <div class="card">
+            <div class="card section-card">
                 <div class="card-header bg-info text-white">Последние показания</div>
                 <div class="card-body">
                     <table class="table table-sm">
@@ -63,12 +67,30 @@
             </div>
         </div>
         <div class="col-md-7">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">Мои счета</div>
+            <div class="card section-card">
+                <div class="card-header bg-warning text-dark">Счета за электричество</div>
                 <div class="card-body">
-                    <table class="table table-bordered table-sm" id="invoicesTable">
-                        <thead><tr><th>Месяц</th><th>Электричество</th><th>Взнос (участок)</th><th>Взнос (сотки)</th><th>Итого</th><th>Оплачено</th></tr></thead>
-                        <tbody id="invoicesBody"></tbody>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Месяц</th><th>Расход (кВт·ч)</th><th>Т1 (до 100)</th><th>Т2 (свыше)</th><th>Т3 (льготный)</th><th>Итого</th><th>Оплачено</th></tr></thead>
+                        <tbody id="electricityInvoicesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card section-card">
+                <div class="card-header bg-warning text-dark">Членские взносы</div>
+                <div class="card-body">
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Месяц</th><th>За участок (₽)</th><th>За сотки (₽)</th><th>Итого</th><th>Оплачено</th></tr></thead>
+                        <tbody id="feeInvoicesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card section-card">
+                <div class="card-header bg-warning text-dark">Дополнительные сборы</div>
+                <div class="card-body">
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Сбор</th><th>Месяц</th><th>Сумма (₽)</th><th>Оплачено</th></tr></thead>
+                        <tbody id="extraFeesBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -83,6 +105,7 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
+    // --- Вспомогательные функции ---
     async function checkAuth() {
         const userStr = localStorage.getItem('currentUser');
         if (!userStr) return window.location.href = 'index.html';
@@ -93,48 +116,173 @@
         document.getElementById('userArea').innerText = currentUser.area_sotok ?? 0;
     }
 
-    async function loadDebt() {
-        // Сумма неоплаченных счетов (invoices)
+    // --- Расчёт суммы за свет по трёхсоставному тарифу с учётом истории ---
+    async function calculateElectricityBreakdown(consumption, readingDate) {
+        // Найти тариф, действующий на дату чтения (месяц показания)
+        const { data: tariff } = await supabaseClient
+            .from('tariff_history')
+            .select('*')
+            .lte('valid_from', readingDate)
+            .order('valid_from', { ascending: false })
+            .limit(1);
+        const t = tariff?.[0] || { t1_rate: 6.2, t2_rate: 7.42, t3_rate: 0.36, t1_limit: 100 };
+        let t1Amount = 0, t2Amount = 0, t3Amount = 0;
+        if (consumption > 0) {
+            t3Amount = consumption * t.t3_rate;
+            if (consumption <= t.t1_limit) {
+                t1Amount = consumption * t.t1_rate;
+            } else {
+                t1Amount = t.t1_limit * t.t1_rate;
+                t2Amount = (consumption - t.t1_limit) * t.t2_rate;
+            }
+        }
+        const total = t1Amount + t2Amount + t3Amount;
+        return { t1Amount, t2Amount, t3Amount, total };
+    }
+
+    // --- Получение показаний и расчёт счетов за электричество по месяцам ---
+    async function loadElectricityInvoices() {
+        // Получаем все счётчики пользователя
+        const { data: meters } = await supabaseClient.from('meters').select('id').eq('user_id', currentUser.id);
+        if (!meters || meters.length === 0) {
+            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7">Нет счётчиков</td></tr>';
+            return;
+        }
+        const meterIds = meters.map(m => m.id);
+        // Получаем все показания по всем счётчикам, сортируем по дате
+        const { data: readings } = await supabaseClient
+            .from('readings')
+            .select('meter_id, reading_date, value')
+            .in('meter_id', meterIds)
+            .order('reading_date', { ascending: true });
+        if (!readings || readings.length < 2) {
+            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7">Недостаточно данных для расчёта</td></tr>';
+            return;
+        }
+        // Группируем показания по месяцам (по каждому счётчику отдельно, потом суммируем по месяцам)
+        const monthlyData = new Map(); // ключ 'YYYY-MM' -> { consumption: total, monthDate: YYYY-MM-DD }
+        // Для каждого счётчика обрабатываем его показания
+        const meterReadingsMap = new Map();
+        for (const meter of meters) {
+            const meterReadings = readings.filter(r => r.meter_id === meter.id).sort((a,b) => new Date(a.reading_date) - new Date(b.reading_date));
+            if (meterReadings.length < 2) continue;
+            for (let i = 1; i < meterReadings.length; i++) {
+                const prev = meterReadings[i-1];
+                const curr = meterReadings[i];
+                const monthKey = curr.reading_date.slice(0,7);
+                const consumption = curr.value - prev.value;
+                if (consumption <= 0) continue;
+                if (!monthlyData.has(monthKey)) {
+                    monthlyData.set(monthKey, { consumption: 0, date: curr.reading_date });
+                }
+                monthlyData.get(monthKey).consumption += consumption;
+            }
+        }
+        if (monthlyData.size === 0) {
+            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7">Нет расхода по месяцам</td></tr>';
+            return;
+        }
+        // Преобразуем в массив и сортируем по дате (новые сверху)
+        const months = Array.from(monthlyData.entries()).map(([key, val]) => ({ month: key, consumption: val.consumption, date: val.date }));
+        months.sort((a,b) => new Date(b.date) - new Date(a.date));
+        // Для каждого месяца получаем статус оплаты из таблицы invoices (если есть)
+        const { data: invoices } = await supabaseClient
+            .from('invoices')
+            .select('year_month, paid')
+            .eq('user_id', currentUser.id);
+        const paidMap = new Map();
+        invoices.forEach(inv => { paidMap.set(inv.year_month.slice(0,7), inv.paid); });
+        // Рассчитываем суммы
+        let html = '';
+        for (const m of months) {
+            const { t1Amount, t2Amount, t3Amount, total } = await calculateElectricityBreakdown(m.consumption, m.date);
+            const paid = paidMap.get(m.month) || false;
+            const paidBadge = paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>';
+            html += `<tr>
+                <td>${m.month}</td>
+                <td>${m.consumption.toFixed(2)}</td>
+                <td>${t1Amount.toFixed(2)}</td>
+                <td>${t2Amount.toFixed(2)}</td>
+                <td>${t3Amount.toFixed(2)}</td>
+                <td>${total.toFixed(2)}</td>
+                <td>${paidBadge}</td>
+            </tr>`;
+        }
+        document.getElementById('electricityInvoicesBody').innerHTML = html;
+    }
+
+    // --- Членские взносы (участок + сотки) ---
+    async function loadFeeInvoices() {
+        // Получаем счета из таблицы invoices (там есть plot_fee и area_fee)
+        const { data: invoices } = await supabaseClient
+            .from('invoices')
+            .select('year_month, plot_fee, area_fee, paid')
+            .eq('user_id', currentUser.id)
+            .order('year_month', { ascending: false });
+        if (!invoices || invoices.length === 0) {
+            document.getElementById('feeInvoicesBody').innerHTML = '<tr><td colspan="5">Нет данных</td></tr>';
+            return;
+        }
+        let html = '';
+        for (const inv of invoices) {
+            const totalFee = (inv.plot_fee || 0) + (inv.area_fee || 0);
+            const paidBadge = inv.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>';
+            html += `<tr>
+                <td>${inv.year_month.slice(0,7)}</td>
+                <td>${(inv.plot_fee || 0).toFixed(2)}</td>
+                <td>${(inv.area_fee || 0).toFixed(2)}</td>
+                <td>${totalFee.toFixed(2)}</td>
+                <td>${paidBadge}</td>
+            </tr>`;
+        }
+        document.getElementById('feeInvoicesBody').innerHTML = html;
+    }
+
+    // --- Дополнительные сборы ---
+    async function loadExtraFees() {
+        const { data: extraFees } = await supabaseClient
+            .from('user_extra_fees')
+            .select('*, extra_fees(name, year_month)')
+            .eq('user_id', currentUser.id)
+            .order('id', { ascending: false });
+        if (!extraFees || extraFees.length === 0) {
+            document.getElementById('extraFeesBody').innerHTML = '<tr><td colspan="4">Нет дополнительных сборов</td></tr>';
+            return;
+        }
+        let html = '';
+        for (const fee of extraFees) {
+            const paidBadge = fee.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>';
+            html += `<tr>
+                <td>${fee.extra_fees?.name || 'Сбор'}</td>
+                <td>${fee.extra_fees?.year_month?.slice(0,7) || ''}</td>
+                <td>${(fee.amount || 0).toFixed(2)}</td>
+                <td>${paidBadge}</td>
+            </tr>`;
+        }
+        document.getElementById('extraFeesBody').innerHTML = html;
+    }
+
+    // --- Общая задолженность (неоплаченные счета + доп. сборы) ---
+    async function loadTotalDebt() {
+        let debt = 0;
+        // Неоплаченные счета (электричество+взносы)
         const { data: invoices } = await supabaseClient
             .from('invoices')
             .select('total')
             .eq('user_id', currentUser.id)
             .eq('paid', false);
-        let debt = invoices.reduce((sum, i) => sum + (i.total || 0), 0);
-        // Плюс неоплаченные дополнительные сборы
+        debt += invoices.reduce((s, i) => s + (i.total || 0), 0);
+        // Неоплаченные дополнительные сборы
         const { data: extraFees } = await supabaseClient
             .from('user_extra_fees')
             .select('amount')
             .eq('user_id', currentUser.id)
             .eq('paid', false);
-        debt += extraFees.reduce((sum, f) => sum + (f.amount || 0), 0);
+        debt += extraFees.reduce((s, f) => s + (f.amount || 0), 0);
         document.getElementById('totalDebt').innerText = debt.toFixed(2) + ' ₽';
     }
 
-    async function loadInvoices() {
-        const { data, error } = await supabaseClient
-            .from('invoices')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('year_month', { ascending: false });
-        if (error) return console.error(error);
-        const tbody = document.getElementById('invoicesBody');
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="6">Нет счетов</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map(i => `
-            <tr>
-                <td>${i.year_month.slice(0,7)}</td>
-                <td>${i.electricity_amount.toFixed(2)}</td>
-                <td>${i.plot_fee.toFixed(2)}</td>
-                <td>${i.area_fee.toFixed(2)}</td>
-                <td>${i.total.toFixed(2)}</td>
-                <td>${i.paid ? '<span class="badge bg-success">Оплачено</span>' : '<span class="badge bg-danger">Не оплачено</span>'}</td>
-            </tr>
-        `).join('');
-    }
-
+    // --- Загрузка счётчиков и последних показаний ---
     async function loadMeters() {
         const { data, error } = await supabaseClient.from('meters').select('id, name').eq('user_id', currentUser.id);
         if (error) return console.error(error);
@@ -153,46 +301,79 @@
         if (error) return;
         const tbody = document.getElementById('lastReadingsBody');
         tbody.innerHTML = data.map(r => `
-            <tr><td>${meterId === +meterSelect.value ? 'Выбранный' : 'Счётчик'}</td><td>${r.reading_date.slice(0,7)}</td><td>${r.value}</td></tr>
+            <tr><td>${meterId === +document.getElementById('meterSelect').value ? 'Выбранный' : 'Счётчик'}</td><td>${r.reading_date.slice(0,7)}</td><td>${r.value}</td></tr>
         `).join('');
     }
 
     document.getElementById('meterSelect').addEventListener('change', (e) => loadLastReadings(e.target.value));
 
+    // --- Отправка показаний (с возможностью обновления в том же месяце) ---
     async function submitReading() {
         const meterId = document.getElementById('meterSelect').value;
         const month = document.getElementById('readingMonth').value;
-        const value = parseFloat(document.getElementById('readingValue').value);
-        if (!meterId || !month || isNaN(value)) {
+        const newValue = parseFloat(document.getElementById('readingValue').value);
+        if (!meterId || !month || isNaN(newValue)) {
             showMsg('readingMsg', 'Заполните все поля', 'danger');
             return;
         }
         const readingDate = month + '-01';
         const targetDate = new Date(readingDate);
         if (targetDate > new Date()) {
-            showMsg('readingMsg', 'Нельзя передавать за будущие месяцы', 'danger');
+            showMsg('readingMsg', 'Нельзя передавать показания за будущие месяцы', 'danger');
             return;
         }
-        // Проверка, нет ли уже показания за этот месяц
+        // Проверяем, есть ли уже показание за этот месяц
         const { data: existing } = await supabaseClient
             .from('readings')
-            .select('id')
+            .select('id, value')
             .eq('meter_id', meterId)
-            .eq('reading_date', readingDate);
-        if (existing && existing.length) {
-            showMsg('readingMsg', 'Показания за этот месяц уже переданы', 'danger');
-            return;
-        }
-        const { error } = await supabaseClient.from('readings').insert({
-            meter_id: meterId,
-            reading_date: readingDate,
-            value: value
-        });
-        if (error) showMsg('readingMsg', 'Ошибка: ' + error.message, 'danger');
-        else {
-            showMsg('readingMsg', 'Показания приняты!', 'success');
-            document.getElementById('readingValue').value = '';
-            loadLastReadings(meterId);
+            .eq('reading_date', readingDate)
+            .maybeSingle();
+        if (existing) {
+            // Обновляем, только если новое значение >= существующего
+            if (newValue < existing.value) {
+                showMsg('readingMsg', `Новое показание (${newValue}) не может быть меньше предыдущего за этот месяц (${existing.value})`, 'danger');
+                return;
+            }
+            const { error } = await supabaseClient
+                .from('readings')
+                .update({ value: newValue })
+                .eq('id', existing.id);
+            if (error) showMsg('readingMsg', 'Ошибка обновления: ' + error.message, 'danger');
+            else {
+                showMsg('readingMsg', 'Показания обновлены!', 'success');
+                document.getElementById('readingValue').value = '';
+                loadLastReadings(meterId);
+                // Пересчитываем счета (они изменятся)
+                loadElectricityInvoices();
+                loadTotalDebt();
+            }
+        } else {
+            // Новое показание: проверяем, что оно не меньше последнего показания за любой предыдущий месяц
+            const { data: lastReading } = await supabaseClient
+                .from('readings')
+                .select('value')
+                .eq('meter_id', meterId)
+                .lt('reading_date', readingDate)
+                .order('reading_date', { ascending: false })
+                .limit(1);
+            if (lastReading && lastReading.length && newValue < lastReading[0].value) {
+                showMsg('readingMsg', `Новое показание (${newValue}) не может быть меньше последнего переданного (${lastReading[0].value})`, 'danger');
+                return;
+            }
+            const { error } = await supabaseClient.from('readings').insert({
+                meter_id: meterId,
+                reading_date: readingDate,
+                value: newValue
+            });
+            if (error) showMsg('readingMsg', 'Ошибка: ' + error.message, 'danger');
+            else {
+                showMsg('readingMsg', 'Показания приняты!', 'success');
+                document.getElementById('readingValue').value = '';
+                loadLastReadings(meterId);
+                loadElectricityInvoices();
+                loadTotalDebt();
+            }
         }
     }
 
@@ -211,8 +392,10 @@
     (async () => {
         await checkAuth();
         await loadMeters();
-        await loadInvoices();
-        await loadDebt();
+        await loadElectricityInvoices();
+        await loadFeeInvoices();
+        await loadExtraFees();
+        await loadTotalDebt();
     })();
 </script>
 </body>
