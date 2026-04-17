@@ -123,7 +123,7 @@
                         <option value="unpaid">Только неоплаченные</option>
                         <option value="paid">Оплаченные полностью</option>
                     </select>
-                    <button class="btn btn-sm btn-dark" id="calculateAllInvoicesBtn"><i class="bi bi-calculator"></i> Рассчитать все пропущенные</button>
+                    <button class="btn btn-sm btn-dark" id="recalculateMonthBtn"><i class="bi bi-calculator"></i> Пересчитать за месяц</button>
                     <button class="btn btn-sm btn-dark" id="exportInvoicesBtn"><i class="bi bi-file-excel"></i> Экспорт Excel</button>
                     <button class="btn btn-sm btn-success" id="importInvoicesBtn"><i class="bi bi-upload"></i> Импорт Excel</button>
                 </div>
@@ -252,6 +252,7 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentAdmin = null, selectedUserIdForMeters = null;
     let allUsers = [], allReadings = [], allMeterInvoices = [], allFeeInvoices = [], allExtraFees = [], allUserExtraFees = [];
+    let tariffHistory = [], feeRatesHistory = [];
 
     function formatMonth(dateStr) {
         if (!dateStr) return '';
@@ -355,8 +356,8 @@
                 <td><button class="btn btn-sm btn-danger deleteReading" data-id="${r.id}">Удалить</button></td>
             </tr>`;
         }
-        tbody.innerHTML=html||'<tr><td colspan="10">Нет данных</td></tr>';
-        document.querySelectorAll('.reading-val').forEach(el=>el.addEventListener('blur',async function(){ const id=this.dataset.id, newVal=parseFloat(this.innerText); if(!isNaN(newVal)) await supabaseClient.from('readings').update({value:newVal}).eq('id',id); loadReadings(); loadMeterInvoices(); }));
+        tbody.innerHTML=html||'<tr><td colspan="10">Нет данных</td>' + '</tr>';
+        document.querySelectorAll('.reading-val').forEach(el=>el.addEventListener('blur',async function(){ const id=this.dataset.id, newVal=parseFloat(this.innerText); if(!isNaN(newVal)) { await supabaseClient.from('readings').update({value:newVal}).eq('id',id); await loadReadings(); await recalcMonthForReading(id); } }));
         document.querySelectorAll('.deleteReading').forEach(btn=>btn.addEventListener('click',()=>deleteReading(btn.dataset.id)));
         document.querySelectorAll('.reading-paid-check').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const invoiceId = cb.dataset.invoiceId;
@@ -374,54 +375,121 @@
         }));
         attachSorting('readingsTable');
     }
+    async function recalcMonthForReading(readingId) {
+        const reading = allReadings.find(r => r.id == readingId);
+        if(reading) {
+            const month = reading.reading_date.slice(0,7);
+            await calculateInvoicesForMonth(month);
+        }
+    }
 
-    // === Счета (с автоматическим созданием за выбранный месяц) ===
-    async function loadMeterInvoices() {
-        const {data}=await supabaseClient.from('meter_invoices').select('*, meters(id,name,users(id,full_name,plot_number))');
-        allMeterInvoices=data||[];
-        renderCombinedInvoices();
+    // === Счета с автоматическим расчётом ===
+    async function loadTariffHistory() { const {data}=await supabaseClient.from('tariff_history').select('*').order('valid_from',{ascending:false}); tariffHistory=data||[]; document.getElementById('tariffHistoryBody').innerHTML=tariffHistory.map(t=>`<tr><td>${t.valid_from}</td><td>${t.t1_rate}</td><td>${t.t2_rate}</td><td>${t.t3_rate}</td><td>${t.t1_limit}</td><td><button class="btn btn-sm btn-danger deleteTariff" data-id="${t.id}">Удалить</button></td></tr>`).join(''); attachDeleteTariff(); }
+    async function loadFeeRatesHistory() { const {data}=await supabaseClient.from('fee_rates_history').select('*').order('valid_from',{ascending:false}); feeRatesHistory=data||[]; document.getElementById('feeRatesHistoryBody').innerHTML=feeRatesHistory.map(f=>`<tr><td>${f.valid_from}</td><td>${f.plot_fee_rate}</td><td>${f.area_fee_rate}</td><td><button class="btn btn-sm btn-danger deleteFeeRate" data-id="${f.id}">Удалить</button></td></tr>`).join(''); attachDeleteFeeRate(); }
+    async function loadMeterInvoices() { const {data}=await supabaseClient.from('meter_invoices').select('*, meters(id,name,users(id,full_name,plot_number))'); allMeterInvoices=data||[]; renderCombinedInvoices(); }
+    async function loadFeeInvoices() { const {data}=await supabaseClient.from('invoices').select('*, users(full_name,plot_number)'); allFeeInvoices=data||[]; renderCombinedInvoices(); }
+
+    async function getTariffForDate(date) {
+        // date - объект Date или строка YYYY-MM-DD
+        const targetDate = new Date(date);
+        let best = null;
+        for(const t of tariffHistory) {
+            const validFrom = new Date(t.valid_from);
+            if(validFrom <= targetDate) {
+                if(!best || new Date(best.valid_from) < validFrom) best = t;
+            }
+        }
+        return best;
     }
-    async function loadFeeInvoices() {
-        const {data}=await supabaseClient.from('invoices').select('*, users(full_name,plot_number)');
-        allFeeInvoices=data||[];
-        renderCombinedInvoices();
+    async function getFeeRatesForDate(date) {
+        const targetDate = new Date(date);
+        let best = null;
+        for(const f of feeRatesHistory) {
+            const validFrom = new Date(f.valid_from);
+            if(validFrom <= targetDate) {
+                if(!best || new Date(best.valid_from) < validFrom) best = f;
+            }
+        }
+        return best;
     }
-    async function ensureInvoicesForMonth(yearMonth) {
+
+    async function calculateInvoicesForMonth(yearMonth) {
         // yearMonth в формате YYYY-MM
-        if (!yearMonth) return;
+        if(!yearMonth) return;
+        // Последний день месяца для определения тарифов
+        const lastDay = new Date(yearMonth + '-01');
+        lastDay.setMonth(lastDay.getMonth() + 1);
+        lastDay.setDate(lastDay.getDate() - 1);
+        const tariff = await getTariffForDate(lastDay);
+        const feeRates = await getFeeRatesForDate(lastDay);
         const users = allUsers.filter(u => u.role !== 'admin');
-        for (const user of users) {
-            // Электричество: для каждого счётчика пользователя
+        for(const user of users) {
+            // Электричество: перебираем счётчики пользователя
             const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id', user.id);
-            for (const meter of meters) {
-                const {data: existing} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id', meter.id).eq('year_month', yearMonth+'-01').limit(1);
-                if (!existing || existing.length === 0) {
-                    await supabaseClient.from('meter_invoices').insert({ meter_id: meter.id, year_month: yearMonth+'-01', amount: 0, paid: false });
+            for(const meter of meters) {
+                // Найти показание за этот месяц (ближайшее к концу месяца, но не позже)
+                const {data: reading} = await supabaseClient.from('readings')
+                    .select('value, reading_date')
+                    .eq('meter_id', meter.id)
+                    .lte('reading_date', lastDay.toISOString().slice(0,10))
+                    .order('reading_date', {ascending: false})
+                    .limit(1);
+                if(!reading || reading.length === 0) continue;
+                const currentReading = reading[0].value;
+                // Предыдущее показание (до этого месяца)
+                const {data: prevReading} = await supabaseClient.from('readings')
+                    .select('value')
+                    .eq('meter_id', meter.id)
+                    .lt('reading_date', yearMonth + '-01')
+                    .order('reading_date', {ascending: false})
+                    .limit(1);
+                const prevValue = prevReading && prevReading[0] ? prevReading[0].value : 0;
+                const consumption = Math.max(0, currentReading - prevValue);
+                let elecAmount = 0;
+                if(tariff && consumption > 0) {
+                    // Упрощённо: используем T1 (дневной тариф). Можно расширить до многотарифного.
+                    elecAmount = consumption * tariff.t1_rate;
+                }
+                // Обновить или создать meter_invoice
+                const {data: existingInv} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id', meter.id).eq('year_month', yearMonth+'-01').limit(1);
+                if(existingInv && existingInv[0]) {
+                    await supabaseClient.from('meter_invoices').update({amount: elecAmount}).eq('id', existingInv[0].id);
+                } else {
+                    await supabaseClient.from('meter_invoices').insert({meter_id: meter.id, year_month: yearMonth+'-01', amount: elecAmount, paid: false});
                 }
             }
             // Взносы
+            let plotFee = 0, areaFee = 0;
+            if(feeRates) {
+                plotFee = feeRates.plot_fee_rate * (user.plots_count || 1);
+                areaFee = feeRates.area_fee_rate * (user.area_sotok || 0);
+            }
             const {data: existingFee} = await supabaseClient.from('invoices').select('id').eq('user_id', user.id).eq('year_month', yearMonth+'-01').limit(1);
-            if (!existingFee || existingFee.length === 0) {
-                await supabaseClient.from('invoices').insert({ user_id: user.id, year_month: yearMonth+'-01', plot_fee: 0, area_fee: 0, plot_fee_paid: false, area_fee_paid: false });
+            if(existingFee && existingFee[0]) {
+                await supabaseClient.from('invoices').update({plot_fee: plotFee, area_fee: areaFee}).eq('id', existingFee[0].id);
+            } else {
+                await supabaseClient.from('invoices').insert({user_id: user.id, year_month: yearMonth+'-01', plot_fee: plotFee, area_fee: areaFee, plot_fee_paid: false, area_fee_paid: false});
             }
         }
         await loadMeterInvoices();
         await loadFeeInvoices();
     }
+
     async function refreshInvoices() {
         const filterVal = document.getElementById('invoiceMonthFilter').value;
         let selectedMonth = null;
         if (filterVal === 'current') {
             const now = new Date();
             selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            await ensureInvoicesForMonth(selectedMonth);
+            await calculateInvoicesForMonth(selectedMonth);
         } else if (filterVal === 'custom') {
             selectedMonth = document.getElementById('customInvoiceMonth').value;
-            if (selectedMonth) await ensureInvoicesForMonth(selectedMonth);
+            if (selectedMonth) await calculateInvoicesForMonth(selectedMonth);
         }
         await loadMeterInvoices();
         await loadFeeInvoices();
     }
+
     function renderCombinedInvoices() {
         const feeMap = new Map();
         for(const fee of allFeeInvoices) {
@@ -485,7 +553,7 @@
                 <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-type="area" data-user-id="${r.user_id}" data-month="${r.month}" ${r.area_fee_paid?'checked':''}> ${r.area_fee_paid?(r.area_fee_paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${r.total.toFixed(2)}</td>
                 <td><button class="btn btn-sm btn-danger deleteCombinedInvoice" data-meter-id="${r.meter_id}" data-user-id="${r.user_id}" data-month="${r.month}">Удалить счёт</button></td>
-            </tr>
+            </table>
         `).join('');
         attachInvoiceCheckboxEvents();
         attachDeleteCombinedInvoice();
@@ -578,11 +646,8 @@
         const tbody = document.getElementById('extraFeesBody');
         tbody.innerHTML = userFees.map(uf => `
             <tr>
-                <td>${uf.id}</td>
-                <td>${uf.users?.full_name}</td>
-                <td>${uf.users?.plot_number || ''}</td>
-                <td>${uf.extra_fees?.name}</td>
-                <td>${formatMonth(uf.extra_fees?.year_month)}</td>
+                <td>${uf.id}</td><td>${uf.users?.full_name}</td><td>${uf.users?.plot_number || ''}</td>
+                <td>${uf.extra_fees?.name}</td><td>${formatMonth(uf.extra_fees?.year_month)}</td>
                 <td>${uf.amount}</td>
                 <td class="text-center"><input type="checkbox" class="user-fee-paid" data-id="${uf.id}" ${uf.paid?'checked':''}> ${uf.paid?(uf.paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${uf.paid_by||''}</td>
@@ -606,7 +671,6 @@
 
     // === Экспорт / Импорт Excel ===
     async function exportToExcel(data, filename) { if(!data.length) return; const ws=XLSX.utils.json_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1'); XLSX.writeFile(wb,filename+'.xlsx'); }
-
     document.getElementById('exportUsersBtn').addEventListener('click',()=>{ const exportData=allUsers.map(u=>({Логин:u.username,Пароль:u.password,ФИО:u.full_name,Участок:u.plot_number,Участков:u.plots_count,Соток:u.area_sotok,Роль:u.role})); exportToExcel(exportData,'users'); });
     document.getElementById('importUsersBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); for(const row of rows){ await supabaseClient.from('users').upsert({ username:row.Логин, password:row.Пароль, full_name:row.ФИО, plot_number:row.Участок, plots_count:row.Участков||1, area_sotok:row.Соток||0, role:row.Роль||'user' },{onConflict:'username'}); } alert('Импорт завершён'); loadUsers(); }; input.click(); });
     document.getElementById('exportReadingsBtn').addEventListener('click',()=>{ const exportData=allReadings.map(r=>({Счётчик:r.meters?.name,Пользователь:r.meters?.users?.full_name,Участок:r.meters?.users?.plot_number,Месяц:formatMonth(r.reading_date),Показание:r.value,Оплачено_эл: (allMeterInvoices.find(i=>i.meter_id===r.meter_id && i.year_month.startsWith(r.reading_date.slice(0,7)))?.paid ? 'Да':'Нет')})); exportToExcel(exportData,'readings'); });
@@ -615,12 +679,10 @@
     document.getElementById('exportExtraFeesBtn').addEventListener('click',()=>{ const exportData=allUserExtraFees.map(uf=>({Пользователь:uf.users?.full_name,Участок:uf.users?.plot_number,Сбор:uf.extra_fees?.name,Месяц:formatMonth(uf.extra_fees?.year_month),Сумма:uf.amount,Оплачено:uf.paid?'Да':'Нет'})); exportToExcel(exportData,'extra_fees'); });
     document.getElementById('importExtraFeesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); let count=0; for(const row of rows){ const userName = row['Пользователь'] || row['user'] || ''; const plot = row['Участок'] || row['plot'] || ''; const feeName = row['Сбор'] || row['fee_name'] || ''; const month = row['Месяц'] || row['month'] || ''; if(!month || month.length<7) continue; const yearMonth = month.slice(0,7)+'-01'; let amount = parseFloat(row['Сумма'] || row['amount'] || 0); const paid = (row['Оплачено'] === 'Да' || row['Оплачено'] === true || row['Оплачено'] === 1); let {data: users} = await supabaseClient.from('users').select('id').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1); let user = users?.[0]; if(!user && plot) { const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1); user = byPlot?.[0]; } if(!user) continue; let {data: feeTpl} = await supabaseClient.from('extra_fees').select('id').eq('name',feeName).eq('year_month',yearMonth).limit(1); let extraFeeId = feeTpl?.[0]?.id; if(!extraFeeId) { const {data: inserted} = await supabaseClient.from('extra_fees').insert({name:feeName, amount, year_month:yearMonth}).select(); extraFeeId = inserted?.[0]?.id; if(!extraFeeId) continue; } const {data: existing} = await supabaseClient.from('user_extra_fees').select('id').eq('user_id',user.id).eq('extra_fee_id',extraFeeId).limit(1); if(existing && existing[0]){ await supabaseClient.from('user_extra_fees').update({amount, paid, paid_by:paid?'admin':null}).eq('id',existing[0].id); } else { await supabaseClient.from('user_extra_fees').insert({user_id:user.id, extra_fee_id:extraFeeId, amount, paid, paid_by:paid?'admin':null}); } count++; } alert(`Импорт завершён: добавлено/обновлено ${count} назначений сборов.`); await loadExtraFeeTemplates(); await loadExtraFees(); }; input.click(); });
 
-    // === Тарифы, объявления, CRUD ===
-    async function loadTariffHistory() { const {data}=await supabaseClient.from('tariff_history').select('*').order('valid_from',{ascending:false}); document.getElementById('tariffHistoryBody').innerHTML=data.map(t=>`<tr><td>${t.valid_from}</td><td>${t.t1_rate}</td><td>${t.t2_rate}</td><td>${t.t3_rate}</td><td>${t.t1_limit}</td><td><button class="btn btn-sm btn-danger deleteTariff" data-id="${t.id}">Удалить</button></td></tr>`).join(''); attachDeleteTariff(); }
-    async function loadFeeRatesHistory() { const {data}=await supabaseClient.from('fee_rates_history').select('*').order('valid_from',{ascending:false}); document.getElementById('feeRatesHistoryBody').innerHTML=data.map(f=>`<tr><td>${f.valid_from}</td><td>${f.plot_fee_rate}</td><td>${f.area_fee_rate}</td><td><button class="btn btn-sm btn-danger deleteFeeRate" data-id="${f.id}">Удалить</button></td></tr>`).join(''); attachDeleteFeeRate(); }
-    async function loadAnnouncements() { const {data}=await supabaseClient.from('announcements').select('*').order('created_at',{ascending:false}); document.getElementById('announcementsBody').innerHTML=data.map(a=>`<tr><td>${a.title||''}</td><td>${a.content.substring(0,100)}</td><td>${new Date(a.created_at).toLocaleDateString()}</td><td><button class="btn btn-sm btn-warning editAnnouncement" data-id="${a.id}">Ред.</button> <button class="btn btn-sm btn-danger deleteAnnouncement" data-id="${a.id}">Удалить</button></td></tr>`).join(''); attachAnnouncementActions(); }
+    // === CRUD и прочее ===
     function attachDeleteTariff() { document.querySelectorAll('.deleteTariff').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить тариф?')) await supabaseClient.from('tariff_history').delete().eq('id',btn.dataset.id); loadTariffHistory(); })); }
     function attachDeleteFeeRate() { document.querySelectorAll('.deleteFeeRate').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить ставку?')) await supabaseClient.from('fee_rates_history').delete().eq('id',btn.dataset.id); loadFeeRatesHistory(); })); }
+    async function loadAnnouncements() { const {data}=await supabaseClient.from('announcements').select('*').order('created_at',{ascending:false}); document.getElementById('announcementsBody').innerHTML=data.map(a=>`<tr><td>${a.title||''}</td><td>${a.content.substring(0,100)}</td><td>${new Date(a.created_at).toLocaleDateString()}</td><td><button class="btn btn-sm btn-warning editAnnouncement" data-id="${a.id}">Ред.</button> <button class="btn btn-sm btn-danger deleteAnnouncement" data-id="${a.id}">Удалить</button></td></tr>`).join(''); attachAnnouncementActions(); }
     function attachAnnouncementActions() {
         document.querySelectorAll('.editAnnouncement').forEach(btn=>btn.addEventListener('click',async()=>{ const id=btn.dataset.id; const {data}=await supabaseClient.from('announcements').select('*').eq('id',id).single(); document.getElementById('announcementId').value=data.id; document.getElementById('announcementTitle').value=data.title||''; document.getElementById('announcementContent').value=data.content; new bootstrap.Modal(document.getElementById('announcementModal')).show(); }));
         document.querySelectorAll('.deleteAnnouncement').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить объявление?')) await supabaseClient.from('announcements').delete().eq('id',btn.dataset.id); loadAnnouncements(); }));
@@ -656,7 +718,6 @@
         }
     }
 
-    // === CRUD и прочее ===
     async function editUser(id) { const {data:u}=await supabaseClient.from('users').select('*').eq('id',id).single(); document.getElementById('editUserId').value=u.id; document.getElementById('editUsername').value=u.username; document.getElementById('editPassword').value=u.password; document.getElementById('editFullName').value=u.full_name||''; document.getElementById('editPlotNumber').value=u.plot_number||''; document.getElementById('editPlotsCount').value=u.plots_count??1; document.getElementById('editAreaSotok').value=u.area_sotok??0; document.getElementById('editRole').value=u.role; new bootstrap.Modal(document.getElementById('editUserModal')).show(); }
     async function saveUser() { const id=document.getElementById('editUserId').value; const data={ username:document.getElementById('editUsername').value, password:document.getElementById('editPassword').value, full_name:document.getElementById('editFullName').value, plot_number:document.getElementById('editPlotNumber').value, plots_count:parseFloat(document.getElementById('editPlotsCount').value), area_sotok:parseFloat(document.getElementById('editAreaSotok').value), role:document.getElementById('editRole').value }; if(id) await supabaseClient.from('users').update(data).eq('id',id); else await supabaseClient.from('users').insert(data); bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide(); loadUsers(); }
     async function deleteUser(id) { if(confirm('Удалить пользователя?')) { await supabaseClient.from('users').delete().eq('id',id); loadUsers(); } }
@@ -674,7 +735,22 @@
     document.getElementById('addTariffBtn').addEventListener('click',async()=>{ const valid_from=prompt('Дата начала (ГГГГ-ММ-ДД):',new Date().toISOString().slice(0,10)); if(!valid_from) return; const t1=parseFloat(prompt('T1 (₽):','6.2')); const t2=parseFloat(prompt('T2 (₽):','7.42')); const t3=parseFloat(prompt('T3 (₽):','0.36')); const limit=parseFloat(prompt('Лимит T1 (кВт·ч):','100')); if(isNaN(t1)||isNaN(t2)||isNaN(t3)||isNaN(limit)) return; await supabaseClient.from('tariff_history').insert({ valid_from, t1_rate:t1, t2_rate:t2, t3_rate:t3, t1_limit:limit }); loadTariffHistory(); });
     document.getElementById('addFeeRateBtn').addEventListener('click',()=>{ document.getElementById('feeRateValidFrom').value=new Date().toISOString().slice(0,10); document.getElementById('feeRatePlot').value=''; document.getElementById('feeRateArea').value=''; new bootstrap.Modal(document.getElementById('addFeeRateModal')).show(); });
     document.getElementById('saveFeeRateBtn').addEventListener('click',async()=>{ const valid_from=document.getElementById('feeRateValidFrom').value; const plot=parseFloat(document.getElementById('feeRatePlot').value); const area=parseFloat(document.getElementById('feeRateArea').value); if(!valid_from||isNaN(plot)||isNaN(area)) return alert('Заполните корректно'); await supabaseClient.from('fee_rates_history').insert({ valid_from, plot_fee_rate:plot, area_fee_rate:area }); bootstrap.Modal.getInstance(document.getElementById('addFeeRateModal')).hide(); loadFeeRatesHistory(); });
-    document.getElementById('calculateAllInvoicesBtn').addEventListener('click',async()=>{ alert('Функция расчёта всех пропущенных счетов требует реализации'); });
+    document.getElementById('recalculateMonthBtn').addEventListener('click',async()=>{
+        const filterVal = document.getElementById('invoiceMonthFilter').value;
+        let selectedMonth = null;
+        if(filterVal === 'current') {
+            const now = new Date();
+            selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        } else if(filterVal === 'custom') {
+            selectedMonth = document.getElementById('customInvoiceMonth').value;
+        }
+        if(selectedMonth) {
+            await calculateInvoicesForMonth(selectedMonth);
+            alert(`Счета за ${formatMonth(selectedMonth)} пересчитаны.`);
+        } else {
+            alert('Выберите месяц (текущий или укажите вручную)');
+        }
+    });
     document.getElementById('addAnnouncementBtn').addEventListener('click',()=>{ document.getElementById('announcementId').value=''; document.getElementById('announcementTitle').value=''; document.getElementById('announcementContent').value=''; new bootstrap.Modal(document.getElementById('announcementModal')).show(); });
     document.getElementById('saveAnnouncementBtn').addEventListener('click',async()=>{ const id=document.getElementById('announcementId').value; const data={ title:document.getElementById('announcementTitle').value, content:document.getElementById('announcementContent').value }; if(id) await supabaseClient.from('announcements').update(data).eq('id',id); else await supabaseClient.from('announcements').insert(data); bootstrap.Modal.getInstance(document.getElementById('announcementModal')).hide(); loadAnnouncements(); });
 
@@ -684,8 +760,8 @@
     document.getElementById('readingsMonthFilter').addEventListener('change',function(){ document.getElementById('customMonthInput').style.display=this.value==='custom'?'inline-block':'none'; applyReadingsFilter(); });
     document.getElementById('customMonthInput').addEventListener('change',applyReadingsFilter);
     document.getElementById('searchInvoices').addEventListener('input',()=>{ renderCombinedInvoices(); });
-    document.getElementById('invoiceMonthFilter').addEventListener('change',async function(){ const val = this.value; document.getElementById('customInvoiceMonth').style.display = val === 'custom' ? 'inline-block' : 'none'; if (val === 'current') { const now = new Date(); const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; await ensureInvoicesForMonth(curMonth); } else if (val === 'custom' && document.getElementById('customInvoiceMonth').value) { await ensureInvoicesForMonth(document.getElementById('customInvoiceMonth').value); } await loadMeterInvoices(); await loadFeeInvoices(); });
-    document.getElementById('customInvoiceMonth').addEventListener('change',async()=>{ const month = document.getElementById('customInvoiceMonth').value; if(month) await ensureInvoicesForMonth(month); await loadMeterInvoices(); await loadFeeInvoices(); });
+    document.getElementById('invoiceMonthFilter').addEventListener('change',async function(){ const val = this.value; document.getElementById('customInvoiceMonth').style.display = val === 'custom' ? 'inline-block' : 'none'; if (val === 'current') { const now = new Date(); const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; await calculateInvoicesForMonth(curMonth); } else if (val === 'custom' && document.getElementById('customInvoiceMonth').value) { await calculateInvoicesForMonth(document.getElementById('customInvoiceMonth').value); } await loadMeterInvoices(); await loadFeeInvoices(); });
+    document.getElementById('customInvoiceMonth').addEventListener('change',async()=>{ const month = document.getElementById('customInvoiceMonth').value; if(month) await calculateInvoicesForMonth(month); await loadMeterInvoices(); await loadFeeInvoices(); });
     document.getElementById('invoicePaidFilter').addEventListener('change',()=>{ renderCombinedInvoices(); });
     document.getElementById('searchExtraFees').addEventListener('input',applyExtraFeesFilter);
     document.getElementById('extraMonthFilter').addEventListener('change',function(){ document.getElementById('customExtraMonth').style.display=this.value==='custom'?'inline-block':'none'; applyExtraFeesFilter(); });
