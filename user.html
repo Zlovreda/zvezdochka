@@ -13,6 +13,15 @@
         .meter-input-card{background:#f1f3f5;border-radius:.5rem;padding:1rem;margin-bottom:1rem}
         .table-responsive{font-size:.9rem}
         .tariff-table td, .tariff-table th{padding:0.3rem}
+        /* Убираем стрелки у числовых полей */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
@@ -47,32 +56,6 @@
         </div>
     </div>
 
-    <!-- Блок действующих тарифов -->
-    <div class="card section-card">
-        <div class="card-header bg-secondary text-white">Действующие тарифы и ставки</div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Электроэнергия <span class="text-muted small">(с <span id="tariffValidFrom"></span>)</span></h6>
-                    <table class="table table-sm table-bordered tariff-table">
-                        <tr><th>T1 (до <span id="t1Limit"></span> кВт·ч)</th><td><span id="t1Rate"></span> ₽/кВт·ч</td></tr>
-                        <tr><th>T2 (свыше лимита)</th><td><span id="t2Rate"></span> ₽/кВт·ч</td></tr>
-                        <tr><th>T3 (экологический сбор)</th><td><span id="t3Rate"></span> ₽/кВт·ч</td></tr>
-                        <tr class="table-light"><th>Пример расчёта:</th><td colspan="2"><small id="calcExample"></small></td></tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h6>Членские взносы <span class="text-muted small">(с <span id="feeValidFrom"></span>)</span></h6>
-                    <table class="table table-sm table-bordered tariff-table">
-                        <tr><th>За участок</th><td><span id="plotFeeRate"></span> ₽</td></tr>
-                        <tr><th>За сотку</th><td><span id="areaFeeRate"></span> ₽/сотка</td></tr>
-                    </table>
-                </div>
-            </div>
-            <small class="text-muted">* Тарифы применяются к показаниям соответствующего месяца. При оплате вы можете увидеть детализацию в квитанции.</small>
-        </div>
-    </div>
-
     <!-- Блок объявлений -->
     <div class="card section-card mb-4">
         <div class="card-header bg-light"><i class="bi bi-megaphone"></i> Объявления от Правления</div>
@@ -91,14 +74,21 @@
                     <div id="readingMsg" class="mt-3"></div>
                 </div>
             </div>
-            <div class="card section-card">
-                <div class="card-header bg-info text-white">Последние показания</div>
-                <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Счётчик</th><th>Месяц</th><th>Показание</th></tr></thead><tbody id="lastReadingsBody"></tbody></table></div>
-            </div>
         </div>
         <div class="col-lg-7">
-            <div class="d-flex justify-content-end mb-2">
-                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> <label>Только неоплаченные</label></div>
+            <div class="d-flex justify-content-end mb-2 gap-3 flex-wrap">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> 
+                    <label>Только неоплаченные</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="groupElectricity"> 
+                    <label>Группировать счета за электричество</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="groupFeePayment"> 
+                    <label>Группировать оплату взносов</label>
+                </div>
             </div>
             <div class="card section-card">
                 <div class="card-header bg-warning text-dark">Счета за электричество (по счётчикам)</div>
@@ -106,11 +96,41 @@
             </div>
             <div class="card section-card">
                 <div class="card-header bg-warning text-dark">Членские взносы</div>
-                <div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Месяц</th><th>За участок</th><th>За сотки</th><th>Итого</th><th>Оплачено (участок)</th><th>Оплачено (сотки)</th></tr></thead><tbody id="feeInvoicesBody"></tbody></table></div>
+                <div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr id="feeTableHeader"><th>Месяц</th><th>За участок</th><th>За сотки</th><th>Итого</th><th>Оплачено (участок)</th><th>Оплачено (сотки)</th></tr></thead><tbody id="feeInvoicesBody"></tbody></table></div>
             </div>
             <div class="card section-card">
                 <div class="card-header bg-warning text-dark">Дополнительные сборы</div>
                 <div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Сбор</th><th>Месяц</th><th>Сумма</th><th>Оплачено</th></tr></thead><tbody id="extraFeesBody"></tbody></table></div>
+            </div>
+            <!-- Блок действующих тарифов (перемещён сюда) -->
+            <div class="card section-card">
+                <div class="card-header bg-secondary text-white">Действующие тарифы и ставки</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Электроэнергия <span class="text-muted small">(с <span id="tariffValidFrom"></span>)</span></h6>
+                            <table class="table table-sm table-bordered tariff-table">
+                                <tr><th>T1 (до <span id="t1Limit"></span> кВт·ч)</th><td><span id="t1Rate"></span> ₽/кВт·ч</td></tr>
+                                <tr><th>T2 (свыше лимита)</th><td><span id="t2Rate"></span> ₽/кВт·ч</td></tr>
+                                <tr><th>T3 (экологический сбор)</th><td><span id="t3Rate"></span> ₽/кВт·ч</td></tr>
+                                <tr class="table-light"><th>Пример расчёта:</th><td colspan="2"><small id="calcExample"></small></td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Членские взносы <span class="text-muted small">(с <span id="feeValidFrom"></span>)</span></h6>
+                            <table class="table table-sm table-bordered tariff-table">
+                                <tr><th>За участок</th><td><span id="plotFeeRate"></span> ₽</td></tr>
+                                <tr><th>За сотку</th><td><span id="areaFeeRate"></span> ₽/сотка</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <small class="text-muted">* Тарифы применяются к показаниям соответствующего месяца. При оплате вы можете увидеть детализацию в квитанции.</small>
+                </div>
+            </div>
+            <!-- Блок последних показаний (перемещён ещё ниже) -->
+            <div class="card section-card">
+                <div class="card-header bg-info text-white">Последние показания</div>
+                <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Счётчик</th><th>Месяц</th><th>Показание</th></tr></thead><tbody id="lastReadingsBody"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -123,6 +143,10 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     let currentUser = null, userMeters = [], previousMap = new Map();
+
+    // Флаги группировки
+    let groupElectricity = false;
+    let groupFeePayment = false;
 
     // Форматирование месяца
     function formatMonth(dateStr) {
@@ -137,10 +161,9 @@
         return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
     }
 
-    // Загрузка текущих тарифов (на сегодня)
+    // Загрузка текущих тарифов
     async function loadCurrentTariffs() {
         const today = new Date().toISOString().slice(0,10);
-        // Тариф на электричество
         const { data: tariff } = await supabaseClient
             .from('tariff_history')
             .select('*')
@@ -153,14 +176,12 @@
         document.getElementById('t2Rate').innerText = t.t2_rate;
         document.getElementById('t3Rate').innerText = t.t3_rate;
         document.getElementById('t1Limit').innerText = t.t1_limit;
-        // Пример расчёта для 150 кВт·ч
         const exampleConsumption = 150;
         let exampleAmount = exampleConsumption * t.t3_rate;
         if (exampleConsumption <= t.t1_limit) exampleAmount += exampleConsumption * t.t1_rate;
         else exampleAmount += t.t1_limit * t.t1_rate + (exampleConsumption - t.t1_limit) * t.t2_rate;
         document.getElementById('calcExample').innerHTML = `При расходе 150 кВт·ч: ≈ ${exampleAmount.toFixed(2)} ₽ (с учётом T1, T2, T3)`;
 
-        // Ставки взносов
         const { data: feeRates } = await supabaseClient
             .from('fee_rates_history')
             .select('*')
@@ -193,6 +214,7 @@
         }
         renderMeterInputs();
     }
+
     function renderMeterInputs(){
         const container = document.getElementById('metersInputsContainer');
         if(!userMeters.length){ container.innerHTML='<div class="alert alert-warning">Нет счётчиков</div>'; return; }
@@ -262,37 +284,93 @@
 
     function filterAndRender() {
         const showUnpaid = document.getElementById('showOnlyUnpaid').checked;
+        
         // Электричество
         let filtered = showUnpaid ? (window.electricityData||[]).filter(r=>!r.paid) : (window.electricityData||[]);
         const elecBody = document.getElementById('electricityInvoicesBody');
-        elecBody.innerHTML = filtered.map(r=>`<td>${formatMonth(r.month)}</td><td>${r.meter_name}</td><td>${r.consumption.toFixed(2)}</td><td>${r.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="elec-paid-checkbox" data-id="${r.id}" ${r.paid?'checked':''}> ${r.paid?(r.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        
+        if (groupElectricity) {
+            // Группировка по месяцу
+            const grouped = new Map();
+            for (const r of filtered) {
+                const key = r.month;
+                if (!grouped.has(key)) {
+                    grouped.set(key, { month: key, consumption: 0, amount: 0, paidAll: true, ids: [] });
+                }
+                const g = grouped.get(key);
+                g.consumption += r.consumption;
+                g.amount += r.amount;
+                g.ids.push(r.id);
+                if (!r.paid) g.paidAll = false;
+            }
+            const groupedArray = Array.from(grouped.values()).sort((a,b)=>b.month.localeCompare(a.month));
+            elecBody.innerHTML = groupedArray.map(g=>{
+                const paidIcon = g.paidAll ? '✅' : '';
+                return `<tr><td>${formatMonth(g.month)}</td><td>Все счётчики</td><td>${g.consumption.toFixed(2)}</td><td>${g.amount.toFixed(2)}</td><td class="text-center">${paidIcon}</td></tr>`;
+            }).join('');
+        } else {
+            elecBody.innerHTML = filtered.map(r=>`<tr><td>${formatMonth(r.month)}</td><td>${r.meter_name}</td><td>${r.consumption.toFixed(2)}</td><td>${r.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="elec-paid-checkbox" data-id="${r.id}" ${r.paid?'checked':''}> ${r.paid?(r.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        }
+
         // Взносы
         let feeFiltered = showUnpaid ? (window.feeData||[]).filter(f=>!f.plot_paid || !f.area_paid) : (window.feeData||[]);
         const feeBody = document.getElementById('feeInvoicesBody');
-        feeBody.innerHTML = feeFiltered.map(f=>`<tr><td>${formatMonth(f.month)}</td><td>${f.plot_fee.toFixed(2)}</td><td>${f.area_fee.toFixed(2)}</td><td>${(f.plot_fee+f.area_fee).toFixed(2)}</td><td class="text-center"><input type="checkbox" class="fee-plot-paid" data-month="${f.month}" ${f.plot_paid?'checked':''}></td><td class="text-center"><input type="checkbox" class="fee-area-paid" data-month="${f.month}" ${f.area_paid?'checked':''}></td></tr>`).join('');
+        const feeHeader = document.getElementById('feeTableHeader');
+        
+        if (groupFeePayment) {
+            feeHeader.innerHTML = `<th>Месяц</th><th>За участок</th><th>За сотки</th><th>Итого</th><th>Оплачено полностью</th>`;
+            feeBody.innerHTML = feeFiltered.map(f=>{
+                const fullyPaid = f.plot_paid && f.area_paid;
+                return `<tr><td>${formatMonth(f.month)}</td><td>${f.plot_fee.toFixed(2)}</td><td>${f.area_fee.toFixed(2)}</td><td>${(f.plot_fee+f.area_fee).toFixed(2)}</td><td class="text-center"><input type="checkbox" class="fee-full-paid" data-month="${f.month}" ${fullyPaid?'checked':''}></td></tr>`;
+            }).join('');
+        } else {
+            feeHeader.innerHTML = `<th>Месяц</th><th>За участок</th><th>За сотки</th><th>Итого</th><th>Оплачено (участок)</th><th>Оплачено (сотки)</th>`;
+            feeBody.innerHTML = feeFiltered.map(f=>`<tr><td>${formatMonth(f.month)}</td><td>${f.plot_fee.toFixed(2)}</td><td>${f.area_fee.toFixed(2)}</td><td>${(f.plot_fee+f.area_fee).toFixed(2)}</td><td class="text-center"><input type="checkbox" class="fee-plot-paid" data-month="${f.month}" ${f.plot_paid?'checked':''}></td><td class="text-center"><input type="checkbox" class="fee-area-paid" data-month="${f.month}" ${f.area_paid?'checked':''}></td></tr>`).join('');
+        }
+
         // Доп. сборы
         let extraFiltered = showUnpaid ? (window.extraData||[]).filter(e=>!e.paid) : (window.extraData||[]);
         const extraBody = document.getElementById('extraFeesBody');
         extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        
         attachCheckboxEvents();
     }
 
     function attachCheckboxEvents() {
-        document.querySelectorAll('.elec-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
-            const id=cb.dataset.id, paid=e.target.checked;
-            await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
-            loadElectricityInvoices(); loadTotalDebt();
-        }));
-        document.querySelectorAll('.fee-plot-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-            const month=cb.dataset.month, paid=e.target.checked;
-            await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-            loadFeeInvoices(); loadTotalDebt();
-        }));
-        document.querySelectorAll('.fee-area-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-            const month=cb.dataset.month, paid=e.target.checked;
-            await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-            loadFeeInvoices(); loadTotalDebt();
-        }));
+        if (!groupElectricity) {
+            document.querySelectorAll('.elec-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
+                const id=cb.dataset.id, paid=e.target.checked;
+                await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+                loadElectricityInvoices(); loadTotalDebt();
+            }));
+        }
+
+        if (groupFeePayment) {
+            document.querySelectorAll('.fee-full-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
+                const month=cb.dataset.month, paid=e.target.checked;
+                await supabaseClient.from('invoices').update({
+                    plot_fee_paid: paid,
+                    plot_fee_paid_by: paid?'user':null,
+                    plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null,
+                    area_fee_paid: paid,
+                    area_fee_paid_by: paid?'user':null,
+                    area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
+                }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+                loadFeeInvoices(); loadTotalDebt();
+            }));
+        } else {
+            document.querySelectorAll('.fee-plot-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
+                const month=cb.dataset.month, paid=e.target.checked;
+                await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+                loadFeeInvoices(); loadTotalDebt();
+            }));
+            document.querySelectorAll('.fee-area-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
+                const month=cb.dataset.month, paid=e.target.checked;
+                await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+                loadFeeInvoices(); loadTotalDebt();
+            }));
+        }
+
         document.querySelectorAll('.extra-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const id=cb.dataset.id, paid=e.target.checked;
             await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
@@ -334,17 +412,35 @@
     async function loadLastReadings() {
         const {data}=await supabaseClient.from('readings').select('reading_date, value, meters(name)').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:false}).limit(5);
         const tbody = document.getElementById('lastReadingsBody');
-        tbody.innerHTML = (data||[]).map(r=>`<td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
+        tbody.innerHTML = (data||[]).map(r=>`<tr><td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
     }
 
     function showMsg(el,msg,type){ const d=document.getElementById(el); d.innerHTML=`<div class="alert alert-${type}">${msg}</div>`; setTimeout(()=>d.innerHTML='',5000); }
 
+    // Установка текущего месяца в поле выбора
+    function setCurrentMonth() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('readingMonth').value = `${year}-${month}`;
+    }
+
+    // Обработчики переключателей
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
     document.getElementById('submitReadingsBtn').addEventListener('click',submitReadings);
     document.getElementById('showOnlyUnpaid').addEventListener('change',filterAndRender);
+    document.getElementById('groupElectricity').addEventListener('change',(e)=>{
+        groupElectricity = e.target.checked;
+        filterAndRender();
+    });
+    document.getElementById('groupFeePayment').addEventListener('change',(e)=>{
+        groupFeePayment = e.target.checked;
+        filterAndRender();
+    });
 
     (async()=>{
         await checkAuth();
+        setCurrentMonth();
         await loadCurrentTariffs();
         await loadUserMeters();
         await loadElectricityInvoices();
