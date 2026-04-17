@@ -302,14 +302,29 @@
     }
 
     async function loadFeeInvoices() {
-        const {data}=await supabaseClient.from('invoices').select('year_month, plot_fee, area_fee, plot_fee_paid, area_fee_paid').eq('user_id',currentUser.id).order('year_month',{ascending:false});
-        window.feeData = (data||[]).map(i=>({ month:i.year_month.slice(0,7), plot_fee:i.plot_fee, area_fee:i.area_fee, plot_paid:i.plot_fee_paid, area_paid:i.area_fee_paid }));
+        const {data}=await supabaseClient.from('invoices').select('year_month, plot_fee, area_fee, plot_fee_paid, area_fee_paid, plot_fee_paid_by, area_fee_paid_by').eq('user_id',currentUser.id).order('year_month',{ascending:false});
+        window.feeData = (data||[]).map(i=>({ 
+            month: i.year_month.slice(0,7), 
+            plot_fee: i.plot_fee, 
+            area_fee: i.area_fee, 
+            plot_paid: i.plot_fee_paid, 
+            area_paid: i.area_fee_paid,
+            plot_paid_by: i.plot_fee_paid_by,
+            area_paid_by: i.area_fee_paid_by
+        }));
         filterAndRender();
     }
 
     async function loadExtraFees() {
-        const {data}=await supabaseClient.from('user_extra_fees').select('id, amount, paid, extra_fees(name, year_month)').eq('user_id',currentUser.id);
-        window.extraData = (data||[]).map(f=>({ id:f.id, name:f.extra_fees?.name, month:f.extra_fees?.year_month?.slice(0,7), amount:f.amount, paid:f.paid }));
+        const {data}=await supabaseClient.from('user_extra_fees').select('id, amount, paid, paid_by, extra_fees(name, year_month)').eq('user_id',currentUser.id);
+        window.extraData = (data||[]).map(f=>({ 
+            id: f.id, 
+            name: f.extra_fees?.name, 
+            month: f.extra_fees?.year_month?.slice(0,7), 
+            amount: f.amount, 
+            paid: f.paid,
+            paid_by: f.paid_by
+        }));
         filterAndRender();
     }
 
@@ -383,7 +398,18 @@
             }).join('');
         } else {
             feeHeader.innerHTML = `<th>Месяц</th><th>За участок</th><th>За сотки</th><th>Итого</th><th>Оплачено (участок)</th><th>Оплачено (сотки)</th>`;
-            feeBody.innerHTML = feeFiltered.map(f=>`<tr><td>${formatMonth(f.month)}</td><td>${f.plot_fee.toFixed(2)}</td><td>${f.area_fee.toFixed(2)}</td><td>${(f.plot_fee+f.area_fee).toFixed(2)}</td><td class="text-center"><input type="checkbox" class="fee-plot-paid" data-month="${f.month}" ${f.plot_paid?'checked':''}></td><td class="text-center"><input type="checkbox" class="fee-area-paid" data-month="${f.month}" ${f.area_paid?'checked':''}></td></tr>`).join('');
+            feeBody.innerHTML = feeFiltered.map(f=>{
+                const plotIcon = f.plot_paid ? (f.plot_paid_by === 'user' ? '👤' : '👑') : '';
+                const areaIcon = f.area_paid ? (f.area_paid_by === 'user' ? '👤' : '👑') : '';
+                return `<tr>
+                    <td>${formatMonth(f.month)}</td>
+                    <td>${f.plot_fee.toFixed(2)}</td>
+                    <td>${f.area_fee.toFixed(2)}</td>
+                    <td>${(f.plot_fee+f.area_fee).toFixed(2)}</td>
+                    <td class="text-center"><input type="checkbox" class="fee-plot-paid" data-month="${f.month}" ${f.plot_paid?'checked':''}> ${plotIcon}</td>
+                    <td class="text-center"><input type="checkbox" class="fee-area-paid" data-month="${f.month}" ${f.area_paid?'checked':''}> ${areaIcon}</td>
+                </tr>`;
+            }).join('');
         }
 
         // Доп. сборы
@@ -409,7 +435,6 @@
             const month = target.dataset.month;
             const paid = target.checked;
             
-            // 1. Оптимистично обновляем локальные данные
             const updatedData = (window.electricityData || []).map(inv => {
                 if (inv.month === month) {
                     return { ...inv, paid: paid, paid_by: paid ? 'user' : null };
@@ -418,10 +443,8 @@
             });
             window.electricityData = updatedData;
             
-            // 2. Перерисовываем таблицу немедленно
             filterAndRender();
             
-            // 3. Отправляем запрос на сервер
             const { data: invoicesToUpdate } = await supabaseClient
                 .from('meter_invoices')
                 .select('id')
@@ -436,7 +459,6 @@
                     .in('id', ids);
                     
                 if (error) {
-                    // Откат изменений при ошибке
                     const rolledBackData = window.electricityData.map(inv => {
                         if (inv.month === month) {
                             return { ...inv, paid: !paid, paid_by: !paid ? 'user' : null };
@@ -449,21 +471,28 @@
                 }
             }
             
-            // Обновляем общую задолженность
             loadTotalDebt();
         }
         // Взносы: участок
         else if (target.classList.contains('fee-plot-paid')) {
             const month = target.dataset.month;
             const paid = target.checked;
-            await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            await supabaseClient.from('invoices').update({
+                plot_fee_paid: paid, 
+                plot_fee_paid_by: paid?'user':null, 
+                plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
+            }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
             loadFeeInvoices(); loadTotalDebt();
         }
         // Взносы: сотки
         else if (target.classList.contains('fee-area-paid')) {
             const month = target.dataset.month;
             const paid = target.checked;
-            await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            await supabaseClient.from('invoices').update({
+                area_fee_paid: paid, 
+                area_fee_paid_by: paid?'user':null, 
+                area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
+            }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
             loadFeeInvoices(); loadTotalDebt();
         }
         // Взносы: полная оплата
