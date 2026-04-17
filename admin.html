@@ -16,6 +16,16 @@
         .sortable { cursor: pointer; user-select: none; }
         .sortable:hover { background-color: #e2e6ea; }
         .filter-row { margin-bottom: 10px; }
+        /* Убираем стрелки у number полей */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +94,7 @@
                                 <th class="sortable" data-sort="id">ID</th>
                                 <th class="sortable" data-sort="meter">Счётчик</th>
                                 <th class="sortable" data-sort="user">Пользователь</th>
+                                <th class="sortable" data-sort="plot">№ участка</th>
                                 <th class="sortable" data-sort="month">Месяц</th>
                                 <th class="sortable" data-sort="value">Показание</th>
                                 <th>Предыдущее</th>
@@ -146,11 +157,23 @@
         </div>
     </div>
 
-    <!-- Дополнительные сборы (с фильтрацией и сортировкой) -->
+    <!-- Дополнительные сборы -->
     <div id="extraFees" class="tab-pane">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white d-flex justify-content-between flex-wrap">
+                <span>Шаблоны дополнительных сборов</span>
+                <button class="btn btn-sm btn-light" id="addExtraFeeBtn"><i class="bi bi-plus"></i> Добавить шаблон</button>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-sm" id="extraFeeTemplatesTable">
+                    <thead><tr><th>ID</th><th>Название</th><th>Сумма (₽)</th><th>Месяц</th><th>Действия</th></tr></thead>
+                    <tbody id="extraFeeTemplatesBody"></tbody>
+                </table>
+            </div>
+        </div>
         <div class="card">
             <div class="card-header bg-success text-white d-flex justify-content-between flex-wrap">
-                <span>Дополнительные сборы</span>
+                <span>Назначенные сборы пользователям</span>
                 <div>
                     <input type="text" id="searchExtraFees" class="form-control form-control-sm d-inline-block w-auto" placeholder="Поиск по пользователю или сбору">
                     <select id="extraMonthFilter" class="form-select form-select-sm w-auto d-inline-block">
@@ -158,7 +181,6 @@
                         <option value="custom">Выбрать месяц</option>
                     </select>
                     <input type="month" id="customExtraMonth" style="display:none;">
-                    <button class="btn btn-sm btn-light" id="addExtraFeeBtn"><i class="bi bi-plus"></i> Добавить сбор</button>
                     <button class="btn btn-sm btn-light" id="exportExtraFeesBtn"><i class="bi bi-file-excel"></i> Экспорт Excel</button>
                     <button class="btn btn-sm btn-success" id="importExtraFeesBtn"><i class="bi bi-upload"></i> Импорт Excel</button>
                 </div>
@@ -194,7 +216,7 @@
     <div id="tariffs" class="tab-pane">
         <div class="row">
             <div class="col-md-6">
-                <div class="card"><div class="card-header bg-dark text-white">Тарифы на электроэнергию <button class="btn btn-sm btn-light float-end" id="addTariffBtn">+</button></div><div class="card-body"><table class="table table-sm"><thead><tr><th>Действует с</th><th>T1</th><th>T2</th><th>T3</th><th>Лимит T1</th><th></th></tr></thead><tbody id="tariffHistoryBody"></tbody></td></div></div>
+                <div class="card"><div class="card-header bg-dark text-white">Тарифы на электроэнергию <button class="btn btn-sm btn-light float-end" id="addTariffBtn">+</button></div><div class="card-body"><table class="table table-sm"><thead><tr><th>Действует с</th><th>T1</th><th>T2</th><th>T3</th><th>Лимит T1</th><th></th></tr></thead><tbody id="tariffHistoryBody"></tbody></table></div></div>
             </div>
             <div class="col-md-6">
                 <div class="card"><div class="card-header bg-secondary text-white">Ставки взносов <button class="btn btn-sm btn-light float-end" id="addFeeRateBtn">+</button></div><div class="card-body"><table class="table table-sm"><thead><tr><th>Действует с</th><th>За участок</th><th>За сотку</th><th></th></tr></thead><tbody id="feeRatesHistoryBody"></tbody></table></div></div>
@@ -216,14 +238,14 @@
     </div>
 </div>
 
-<!-- Модальные окна (без изменений) -->
+<!-- Модальные окна -->
 <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Редактировать пользователя</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editUserId"><label>Логин *</label><input type="text" id="editUsername" class="form-control"><label>Пароль *</label><input type="text" id="editPassword" class="form-control"><label>ФИО</label><input type="text" id="editFullName" class="form-control"><label>Номер участка</label><input type="text" id="editPlotNumber" class="form-control"><label>Доля участка</label><input type="number" step="0.01" id="editPlotsCount" class="form-control" value="1"><label>Площадь в сотках</label><input type="number" step="0.01" id="editAreaSotok" class="form-control" value="0"><label>Роль</label><select id="editRole" class="form-control"><option value="user">Житель</option><option value="admin">Админ</option></select><button class="btn btn-primary w-100 mt-3" id="saveUserBtn">Сохранить</button></div></div></div></div>
 
 <div class="modal fade" id="editMeterModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Счётчик</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editMeterId"><input type="hidden" id="editMeterUserId"><label>Название</label><input type="text" id="editMeterName" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveMeterBtn">Сохранить</button></div></div></div></div>
 
 <div class="modal fade" id="editReadingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Показание</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editReadingId"><label>Счётчик</label><select id="editReadingMeterId" class="form-control"></select><label>Месяц</label><input type="month" id="editReadingDate" class="form-control"><label>Показание</label><input type="number" step="0.01" id="editReadingValue" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveReadingBtn">Сохранить</button></div></div></div></div>
 
-<div class="modal fade" id="editExtraFeeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Дополнительный сбор (шаблон)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editExtraFeeId"><label>Название</label><input type="text" id="editExtraFeeName" class="form-control"><label>Сумма (₽)</label><input type="number" step="0.01" id="editExtraFeeAmount" class="form-control"><label>Месяц</label><input type="month" id="editExtraFeeMonth" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveExtraFeeBtn">Сохранить</button></div></div></div></div>
+<div class="modal fade" id="editExtraFeeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Шаблон доп. сбора</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editExtraFeeId"><label>Название</label><input type="text" id="editExtraFeeName" class="form-control"><label>Сумма (₽)</label><input type="number" step="0.01" id="editExtraFeeAmount" class="form-control"><label>Месяц</label><input type="month" id="editExtraFeeMonth" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveExtraFeeBtn">Сохранить</button></div></div></div></div>
 
 <div class="modal fade" id="assignExtraFeeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Назначить сбор</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label>Пользователь</label><select id="assignUserId" class="form-control"></select><label>Сбор</label><select id="assignExtraFeeId" class="form-control"></select><label>Сумма (если отличается)</label><input type="number" step="0.01" id="assignAmount" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveAssignExtraFeeBtn">Назначить</button></div></div></div></div>
 
@@ -240,7 +262,6 @@
     let currentAdmin = null, selectedUserIdForMeters = null;
     let allUsers = [], allReadings = [], allMeterInvoices = [], allFeeInvoices = [], allExtraFees = [], allUserExtraFees = [];
 
-    // Форматирование месяца
     function formatMonth(dateStr) {
         if (!dateStr) return '';
         let year, month;
@@ -261,13 +282,12 @@
     }
 
     async function loadAllData() {
-        await loadUsers(); await loadReadings(); await loadMeterInvoices(); await loadFeeInvoices(); await loadExtraFees(); await loadTariffHistory(); await loadFeeRatesHistory(); await loadAnnouncements();
+        await loadUsers(); await loadReadings(); await loadMeterInvoices(); await loadFeeInvoices(); await loadExtraFeeTemplates(); await loadExtraFees(); await loadTariffHistory(); await loadFeeRatesHistory(); await loadAnnouncements();
     }
 
     async function loadUsers() {
         const {data}=await supabaseClient.from('users').select('*');
         allUsers=data||[];
-        // Подсчёт количества счётчиков для каждого пользователя
         const {data: meters}=await supabaseClient.from('meters').select('user_id');
         const meterCount = {};
         meters.forEach(m => { meterCount[m.user_id] = (meterCount[m.user_id] || 0) + 1; });
@@ -326,15 +346,15 @@
             const {data:prev}=await supabaseClient.from('readings').select('value').eq('meter_id',r.meter_id).lt('reading_date',r.reading_date).order('reading_date',{ascending:false}).limit(1);
             const prevVal=prev?.[0]?.value||0;
             const consumption=(r.value-prevVal).toFixed(2);
-            html+=`<tr><td>${r.id}</td><td>${r.meters?.name}</td><td>${r.meters?.users?.full_name}</td><td>${formatMonth(r.reading_date)}</td><td contenteditable="true" class="editable-field reading-val" data-id="${r.id}">${r.value}</td><td>${prevVal}</td><td>${consumption}</td><td><button class="btn btn-sm btn-danger deleteReading" data-id="${r.id}">Удалить</button></td></tr>`;
+            html+=`<tr><td>${r.id}</td><td>${r.meters?.name}</td><td>${r.meters?.users?.full_name}</td><td>${r.meters?.users?.plot_number || ''}</td><td>${formatMonth(r.reading_date)}</td><td contenteditable="true" class="editable-field reading-val" data-id="${r.id}">${r.value}</td><td>${prevVal}</td><td>${consumption}</td><td><button class="btn btn-sm btn-danger deleteReading" data-id="${r.id}">Удалить</button></td></tr>`;
         }
-        tbody.innerHTML=html||'<tr><td colspan="8">Нет данных</td></tr>';
+        tbody.innerHTML=html||'<tr><td colspan="9">Нет данных</td></tr>';
         document.querySelectorAll('.reading-val').forEach(el=>el.addEventListener('blur',async function(){ const id=this.dataset.id, newVal=parseFloat(this.innerText); if(!isNaN(newVal)) await supabaseClient.from('readings').update({value:newVal}).eq('id',id); loadReadings(); }));
         document.querySelectorAll('.deleteReading').forEach(btn=>btn.addEventListener('click',()=>deleteReading(btn.dataset.id)));
         attachSorting('readingsTable');
     }
 
-    // === Счета (объединённые) ===
+    // === Счета ===
     async function loadMeterInvoices() {
         const {data}=await supabaseClient.from('meter_invoices').select('*, meters(id,name,users(id,full_name,plot_number))');
         allMeterInvoices=data||[];
@@ -346,14 +366,11 @@
         renderCombinedInvoices();
     }
     function renderCombinedInvoices() {
-        // Объединяем данные из meter_invoices и fee_invoices в одну таблицу
-        // Создаём карту для быстрого доступа к взносам по (user_id, month)
         const feeMap = new Map();
         for(const fee of allFeeInvoices) {
             const key = `${fee.user_id}|${fee.year_month.slice(0,7)}`;
             feeMap.set(key, fee);
         }
-        // Для каждого meter_invoice создаём строку
         let rows = [];
         for(const elec of allMeterInvoices) {
             const user = elec.meters?.users;
@@ -370,16 +387,13 @@
                 electricity_paid_by: elec.paid_by,
                 plot_fee: fee.plot_fee,
                 plot_fee_paid: fee.plot_fee_paid,
-                plot_fee_paid_by: fee.plot_fee_paid_by,
                 area_fee: fee.area_fee,
                 area_fee_paid: fee.area_fee_paid,
-                area_fee_paid_by: fee.area_fee_paid_by,
                 total: (elec.amount || 0) + (fee.plot_fee || 0) + (fee.area_fee || 0),
                 meter_id: elec.meter_id,
                 user_id: user.id
             });
         }
-        // Фильтрация
         const search = document.getElementById('searchInvoices').value.toLowerCase();
         const monthFilter = document.getElementById('invoiceMonthFilter').value;
         const customMonth = document.getElementById('customInvoiceMonth').value;
@@ -394,19 +408,19 @@
     function renderInvoicesTable(rows) {
         const tbody = document.getElementById('invoicesBody');
         tbody.innerHTML = rows.map(r => `
-            <tr>
+            <tr data-user-id="${r.user_id}" data-month="${r.month}">
                 <td>${r.id}</td>
                 <td>${r.user_name}</td>
                 <td>${r.plot_number || ''}</td>
                 <td>${formatMonth(r.month)}</td>
                 <td>${r.electricity_amount.toFixed(2)}</td>
-                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-id="${r.id}" data-type="electricity" ${r.electricity_paid?'checked':''}> ${r.electricity_paid?(r.electricity_paid_by==='user'?'👤':'👑'):''}</td>
+                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-type="electricity" data-id="${r.id}" ${r.electricity_paid?'checked':''}> ${r.electricity_paid?(r.electricity_paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${r.plot_fee.toFixed(2)}</td>
-                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-id="${r.id}" data-type="plot" ${r.plot_fee_paid?'checked':''}> ${r.plot_fee_paid?(r.plot_fee_paid_by==='user'?'👤':'👑'):''}</td>
+                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-type="plot" data-user-id="${r.user_id}" data-month="${r.month}" ${r.plot_fee_paid?'checked':''}> ${r.plot_fee_paid?(r.plot_fee_paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${r.area_fee.toFixed(2)}</td>
-                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-id="${r.id}" data-type="area" ${r.area_fee_paid?'checked':''}> ${r.area_fee_paid?(r.area_fee_paid_by==='user'?'👤':'👑'):''}</td>
+                <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-type="area" data-user-id="${r.user_id}" data-month="${r.month}" ${r.area_fee_paid?'checked':''}> ${r.area_fee_paid?(r.area_fee_paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${r.total.toFixed(2)}</td>
-                <td><button class="btn btn-sm btn-danger deleteCombinedInvoice" data-id="${r.id}" data-meter-id="${r.meter_id}" data-user-id="${r.user_id}" data-month="${r.month}">Удалить счёт</button></td>
+                <td><button class="btn btn-sm btn-danger deleteCombinedInvoice" data-meter-id="${r.meter_id}" data-user-id="${r.user_id}" data-month="${r.month}">Удалить счёт</button></td>
             </tr>
         `).join('');
         attachInvoiceCheckboxEvents();
@@ -415,24 +429,26 @@
     }
     function attachInvoiceCheckboxEvents() {
         document.querySelectorAll('.invoice-paid-check').forEach(cb=>cb.addEventListener('change',async(e)=>{
-            const id = cb.dataset.id;
             const type = cb.dataset.type;
             const paid = e.target.checked;
             if(type === 'electricity') {
+                const id = cb.dataset.id;
                 await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'admin':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
                 loadMeterInvoices();
-            } else if(type === 'plot') {
-                // Найти invoice по user_id и month
-                const row = cb.closest('tr');
-                const month = row.cells[3].innerText; // нужен month в формате yyyy-mm
-                const userId = row.cells[1].dataset?.userId; // нужно хранить
-                // Лучше через data-атрибуты, упростим: будем хранить user_id и month в строке
-            } else if(type === 'area') {
-                // Аналогично
+            } else {
+                const userId = cb.dataset.userId;
+                const month = cb.dataset.month;
+                if(!userId || !month) return;
+                const {data: existing} = await supabaseClient.from('invoices').select('*').eq('user_id',userId).eq('year_month',month+'-01').single();
+                if(!existing) return;
+                const update = {};
+                if(type === 'plot') { update.plot_fee_paid = paid; update.plot_fee_paid_by = paid ? 'admin' : null; }
+                if(type === 'area') { update.area_fee_paid = paid; update.area_fee_paid_by = paid ? 'admin' : null; }
+                await supabaseClient.from('invoices').update(update).eq('id',existing.id);
+                loadFeeInvoices();
             }
         }));
     }
-    // Упростим: сделаем update через поиск в БД по user_id и month (из строки)
     function attachDeleteCombinedInvoice() {
         document.querySelectorAll('.deleteCombinedInvoice').forEach(btn=>btn.addEventListener('click',async()=>{
             const meterId = btn.dataset.meterId;
@@ -446,7 +462,44 @@
         }));
     }
 
-    // === Дополнительные сборы (с фильтрацией и сортировкой) ===
+    // === Шаблоны дополнительных сборов ===
+    async function loadExtraFeeTemplates() {
+        const {data}=await supabaseClient.from('extra_fees').select('*').order('year_month',{ascending:false});
+        allExtraFees=data||[];
+        const tbody = document.getElementById('extraFeeTemplatesBody');
+        tbody.innerHTML = allExtraFees.map(f => `
+            <tr>
+                <td>${f.id}</td>
+                <td>${f.name}</td>
+                <td>${f.amount}</td>
+                <td>${formatMonth(f.year_month)}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning editExtraFeeTemplate" data-id="${f.id}">Ред.</button>
+                    <button class="btn btn-sm btn-danger deleteExtraFeeTemplate" data-id="${f.id}">Удалить</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.editExtraFeeTemplate').forEach(btn=>btn.addEventListener('click',()=>editExtraFeeTemplate(btn.dataset.id)));
+        document.querySelectorAll('.deleteExtraFeeTemplate').forEach(btn=>btn.addEventListener('click',()=>deleteExtraFeeTemplate(btn.dataset.id)));
+    }
+    async function editExtraFeeTemplate(id) {
+        const {data:f}=await supabaseClient.from('extra_fees').select('*').eq('id',id).single();
+        document.getElementById('editExtraFeeId').value=f.id;
+        document.getElementById('editExtraFeeName').value=f.name;
+        document.getElementById('editExtraFeeAmount').value=f.amount;
+        document.getElementById('editExtraFeeMonth').value=f.year_month.slice(0,7);
+        new bootstrap.Modal(document.getElementById('editExtraFeeModal')).show();
+    }
+    async function deleteExtraFeeTemplate(id) {
+        if(confirm('Удалить шаблон сбора? Все назначения этого сбора также будут удалены.')) {
+            await supabaseClient.from('user_extra_fees').delete().eq('extra_fee_id',id);
+            await supabaseClient.from('extra_fees').delete().eq('id',id);
+            loadExtraFeeTemplates();
+            loadExtraFees();
+        }
+    }
+
+    // === Дополнительные сборы (назначенные) ===
     async function loadExtraFees() {
         const {data: userFees}=await supabaseClient.from('user_extra_fees').select('*, users(full_name,plot_number), extra_fees(name, amount, year_month)');
         allUserExtraFees = userFees||[];
@@ -491,19 +544,124 @@
         }));
     }
 
-    // === Тарифы, объявления, CRUD (сокращённо, без изменений) ===
+    // === Импорт Excel для Счетов ===
+    async function importInvoicesExcel(file) {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        if(!rows.length) { alert('Файл пуст'); return; }
+        // Ожидаем колонки: Пользователь, Участок, Месяц (ГГГГ-ММ), Электричество (₽), Оплачено эл, Взнос участок (₽), Оплачено уч, Взнос сотки (₽), Оплачено сот
+        let meterCount = 0, feeCount = 0;
+        for(const row of rows) {
+            const userName = row['Пользователь'] || row['user'] || '';
+            const plot = row['Участок'] || row['plot'] || '';
+            const month = row['Месяц'] || row['month'] || '';
+            if(!month || month.length<7) continue;
+            const yearMonth = month.slice(0,7)+'-01';
+            // Найти пользователя по ФИО или участку
+            let {data: users} = await supabaseClient.from('users').select('id, plot_number').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1);
+            let user = users?.[0];
+            if(!user && plot) {
+                const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1);
+                user = byPlot?.[0];
+            }
+            if(!user) { console.warn('Пользователь не найден:', userName, plot); continue; }
+            // Электричество
+            const elecAmount = parseFloat(row['Электричество (₽)'] || row['electricity'] || 0);
+            if(!isNaN(elecAmount) && elecAmount>0) {
+                // Найти счётчик пользователя (берём первый)
+                const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id',user.id).limit(1);
+                if(meters && meters[0]) {
+                    const meterId = meters[0].id;
+                    const {data: existing} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id',meterId).eq('year_month',yearMonth).limit(1);
+                    const paid = (row['Оплачено эл'] === 'Да' || row['Оплачено эл'] === true);
+                    if(existing && existing[0]) {
+                        await supabaseClient.from('meter_invoices').update({amount: elecAmount, paid, paid_by: paid ? 'admin' : null}).eq('id',existing[0].id);
+                    } else {
+                        await supabaseClient.from('meter_invoices').insert({meter_id: meterId, year_month: yearMonth, amount: elecAmount, paid, paid_by: paid ? 'admin' : null});
+                    }
+                    meterCount++;
+                }
+            }
+            // Взносы
+            const plotFee = parseFloat(row['Взнос участок (₽)'] || row['plot_fee'] || 0);
+            const areaFee = parseFloat(row['Взнос сотки (₽)'] || row['area_fee'] || 0);
+            if(!isNaN(plotFee) || !isNaN(areaFee)) {
+                const paidPlot = (row['Оплачено уч'] === 'Да' || row['Оплачено уч'] === true);
+                const paidArea = (row['Оплачено сот'] === 'Да' || row['Оплачено сот'] === true);
+                const {data: existing} = await supabaseClient.from('invoices').select('id').eq('user_id',user.id).eq('year_month',yearMonth).limit(1);
+                if(existing && existing[0]) {
+                    await supabaseClient.from('invoices').update({plot_fee: plotFee, area_fee: areaFee, plot_fee_paid: paidPlot, area_fee_paid: paidArea}).eq('id',existing[0].id);
+                } else {
+                    await supabaseClient.from('invoices').insert({user_id: user.id, year_month: yearMonth, plot_fee: plotFee, area_fee: areaFee, plot_fee_paid: paidPlot, area_fee_paid: paidArea});
+                }
+                feeCount++;
+            }
+        }
+        alert(`Импорт завершён: добавлено/обновлено ${meterCount} счетов за электричество, ${feeCount} счетов за взносы.`);
+        loadMeterInvoices(); loadFeeInvoices();
+    }
+
+    // === Импорт Excel для Доп. сборов ===
+    async function importExtraFeesExcel(file) {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        if(!rows.length) { alert('Файл пуст'); return; }
+        // Ожидаем колонки: Пользователь, Участок, Сбор, Месяц, Сумма, Оплачено
+        let count = 0;
+        for(const row of rows) {
+            const userName = row['Пользователь'] || row['user'] || '';
+            const plot = row['Участок'] || row['plot'] || '';
+            const feeName = row['Сбор'] || row['fee_name'] || '';
+            const month = row['Месяц'] || row['month'] || '';
+            if(!month || month.length<7) continue;
+            const yearMonth = month.slice(0,7)+'-01';
+            let amount = parseFloat(row['Сумма'] || row['amount'] || 0);
+            const paid = (row['Оплачено'] === 'Да' || row['Оплачено'] === true);
+            // Найти пользователя
+            let {data: users} = await supabaseClient.from('users').select('id').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1);
+            let user = users?.[0];
+            if(!user && plot) {
+                const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1);
+                user = byPlot?.[0];
+            }
+            if(!user) { console.warn('Пользователь не найден:', userName, plot); continue; }
+            // Найти шаблон сбора по имени и месяцу
+            let {data: feeTpl} = await supabaseClient.from('extra_fees').select('id').eq('name',feeName).eq('year_month',yearMonth).limit(1);
+            let extraFeeId = feeTpl?.[0]?.id;
+            if(!extraFeeId) {
+                // Создаём новый шаблон
+                const {data: inserted} = await supabaseClient.from('extra_fees').insert({name: feeName, amount, year_month: yearMonth}).select();
+                extraFeeId = inserted?.[0]?.id;
+                if(!extraFeeId) continue;
+            }
+            // Проверим, есть ли уже назначение
+            const {data: existing} = await supabaseClient.from('user_extra_fees').select('id').eq('user_id',user.id).eq('extra_fee_id',extraFeeId).limit(1);
+            if(existing && existing[0]) {
+                await supabaseClient.from('user_extra_fees').update({amount, paid, paid_by: paid?'admin':null}).eq('id',existing[0].id);
+            } else {
+                await supabaseClient.from('user_extra_fees').insert({user_id: user.id, extra_fee_id: extraFeeId, amount, paid, paid_by: paid?'admin':null});
+            }
+            count++;
+        }
+        alert(`Импорт завершён: добавлено/обновлено ${count} назначений сборов.`);
+        loadExtraFeeTemplates();
+        loadExtraFees();
+    }
+
+    // === Тарифы, объявления, CRUD ===
     async function loadTariffHistory() { const {data}=await supabaseClient.from('tariff_history').select('*').order('valid_from',{ascending:false}); document.getElementById('tariffHistoryBody').innerHTML=data.map(t=>`<tr><td>${t.valid_from}</td><td>${t.t1_rate}</td><td>${t.t2_rate}</td><td>${t.t3_rate}</td><td>${t.t1_limit}</td><td><button class="btn btn-sm btn-danger deleteTariff" data-id="${t.id}">Удалить</button></td></tr>`).join(''); attachDeleteTariff(); }
     async function loadFeeRatesHistory() { const {data}=await supabaseClient.from('fee_rates_history').select('*').order('valid_from',{ascending:false}); document.getElementById('feeRatesHistoryBody').innerHTML=data.map(f=>`<tr><td>${f.valid_from}</td><td>${f.plot_fee_rate}</td><td>${f.area_fee_rate}</td><td><button class="btn btn-sm btn-danger deleteFeeRate" data-id="${f.id}">Удалить</button></td></tr>`).join(''); attachDeleteFeeRate(); }
     async function loadAnnouncements() { const {data}=await supabaseClient.from('announcements').select('*').order('created_at',{ascending:false}); document.getElementById('announcementsBody').innerHTML=data.map(a=>`<tr><td>${a.title||''}</td><td>${a.content.substring(0,100)}</td><td>${new Date(a.created_at).toLocaleDateString()}</td><td><button class="btn btn-sm btn-warning editAnnouncement" data-id="${a.id}">Ред.</button> <button class="btn btn-sm btn-danger deleteAnnouncement" data-id="${a.id}">Удалить</button></td></tr>`).join(''); attachAnnouncementActions(); }
-
     function attachDeleteTariff() { document.querySelectorAll('.deleteTariff').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить тариф?')) await supabaseClient.from('tariff_history').delete().eq('id',btn.dataset.id); loadTariffHistory(); })); }
     function attachDeleteFeeRate() { document.querySelectorAll('.deleteFeeRate').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить ставку?')) await supabaseClient.from('fee_rates_history').delete().eq('id',btn.dataset.id); loadFeeRatesHistory(); })); }
     function attachAnnouncementActions() {
         document.querySelectorAll('.editAnnouncement').forEach(btn=>btn.addEventListener('click',async()=>{ const id=btn.dataset.id; const {data}=await supabaseClient.from('announcements').select('*').eq('id',id).single(); document.getElementById('announcementId').value=data.id; document.getElementById('announcementTitle').value=data.title||''; document.getElementById('announcementContent').value=data.content; new bootstrap.Modal(document.getElementById('announcementModal')).show(); }));
         document.querySelectorAll('.deleteAnnouncement').forEach(btn=>btn.addEventListener('click',async()=>{ if(confirm('Удалить объявление?')) await supabaseClient.from('announcements').delete().eq('id',btn.dataset.id); loadAnnouncements(); }));
     }
-
-    // === Сортировка таблиц ===
     function attachSorting(tableId) {
         const table = document.getElementById(tableId);
         if(!table) return;
@@ -535,36 +693,17 @@
         }
     }
 
-    // === Импорт/экспорт (упрощённо для демонстрации) ===
+    // === Экспорт (без изменений) ===
     async function exportToExcel(data, filename) { if(!data.length) return; const ws=XLSX.utils.json_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1'); XLSX.writeFile(wb,filename+'.xlsx'); }
     document.getElementById('exportUsersBtn').addEventListener('click',()=>{ const exportData=allUsers.map(u=>({Логин:u.username,Пароль:u.password,ФИО:u.full_name,Участок:u.plot_number,Участков:u.plots_count,Соток:u.area_sotok,Роль:u.role})); exportToExcel(exportData,'users'); });
     document.getElementById('importUsersBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); for(const row of rows){ await supabaseClient.from('users').upsert({ username:row.Логин, password:row.Пароль, full_name:row.ФИО, plot_number:row.Участок, plots_count:row.Участков||1, area_sotok:row.Соток||0, role:row.Роль||'user' },{onConflict:'username'}); } alert('Импорт завершён'); loadUsers(); }; input.click(); });
-    document.getElementById('exportReadingsBtn').addEventListener('click',()=>{ const exportData=allReadings.map(r=>({Счётчик:r.meters?.name,Пользователь:r.meters?.users?.full_name,Месяц:formatMonth(r.reading_date),Показание:r.value})); exportToExcel(exportData,'readings'); });
-    document.getElementById('exportInvoicesBtn').addEventListener('click',()=>{ // Экспорт объединённых счетов
-        const rows = []; // собрать из текущих отфильтрованных
-        const tbodyRows = document.querySelectorAll('#invoicesBody tr');
-        tbodyRows.forEach(row => {
-            const cells = row.cells;
-            rows.push({
-                Пользователь: cells[1].innerText,
-                Участок: cells[2].innerText,
-                Месяц: cells[3].innerText,
-                Электричество: cells[4].innerText,
-                Оплачено_эл: cells[5].innerText.includes('checked')?'Да':'Нет',
-                Взнос_участок: cells[6].innerText,
-                Оплачено_уч: cells[7].innerText.includes('checked')?'Да':'Нет',
-                Взнос_сотки: cells[8].innerText,
-                Оплачено_сот: cells[9].innerText.includes('checked')?'Да':'Нет',
-                Итого: cells[10].innerText
-            });
-        });
-        exportToExcel(rows,'invoices');
-    });
-    document.getElementById('importInvoicesBtn').addEventListener('click',()=>{ alert('Импорт счетов требует сложной логики, реализуйте при необходимости'); });
+    document.getElementById('exportReadingsBtn').addEventListener('click',()=>{ const exportData=allReadings.map(r=>({Счётчик:r.meters?.name,Пользователь:r.meters?.users?.full_name,Участок:r.meters?.users?.plot_number,Месяц:formatMonth(r.reading_date),Показание:r.value})); exportToExcel(exportData,'readings'); });
+    document.getElementById('exportInvoicesBtn').addEventListener('click',()=>{ const rows = []; document.querySelectorAll('#invoicesBody tr').forEach(row => { const cells = row.cells; rows.push({Пользователь: cells[1].innerText, Участок: cells[2].innerText, Месяц: cells[3].innerText, Электричество: cells[4].innerText, Оплачено_эл: cells[5].innerText.includes('checked')?'Да':'Нет', Взнос_участок: cells[6].innerText, Оплачено_уч: cells[7].innerText.includes('checked')?'Да':'Нет', Взнос_сотки: cells[8].innerText, Оплачено_сот: cells[9].innerText.includes('checked')?'Да':'Нет', Итого: cells[10].innerText}); }); exportToExcel(rows,'invoices'); });
+    document.getElementById('importInvoicesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ await importInvoicesExcel(e.target.files[0]); }; input.click(); });
     document.getElementById('exportExtraFeesBtn').addEventListener('click',()=>{ const exportData=allUserExtraFees.map(uf=>({Пользователь:uf.users?.full_name,Участок:uf.users?.plot_number,Сбор:uf.extra_fees?.name,Месяц:formatMonth(uf.extra_fees?.year_month),Сумма:uf.amount,Оплачено:uf.paid?'Да':'Нет'})); exportToExcel(exportData,'extra_fees'); });
-    document.getElementById('importExtraFeesBtn').addEventListener('click',()=>{ alert('Импорт доп.сборов требует осторожности, реализуйте вручную'); });
+    document.getElementById('importExtraFeesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ await importExtraFeesExcel(e.target.files[0]); }; input.click(); });
 
-    // === CRUD и прочее (остальное без изменений) ===
+    // === CRUD и прочее ===
     async function editUser(id) { const {data:u}=await supabaseClient.from('users').select('*').eq('id',id).single(); document.getElementById('editUserId').value=u.id; document.getElementById('editUsername').value=u.username; document.getElementById('editPassword').value=u.password; document.getElementById('editFullName').value=u.full_name||''; document.getElementById('editPlotNumber').value=u.plot_number||''; document.getElementById('editPlotsCount').value=u.plots_count??1; document.getElementById('editAreaSotok').value=u.area_sotok??0; document.getElementById('editRole').value=u.role; new bootstrap.Modal(document.getElementById('editUserModal')).show(); }
     async function saveUser() { const id=document.getElementById('editUserId').value; const data={ username:document.getElementById('editUsername').value, password:document.getElementById('editPassword').value, full_name:document.getElementById('editFullName').value, plot_number:document.getElementById('editPlotNumber').value, plots_count:parseFloat(document.getElementById('editPlotsCount').value), area_sotok:parseFloat(document.getElementById('editAreaSotok').value), role:document.getElementById('editRole').value }; if(id) await supabaseClient.from('users').update(data).eq('id',id); else await supabaseClient.from('users').insert(data); bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide(); loadUsers(); }
     async function deleteUser(id) { if(confirm('Удалить пользователя?')) { await supabaseClient.from('users').delete().eq('id',id); loadUsers(); } }
@@ -575,18 +714,18 @@
     document.getElementById('addReadingBtn').addEventListener('click',async()=>{ document.getElementById('editReadingId').value=''; document.getElementById('editReadingValue').value=''; document.getElementById('editReadingDate').value=new Date().toISOString().slice(0,7); const {data:meters}=await supabaseClient.from('meters').select('id,name'); document.getElementById('editReadingMeterId').innerHTML=meters.map(m=>`<option value="${m.id}">${m.name}</option>`).join(''); new bootstrap.Modal(document.getElementById('editReadingModal')).show(); });
     document.getElementById('saveReadingBtn').addEventListener('click',async()=>{ const id=document.getElementById('editReadingId').value; const data={ meter_id:document.getElementById('editReadingMeterId').value, reading_date:document.getElementById('editReadingDate').value+'-01', value:parseFloat(document.getElementById('editReadingValue').value) }; if(id) await supabaseClient.from('readings').update(data).eq('id',id); else await supabaseClient.from('readings').insert(data); bootstrap.Modal.getInstance(document.getElementById('editReadingModal')).hide(); loadReadings(); });
     document.getElementById('addExtraFeeBtn').addEventListener('click',()=>{ document.getElementById('editExtraFeeId').value=''; document.getElementById('editExtraFeeName').value=''; document.getElementById('editExtraFeeAmount').value=''; document.getElementById('editExtraFeeMonth').value=new Date().toISOString().slice(0,7); new bootstrap.Modal(document.getElementById('editExtraFeeModal')).show(); });
-    document.getElementById('saveExtraFeeBtn').addEventListener('click',async()=>{ const id=document.getElementById('editExtraFeeId').value; const data={ name:document.getElementById('editExtraFeeName').value, amount:parseFloat(document.getElementById('editExtraFeeAmount').value), year_month:document.getElementById('editExtraFeeMonth').value+'-01' }; if(id) await supabaseClient.from('extra_fees').update(data).eq('id',id); else await supabaseClient.from('extra_fees').insert(data); bootstrap.Modal.getInstance(document.getElementById('editExtraFeeModal')).hide(); loadExtraFees(); });
+    document.getElementById('saveExtraFeeBtn').addEventListener('click',async()=>{ const id=document.getElementById('editExtraFeeId').value; const data={ name:document.getElementById('editExtraFeeName').value, amount:parseFloat(document.getElementById('editExtraFeeAmount').value), year_month:document.getElementById('editExtraFeeMonth').value+'-01' }; if(id) await supabaseClient.from('extra_fees').update(data).eq('id',id); else await supabaseClient.from('extra_fees').insert(data); bootstrap.Modal.getInstance(document.getElementById('editExtraFeeModal')).hide(); loadExtraFeeTemplates(); });
     document.getElementById('assignExtraFeeBtn').addEventListener('click',async()=>{ const {data:users}=await supabaseClient.from('users').select('id,full_name').neq('role','admin'); const {data:fees}=await supabaseClient.from('extra_fees').select('id,name,amount'); const userSelect=document.getElementById('assignUserId'); const feeSelect=document.getElementById('assignExtraFeeId'); userSelect.innerHTML=users.map(u=>`<option value="${u.id}">${u.full_name}</option>`).join(''); feeSelect.innerHTML=fees.map(f=>`<option value="${f.id}" data-amount="${f.amount}">${f.name} (${f.amount}₽)</option>`).join(''); feeSelect.addEventListener('change',function(){ const selected=this.options[this.selectedIndex]; document.getElementById('assignAmount').value=selected.dataset.amount; }); if(fees.length) feeSelect.dispatchEvent(new Event('change')); new bootstrap.Modal(document.getElementById('assignExtraFeeModal')).show(); });
     document.getElementById('saveAssignExtraFeeBtn').addEventListener('click',async()=>{ const userId=document.getElementById('assignUserId').value; const extraFeeId=document.getElementById('assignExtraFeeId').value; const amount=parseFloat(document.getElementById('assignAmount').value); if(!userId||!extraFeeId||isNaN(amount)) return alert('Заполните поля'); await supabaseClient.from('user_extra_fees').insert({ user_id:userId, extra_fee_id:extraFeeId, amount }); bootstrap.Modal.getInstance(document.getElementById('assignExtraFeeModal')).hide(); loadExtraFees(); });
     document.getElementById('assignExtraFeeToAllBtn').addEventListener('click',async()=>{ const {data:fees}=await supabaseClient.from('extra_fees').select('id,name,amount'); if(!fees.length) return alert('Сначала создайте сбор'); const feeNames=fees.map((f,i)=>`${i+1}. ${f.name} (${f.amount}₽)`).join('\n'); const feeIndex=prompt(`Выберите номер сбора:\n${feeNames}`); if(!feeIndex) return; const selectedFee=fees[parseInt(feeIndex)-1]; if(!selectedFee) return alert('Неверный номер'); const {data:users}=await supabaseClient.from('users').select('id').neq('role','admin'); if(!confirm(`Назначить "${selectedFee.name}" всем ${users.length} пользователям?`)) return; const {data:existing}=await supabaseClient.from('user_extra_fees').select('user_id').eq('extra_fee_id',selectedFee.id); const existingIds=new Set(existing.map(a=>a.user_id)); const newRecords=users.filter(u=>!existingIds.has(u.id)).map(u=>({ user_id:u.id, extra_fee_id:selectedFee.id, amount:selectedFee.amount, paid:false })); if(!newRecords.length){ alert('У всех уже есть этот сбор'); return; } const {error}=await supabaseClient.from('user_extra_fees').insert(newRecords); if(error) alert('Ошибка: '+error.message); else alert(`Назначено ${newRecords.length} пользователям`); loadExtraFees(); });
     document.getElementById('addTariffBtn').addEventListener('click',async()=>{ const valid_from=prompt('Дата начала (ГГГГ-ММ-ДД):',new Date().toISOString().slice(0,10)); if(!valid_from) return; const t1=parseFloat(prompt('T1 (₽):','6.2')); const t2=parseFloat(prompt('T2 (₽):','7.42')); const t3=parseFloat(prompt('T3 (₽):','0.36')); const limit=parseFloat(prompt('Лимит T1 (кВт·ч):','100')); if(isNaN(t1)||isNaN(t2)||isNaN(t3)||isNaN(limit)) return; await supabaseClient.from('tariff_history').insert({ valid_from, t1_rate:t1, t2_rate:t2, t3_rate:t3, t1_limit:limit }); loadTariffHistory(); });
     document.getElementById('addFeeRateBtn').addEventListener('click',()=>{ document.getElementById('feeRateValidFrom').value=new Date().toISOString().slice(0,10); document.getElementById('feeRatePlot').value=''; document.getElementById('feeRateArea').value=''; new bootstrap.Modal(document.getElementById('addFeeRateModal')).show(); });
     document.getElementById('saveFeeRateBtn').addEventListener('click',async()=>{ const valid_from=document.getElementById('feeRateValidFrom').value; const plot=parseFloat(document.getElementById('feeRatePlot').value); const area=parseFloat(document.getElementById('feeRateArea').value); if(!valid_from||isNaN(plot)||isNaN(area)) return alert('Заполните корректно'); await supabaseClient.from('fee_rates_history').insert({ valid_from, plot_fee_rate:plot, area_fee_rate:area }); bootstrap.Modal.getInstance(document.getElementById('addFeeRateModal')).hide(); loadFeeRatesHistory(); });
-    document.getElementById('calculateAllInvoicesBtn').addEventListener('click',async()=>{ /* функция расчёта пропущенных счетов - опущена для краткости, но может быть добавлена */ alert('Функция расчёта всех пропущенных счетов требует реализации'); });
+    document.getElementById('calculateAllInvoicesBtn').addEventListener('click',async()=>{ alert('Функция расчёта всех пропущенных счетов требует реализации'); });
     document.getElementById('addAnnouncementBtn').addEventListener('click',()=>{ document.getElementById('announcementId').value=''; document.getElementById('announcementTitle').value=''; document.getElementById('announcementContent').value=''; new bootstrap.Modal(document.getElementById('announcementModal')).show(); });
     document.getElementById('saveAnnouncementBtn').addEventListener('click',async()=>{ const id=document.getElementById('announcementId').value; const data={ title:document.getElementById('announcementTitle').value, content:document.getElementById('announcementContent').value }; if(id) await supabaseClient.from('announcements').update(data).eq('id',id); else await supabaseClient.from('announcements').insert(data); bootstrap.Modal.getInstance(document.getElementById('announcementModal')).hide(); loadAnnouncements(); });
 
-    // Фильтры и события
+    // Фильтры
     document.getElementById('searchUsers').addEventListener('input',loadUsers);
     document.getElementById('searchReadings').addEventListener('input',applyReadingsFilter);
     document.getElementById('readingsMonthFilter').addEventListener('change',function(){ document.getElementById('customMonthInput').style.display=this.value==='custom'?'inline-block':'none'; applyReadingsFilter(); });
@@ -599,9 +738,14 @@
     document.getElementById('extraMonthFilter').addEventListener('change',function(){ document.getElementById('customExtraMonth').style.display=this.value==='custom'?'inline-block':'none'; applyExtraFeesFilter(); });
     document.getElementById('customExtraMonth').addEventListener('change',applyExtraFeesFilter);
 
-    function initTabs() { document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',(e)=>{ e.preventDefault(); const tabId=tab.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); tab.classList.add('active'); if(tabId==='usersMeters') loadUsers(); else if(tabId==='readings') loadReadings(); else if(tabId==='invoices'){ loadMeterInvoices(); loadFeeInvoices(); } else if(tabId==='extraFees') loadExtraFees(); else if(tabId==='tariffs'){ loadTariffHistory(); loadFeeRatesHistory(); } else if(tabId==='announcements') loadAnnouncements(); })); }
+    function initTabs() { document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',(e)=>{ e.preventDefault(); const tabId=tab.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); tab.classList.add('active'); if(tabId==='usersMeters') loadUsers(); else if(tabId==='readings') loadReadings(); else if(tabId==='invoices'){ loadMeterInvoices(); loadFeeInvoices(); } else if(tabId==='extraFees'){ loadExtraFeeTemplates(); loadExtraFees(); } else if(tabId==='tariffs'){ loadTariffHistory(); loadFeeRatesHistory(); } else if(tabId==='announcements') loadAnnouncements(); })); }
 
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
+    document.getElementById('addUserBtn').addEventListener('click',()=>{ document.getElementById('editUserId').value=''; document.getElementById('editUsername').value=''; document.getElementById('editPassword').value=''; document.getElementById('editFullName').value=''; document.getElementById('editPlotNumber').value=''; document.getElementById('editPlotsCount').value=1; document.getElementById('editAreaSotok').value=0; document.getElementById('editRole').value='user'; new bootstrap.Modal(document.getElementById('editUserModal')).show(); });
+    document.getElementById('saveUserBtn').addEventListener('click',saveUser);
+    document.getElementById('addMeterForUserBtn').addEventListener('click',()=>{ if(!selectedUserIdForMeters) return; document.getElementById('editMeterId').value=''; document.getElementById('editMeterUserId').value=selectedUserIdForMeters; document.getElementById('editMeterName').value=''; new bootstrap.Modal(document.getElementById('editMeterModal')).show(); });
+    document.getElementById('saveMeterBtn').addEventListener('click',saveMeter);
+
     (async()=>{ await checkAuth(); initTabs(); await loadAllData(); })();
 </script>
 </body>
