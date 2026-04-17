@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    <!-- Показания (с фильтрацией, сортировкой и статусом оплаты) -->
+    <!-- Показания -->
     <div id="readings" class="tab-pane">
         <div class="card">
             <div class="card-header bg-info text-white d-flex justify-content-between flex-wrap">
@@ -113,6 +113,7 @@
                 <div>
                     <input type="text" id="searchInvoices" class="form-control form-control-sm d-inline-block w-auto" placeholder="Поиск по пользователю или участку">
                     <select id="invoiceMonthFilter" class="form-select form-select-sm w-auto d-inline-block">
+                        <option value="current">Текущий месяц</option>
                         <option value="all">Все месяцы</option>
                         <option value="custom">Выбрать месяц</option>
                     </select>
@@ -234,7 +235,7 @@
     </div>
 </div>
 
-<!-- Модальные окна -->
+<!-- Модальные окна (без изменений) -->
 <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Редактировать пользователя</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editUserId"><label>Логин *</label><input type="text" id="editUsername" class="form-control"><label>Пароль *</label><input type="text" id="editPassword" class="form-control"><label>ФИО</label><input type="text" id="editFullName" class="form-control"><label>Номер участка</label><input type="text" id="editPlotNumber" class="form-control"><label>Доля участка</label><input type="number" step="0.01" id="editPlotsCount" class="form-control" value="1"><label>Площадь в сотках</label><input type="number" step="0.01" id="editAreaSotok" class="form-control" value="0"><label>Роль</label><select id="editRole" class="form-control"><option value="user">Житель</option><option value="admin">Админ</option></select><button class="btn btn-primary w-100 mt-3" id="saveUserBtn">Сохранить</button></div></div></div></div>
 <div class="modal fade" id="editMeterModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Счётчик</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editMeterId"><input type="hidden" id="editMeterUserId"><label>Название</label><input type="text" id="editMeterName" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveMeterBtn">Сохранить</button></div></div></div></div>
 <div class="modal fade" id="editReadingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Показание</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editReadingId"><label>Счётчик</label><select id="editReadingMeterId" class="form-control"></select><label>Месяц</label><input type="month" id="editReadingDate" class="form-control"><label>Показание</label><input type="number" step="0.01" id="editReadingValue" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveReadingBtn">Сохранить</button></div></div></div></div>
@@ -275,6 +276,7 @@
         await loadUsers(); await loadReadings(); await loadMeterInvoices(); await loadFeeInvoices(); await loadExtraFeeTemplates(); await loadExtraFees(); await loadTariffHistory(); await loadFeeRatesHistory(); await loadAnnouncements();
     }
 
+    // === Пользователи ===
     async function loadUsers() {
         const {data}=await supabaseClient.from('users').select('*');
         allUsers=data||[];
@@ -314,7 +316,7 @@
         document.querySelectorAll('.deleteMeter').forEach(btn=>btn.addEventListener('click',()=>deleteMeter(btn.dataset.id)));
     }
 
-    // === Показания (с оплатой) ===
+    // === Показания ===
     async function loadReadings() {
         const {data}=await supabaseClient.from('readings').select('*, meters(id,name,users(id,full_name,plot_number))').order('reading_date',{ascending:false});
         allReadings=data||[];
@@ -336,7 +338,6 @@
             const {data:prev}=await supabaseClient.from('readings').select('value').eq('meter_id',r.meter_id).lt('reading_date',r.reading_date).order('reading_date',{ascending:false}).limit(1);
             const prevVal=prev?.[0]?.value||0;
             const consumption=(r.value-prevVal).toFixed(2);
-            // Найдём счёт за электричество для этого счётчика и месяца
             const monthPrefix = r.reading_date.slice(0,7);
             const invoice = allMeterInvoices.find(inv => inv.meter_id === r.meter_id && inv.year_month.startsWith(monthPrefix));
             const isPaid = invoice ? invoice.paid : false;
@@ -365,17 +366,16 @@
             if(invoiceId) {
                 await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'admin':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',invoiceId);
             } else if(meterId && month) {
-                // Создаём новый счёт, если его ещё нет
                 const {data: newInv} = await supabaseClient.from('meter_invoices').insert({meter_id: meterId, year_month: month+'-01', amount: 0, paid, paid_by: paid?'admin':null}).select();
                 if(newInv && newInv[0]) cb.dataset.invoiceId = newInv[0].id;
             }
             await loadMeterInvoices();
-            loadReadings(); // обновим таблицу показаний
+            loadReadings();
         }));
         attachSorting('readingsTable');
     }
 
-    // === Счета ===
+    // === Счета (с автоматическим созданием за выбранный месяц) ===
     async function loadMeterInvoices() {
         const {data}=await supabaseClient.from('meter_invoices').select('*, meters(id,name,users(id,full_name,plot_number))');
         allMeterInvoices=data||[];
@@ -385,6 +385,42 @@
         const {data}=await supabaseClient.from('invoices').select('*, users(full_name,plot_number)');
         allFeeInvoices=data||[];
         renderCombinedInvoices();
+    }
+    async function ensureInvoicesForMonth(yearMonth) {
+        // yearMonth в формате YYYY-MM
+        if (!yearMonth) return;
+        const users = allUsers.filter(u => u.role !== 'admin');
+        for (const user of users) {
+            // Электричество: для каждого счётчика пользователя
+            const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id', user.id);
+            for (const meter of meters) {
+                const {data: existing} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id', meter.id).eq('year_month', yearMonth+'-01').limit(1);
+                if (!existing || existing.length === 0) {
+                    await supabaseClient.from('meter_invoices').insert({ meter_id: meter.id, year_month: yearMonth+'-01', amount: 0, paid: false });
+                }
+            }
+            // Взносы
+            const {data: existingFee} = await supabaseClient.from('invoices').select('id').eq('user_id', user.id).eq('year_month', yearMonth+'-01').limit(1);
+            if (!existingFee || existingFee.length === 0) {
+                await supabaseClient.from('invoices').insert({ user_id: user.id, year_month: yearMonth+'-01', plot_fee: 0, area_fee: 0, plot_fee_paid: false, area_fee_paid: false });
+            }
+        }
+        await loadMeterInvoices();
+        await loadFeeInvoices();
+    }
+    async function refreshInvoices() {
+        const filterVal = document.getElementById('invoiceMonthFilter').value;
+        let selectedMonth = null;
+        if (filterVal === 'current') {
+            const now = new Date();
+            selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            await ensureInvoicesForMonth(selectedMonth);
+        } else if (filterVal === 'custom') {
+            selectedMonth = document.getElementById('customInvoiceMonth').value;
+            if (selectedMonth) await ensureInvoicesForMonth(selectedMonth);
+        }
+        await loadMeterInvoices();
+        await loadFeeInvoices();
     }
     function renderCombinedInvoices() {
         const feeMap = new Map();
@@ -417,11 +453,18 @@
         }
         const search = document.getElementById('searchInvoices').value.toLowerCase();
         const monthFilter = document.getElementById('invoiceMonthFilter').value;
-        const customMonth = document.getElementById('customInvoiceMonth').value;
-        const paidFilter = document.getElementById('invoicePaidFilter').value;
+        let customMonth = document.getElementById('customInvoiceMonth').value;
+        let selectedMonth = null;
+        if (monthFilter === 'current') {
+            const now = new Date();
+            selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        } else if (monthFilter === 'custom') {
+            selectedMonth = customMonth;
+        }
         let filtered = rows;
         if(search) filtered = filtered.filter(r => r.user_name?.toLowerCase().includes(search) || r.plot_number?.toLowerCase().includes(search));
-        if(monthFilter==='custom' && customMonth) filtered = filtered.filter(r => r.month === customMonth);
+        if(selectedMonth) filtered = filtered.filter(r => r.month === selectedMonth);
+        const paidFilter = document.getElementById('invoicePaidFilter').value;
         if(paidFilter === 'unpaid') filtered = filtered.filter(r => !r.electricity_paid || !r.plot_fee_paid || !r.area_fee_paid);
         if(paidFilter === 'paid') filtered = filtered.filter(r => r.electricity_paid && r.plot_fee_paid && r.area_fee_paid);
         renderInvoicesTable(filtered);
@@ -456,7 +499,7 @@
                 const id = cb.dataset.id;
                 await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'admin':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
                 await loadMeterInvoices();
-                loadReadings(); // обновим таблицу показаний
+                loadReadings();
             } else {
                 const userId = cb.dataset.userId;
                 const month = cb.dataset.month;
@@ -535,8 +578,11 @@
         const tbody = document.getElementById('extraFeesBody');
         tbody.innerHTML = userFees.map(uf => `
             <tr>
-                <td>${uf.id}</td><td>${uf.users?.full_name}</td><td>${uf.users?.plot_number || ''}</td>
-                <td>${uf.extra_fees?.name}</td><td>${formatMonth(uf.extra_fees?.year_month)}</td>
+                <td>${uf.id}</td>
+                <td>${uf.users?.full_name}</td>
+                <td>${uf.users?.plot_number || ''}</td>
+                <td>${uf.extra_fees?.name}</td>
+                <td>${formatMonth(uf.extra_fees?.year_month)}</td>
                 <td>${uf.amount}</td>
                 <td class="text-center"><input type="checkbox" class="user-fee-paid" data-id="${uf.id}" ${uf.paid?'checked':''}> ${uf.paid?(uf.paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${uf.paid_by||''}</td>
@@ -565,9 +611,9 @@
     document.getElementById('importUsersBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); for(const row of rows){ await supabaseClient.from('users').upsert({ username:row.Логин, password:row.Пароль, full_name:row.ФИО, plot_number:row.Участок, plots_count:row.Участков||1, area_sotok:row.Соток||0, role:row.Роль||'user' },{onConflict:'username'}); } alert('Импорт завершён'); loadUsers(); }; input.click(); });
     document.getElementById('exportReadingsBtn').addEventListener('click',()=>{ const exportData=allReadings.map(r=>({Счётчик:r.meters?.name,Пользователь:r.meters?.users?.full_name,Участок:r.meters?.users?.plot_number,Месяц:formatMonth(r.reading_date),Показание:r.value,Оплачено_эл: (allMeterInvoices.find(i=>i.meter_id===r.meter_id && i.year_month.startsWith(r.reading_date.slice(0,7)))?.paid ? 'Да':'Нет')})); exportToExcel(exportData,'readings'); });
     document.getElementById('exportInvoicesBtn').addEventListener('click',()=>{ const rows = allMeterInvoices.map(elec=>{ const user = elec.meters?.users; if(!user) return null; const monthKey = elec.year_month.slice(0,7); const fee = allFeeInvoices.find(f=>f.user_id===user.id && f.year_month.startsWith(monthKey)) || {}; return {Пользователь:user.full_name, Участок:user.plot_number, Месяц:formatMonth(monthKey), Электричество:elec.amount, Оплачено_эл:elec.paid?'Да':'Нет', Взнос_участок:fee.plot_fee||0, Оплачено_уч:fee.plot_fee_paid?'Да':'Нет', Взнос_сотки:fee.area_fee||0, Оплачено_сот:fee.area_fee_paid?'Да':'Нет', Итого:(elec.amount+(fee.plot_fee||0)+(fee.area_fee||0))}; }).filter(r=>r); exportToExcel(rows,'invoices'); });
-    document.getElementById('importInvoicesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); let meterCount=0, feeCount=0; for(const row of rows){ const userName = row['Пользователь'] || row['user'] || ''; const plot = row['Участок'] || row['plot'] || ''; const month = row['Месяц'] || row['month'] || ''; if(!month || month.length<7) continue; const yearMonth = month.slice(0,7)+'-01'; let {data: users} = await supabaseClient.from('users').select('id, plot_number').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1); let user = users?.[0]; if(!user && plot) { const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1); user = byPlot?.[0]; } if(!user) continue; const elecAmount = parseFloat(row['Электричество (₽)'] || row['electricity'] || 0); if(!isNaN(elecAmount)) { const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id',user.id).limit(1); if(meters && meters[0]){ const paid = (row['Оплачено эл'] === 'Да' || row['Оплачено эл'] === true || row['Оплачено эл'] === 1); await supabaseClient.from('meter_invoices').upsert({ meter_id:meters[0].id, year_month:yearMonth, amount:elecAmount, paid, paid_by:paid?'admin':null }, {onConflict:'meter_id,year_month'}); meterCount++; } } const plotFee = parseFloat(row['Взнос участок (₽)'] || row['plot_fee'] || 0); const areaFee = parseFloat(row['Взнос сотки (₽)'] || row['area_fee'] || 0); if(!isNaN(plotFee) || !isNaN(areaFee)){ const paidPlot = (row['Оплачено уч'] === 'Да' || row['Оплачено уч'] === true || row['Оплачено уч'] === 1); const paidArea = (row['Оплачено сот'] === 'Да' || row['Оплачено сот'] === true || row['Оплачено сот'] === 1); await supabaseClient.from('invoices').upsert({ user_id:user.id, year_month:yearMonth, plot_fee:plotFee, area_fee:areaFee, plot_fee_paid:paidPlot, area_fee_paid:paidArea }, {onConflict:'user_id,year_month'}); feeCount++; } } alert(`Импорт: ${meterCount} счетов за электричество, ${feeCount} за взносы`); loadMeterInvoices(); loadFeeInvoices(); loadReadings(); }; input.click(); });
+    document.getElementById('importInvoicesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); let meterCount=0, feeCount=0; for(const row of rows){ const userName = row['Пользователь'] || row['user'] || ''; const plot = row['Участок'] || row['plot'] || ''; const month = row['Месяц'] || row['month'] || ''; if(!month || month.length<7) continue; const yearMonth = month.slice(0,7)+'-01'; let {data: users} = await supabaseClient.from('users').select('id, plot_number').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1); let user = users?.[0]; if(!user && plot) { const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1); user = byPlot?.[0]; } if(!user) continue; const elecAmount = parseFloat(row['Электричество (₽)'] || row['electricity'] || 0); if(!isNaN(elecAmount)) { const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id',user.id).limit(1); if(meters && meters[0]){ const paid = (row['Оплачено эл'] === 'Да' || row['Оплачено эл'] === true || row['Оплачено эл'] === 1); const {data: existing} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id',meters[0].id).eq('year_month',yearMonth).limit(1); if(existing && existing[0]){ await supabaseClient.from('meter_invoices').update({amount:elecAmount, paid, paid_by:paid?'admin':null}).eq('id',existing[0].id); } else { await supabaseClient.from('meter_invoices').insert({meter_id:meters[0].id, year_month:yearMonth, amount:elecAmount, paid, paid_by:paid?'admin':null}); } meterCount++; } } const plotFee = parseFloat(row['Взнос участок (₽)'] || row['plot_fee'] || 0); const areaFee = parseFloat(row['Взнос сотки (₽)'] || row['area_fee'] || 0); if(!isNaN(plotFee) || !isNaN(areaFee)){ const paidPlot = (row['Оплачено уч'] === 'Да' || row['Оплачено уч'] === true || row['Оплачено уч'] === 1); const paidArea = (row['Оплачено сот'] === 'Да' || row['Оплачено сот'] === true || row['Оплачено сот'] === 1); const {data: existing} = await supabaseClient.from('invoices').select('id').eq('user_id',user.id).eq('year_month',yearMonth).limit(1); if(existing && existing[0]){ await supabaseClient.from('invoices').update({plot_fee:plotFee, area_fee:areaFee, plot_fee_paid:paidPlot, area_fee_paid:paidArea}).eq('id',existing[0].id); } else { await supabaseClient.from('invoices').insert({user_id:user.id, year_month:yearMonth, plot_fee:plotFee, area_fee:areaFee, plot_fee_paid:paidPlot, area_fee_paid:paidArea}); } feeCount++; } } alert(`Импорт завершён: ${meterCount} счетов за электричество, ${feeCount} за взносы.`); await loadMeterInvoices(); await loadFeeInvoices(); loadReadings(); }; input.click(); });
     document.getElementById('exportExtraFeesBtn').addEventListener('click',()=>{ const exportData=allUserExtraFees.map(uf=>({Пользователь:uf.users?.full_name,Участок:uf.users?.plot_number,Сбор:uf.extra_fees?.name,Месяц:formatMonth(uf.extra_fees?.year_month),Сумма:uf.amount,Оплачено:uf.paid?'Да':'Нет'})); exportToExcel(exportData,'extra_fees'); });
-    document.getElementById('importExtraFeesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); let count=0; for(const row of rows){ const userName = row['Пользователь'] || row['user'] || ''; const plot = row['Участок'] || row['plot'] || ''; const feeName = row['Сбор'] || row['fee_name'] || ''; const month = row['Месяц'] || row['month'] || ''; if(!month || month.length<7) continue; const yearMonth = month.slice(0,7)+'-01'; let amount = parseFloat(row['Сумма'] || row['amount'] || 0); const paid = (row['Оплачено'] === 'Да' || row['Оплачено'] === true || row['Оплачено'] === 1); let {data: users} = await supabaseClient.from('users').select('id').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1); let user = users?.[0]; if(!user && plot) { const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1); user = byPlot?.[0]; } if(!user) continue; let {data: feeTpl} = await supabaseClient.from('extra_fees').select('id').eq('name',feeName).eq('year_month',yearMonth).limit(1); let extraFeeId = feeTpl?.[0]?.id; if(!extraFeeId) { const {data: inserted} = await supabaseClient.from('extra_fees').insert({name:feeName, amount, year_month:yearMonth}).select(); extraFeeId = inserted?.[0]?.id; if(!extraFeeId) continue; } await supabaseClient.from('user_extra_fees').upsert({ user_id:user.id, extra_fee_id:extraFeeId, amount, paid, paid_by:paid?'admin':null }, {onConflict:'user_id,extra_fee_id'}); count++; } alert(`Импорт завершён: добавлено/обновлено ${count} назначений сборов.`); loadExtraFeeTemplates(); loadExtraFees(); }; input.click(); });
+    document.getElementById('importExtraFeesBtn').addEventListener('click',()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.xlsx, .xls'; input.onchange=async(e)=>{ const file=e.target.files[0]; const data=await file.arrayBuffer(); const workbook=XLSX.read(data); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet); let count=0; for(const row of rows){ const userName = row['Пользователь'] || row['user'] || ''; const plot = row['Участок'] || row['plot'] || ''; const feeName = row['Сбор'] || row['fee_name'] || ''; const month = row['Месяц'] || row['month'] || ''; if(!month || month.length<7) continue; const yearMonth = month.slice(0,7)+'-01'; let amount = parseFloat(row['Сумма'] || row['amount'] || 0); const paid = (row['Оплачено'] === 'Да' || row['Оплачено'] === true || row['Оплачено'] === 1); let {data: users} = await supabaseClient.from('users').select('id').or(`full_name.ilike.%${userName}%,plot_number.eq.${plot}`).limit(1); let user = users?.[0]; if(!user && plot) { const {data: byPlot} = await supabaseClient.from('users').select('id').eq('plot_number',plot).limit(1); user = byPlot?.[0]; } if(!user) continue; let {data: feeTpl} = await supabaseClient.from('extra_fees').select('id').eq('name',feeName).eq('year_month',yearMonth).limit(1); let extraFeeId = feeTpl?.[0]?.id; if(!extraFeeId) { const {data: inserted} = await supabaseClient.from('extra_fees').insert({name:feeName, amount, year_month:yearMonth}).select(); extraFeeId = inserted?.[0]?.id; if(!extraFeeId) continue; } const {data: existing} = await supabaseClient.from('user_extra_fees').select('id').eq('user_id',user.id).eq('extra_fee_id',extraFeeId).limit(1); if(existing && existing[0]){ await supabaseClient.from('user_extra_fees').update({amount, paid, paid_by:paid?'admin':null}).eq('id',existing[0].id); } else { await supabaseClient.from('user_extra_fees').insert({user_id:user.id, extra_fee_id:extraFeeId, amount, paid, paid_by:paid?'admin':null}); } count++; } alert(`Импорт завершён: добавлено/обновлено ${count} назначений сборов.`); await loadExtraFeeTemplates(); await loadExtraFees(); }; input.click(); });
 
     // === Тарифы, объявления, CRUD ===
     async function loadTariffHistory() { const {data}=await supabaseClient.from('tariff_history').select('*').order('valid_from',{ascending:false}); document.getElementById('tariffHistoryBody').innerHTML=data.map(t=>`<tr><td>${t.valid_from}</td><td>${t.t1_rate}</td><td>${t.t2_rate}</td><td>${t.t3_rate}</td><td>${t.t1_limit}</td><td><button class="btn btn-sm btn-danger deleteTariff" data-id="${t.id}">Удалить</button></td></tr>`).join(''); attachDeleteTariff(); }
@@ -638,14 +684,14 @@
     document.getElementById('readingsMonthFilter').addEventListener('change',function(){ document.getElementById('customMonthInput').style.display=this.value==='custom'?'inline-block':'none'; applyReadingsFilter(); });
     document.getElementById('customMonthInput').addEventListener('change',applyReadingsFilter);
     document.getElementById('searchInvoices').addEventListener('input',()=>{ renderCombinedInvoices(); });
-    document.getElementById('invoiceMonthFilter').addEventListener('change',function(){ document.getElementById('customInvoiceMonth').style.display=this.value==='custom'?'inline-block':'none'; renderCombinedInvoices(); });
-    document.getElementById('customInvoiceMonth').addEventListener('change',renderCombinedInvoices);
-    document.getElementById('invoicePaidFilter').addEventListener('change',renderCombinedInvoices);
+    document.getElementById('invoiceMonthFilter').addEventListener('change',async function(){ const val = this.value; document.getElementById('customInvoiceMonth').style.display = val === 'custom' ? 'inline-block' : 'none'; if (val === 'current') { const now = new Date(); const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; await ensureInvoicesForMonth(curMonth); } else if (val === 'custom' && document.getElementById('customInvoiceMonth').value) { await ensureInvoicesForMonth(document.getElementById('customInvoiceMonth').value); } await loadMeterInvoices(); await loadFeeInvoices(); });
+    document.getElementById('customInvoiceMonth').addEventListener('change',async()=>{ const month = document.getElementById('customInvoiceMonth').value; if(month) await ensureInvoicesForMonth(month); await loadMeterInvoices(); await loadFeeInvoices(); });
+    document.getElementById('invoicePaidFilter').addEventListener('change',()=>{ renderCombinedInvoices(); });
     document.getElementById('searchExtraFees').addEventListener('input',applyExtraFeesFilter);
     document.getElementById('extraMonthFilter').addEventListener('change',function(){ document.getElementById('customExtraMonth').style.display=this.value==='custom'?'inline-block':'none'; applyExtraFeesFilter(); });
     document.getElementById('customExtraMonth').addEventListener('change',applyExtraFeesFilter);
 
-    function initTabs() { document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',(e)=>{ e.preventDefault(); const tabId=tab.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); tab.classList.add('active'); if(tabId==='usersMeters') loadUsers(); else if(tabId==='readings') loadReadings(); else if(tabId==='invoices'){ loadMeterInvoices(); loadFeeInvoices(); } else if(tabId==='extraFees'){ loadExtraFeeTemplates(); loadExtraFees(); } else if(tabId==='tariffs'){ loadTariffHistory(); loadFeeRatesHistory(); } else if(tabId==='announcements') loadAnnouncements(); })); }
+    function initTabs() { document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',(e)=>{ e.preventDefault(); const tabId=tab.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); tab.classList.add('active'); if(tabId==='usersMeters') loadUsers(); else if(tabId==='readings') loadReadings(); else if(tabId==='invoices'){ refreshInvoices(); } else if(tabId==='extraFees'){ loadExtraFeeTemplates(); loadExtraFees(); } else if(tabId==='tariffs'){ loadTariffHistory(); loadFeeRatesHistory(); } else if(tabId==='announcements') loadAnnouncements(); })); }
 
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
     document.getElementById('addUserBtn').addEventListener('click',()=>{ document.getElementById('editUserId').value=''; document.getElementById('editUsername').value=''; document.getElementById('editPassword').value=''; document.getElementById('editFullName').value=''; document.getElementById('editPlotNumber').value=''; document.getElementById('editPlotsCount').value=1; document.getElementById('editAreaSotok').value=0; document.getElementById('editRole').value='user'; new bootstrap.Modal(document.getElementById('editUserModal')).show(); });
@@ -653,7 +699,7 @@
     document.getElementById('addMeterForUserBtn').addEventListener('click',()=>{ if(!selectedUserIdForMeters) return; document.getElementById('editMeterId').value=''; document.getElementById('editMeterUserId').value=selectedUserIdForMeters; document.getElementById('editMeterName').value=''; new bootstrap.Modal(document.getElementById('editMeterModal')).show(); });
     document.getElementById('saveMeterBtn').addEventListener('click',saveMeter);
 
-    (async()=>{ await checkAuth(); initTabs(); await loadAllData(); })();
+    (async()=>{ await checkAuth(); initTabs(); await loadAllData(); await refreshInvoices(); })();
 </script>
 </body>
 </html>
