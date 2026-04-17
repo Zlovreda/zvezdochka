@@ -12,6 +12,10 @@
         .cursor-pointer { cursor: pointer; }
         .editable-field { background-color: #fff3cd; }
         .table-sm td, .table-sm th { padding: 0.3rem; }
+        .meters-section { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+        /* Улучшение читаемости модальных окон */
+        .modal-body label { font-weight: 500; margin-bottom: 0.2rem; }
+        .modal-body input, .modal-body select { margin-bottom: 0.8rem; }
     </style>
 </head>
 <body>
@@ -23,67 +27,73 @@
 
     <!-- Вкладки -->
     <ul class="nav nav-tabs mb-3">
-        <li class="nav-item"><a class="nav-link active" data-tab="users">Пользователи</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="meters">Счётчики</a></li>
+        <li class="nav-item"><a class="nav-link active" data-tab="usersMeters">Пользователи и счётчики</a></li>
         <li class="nav-item"><a class="nav-link" data-tab="readings">Показания</a></li>
         <li class="nav-item"><a class="nav-link" data-tab="invoices">Счета</a></li>
         <li class="nav-item"><a class="nav-link" data-tab="extraFees">Доп. сборы</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="tariffs">Тарифы (история)</a></li>
-        <li class="nav-item"><a class="nav-link" data-tab="settings">Настройки</a></li>
+        <li class="nav-item"><a class="nav-link" data-tab="tariffs">Тарифы</a></li>
     </ul>
 
-    <!-- ==================== Панель Пользователи ==================== -->
-    <div id="users" class="tab-pane active">
+    <!-- ==================== Панель Пользователи и счётчики ==================== -->
+    <div id="usersMeters" class="tab-pane active">
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between">
-                <span>Управление пользователями</span>
-                <button class="btn btn-sm btn-light" id="addUserBtn"><i class="bi bi-plus"></i> Добавить</button>
+                <span>Пользователи</span>
+                <button class="btn btn-sm btn-light" id="addUserBtn"><i class="bi bi-plus"></i> Добавить пользователя</button>
             </div>
             <div class="card-body">
                 <table class="table table-bordered table-sm">
-                    <thead><tr><th>ID</th><th>Логин</th><th>ФИО</th><th>Участков (доля)</th><th>Соток</th><th>Роль</th><th>Действия</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Логин</th><th>ФИО</th><th>Участков (доля)</th><th>Соток</th>
+                            <th>Счётчиков</th><th>Роль</th><th>Действия</th>
+                        </tr>
+                    </thead>
                     <tbody id="usersBody"></tbody>
                 </table>
+                <div id="metersForUserSection" class="meters-section" style="display:none;">
+                    <h5>Счётчики пользователя: <span id="selectedUserName"></span></h5>
+                    <button class="btn btn-sm btn-success mb-2" id="addMeterForUserBtn"><i class="bi bi-plus"></i> Добавить счётчик</button>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>ID</th><th>Название</th><th>Действия</th></tr></thead>
+                        <tbody id="userMetersBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== Панель Счётчики ==================== -->
-    <div id="meters" class="tab-pane">
-        <div class="card">
-            <div class="card-header bg-secondary text-white d-flex justify-content-between">
-                <span>Счётчики</span>
-                <button class="btn btn-sm btn-light" id="addMeterBtn"><i class="bi bi-plus"></i> Добавить</button>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered table-sm">
-                    <thead><tr><th>ID</th><th>Пользователь</th><th>Название</th><th>Действия</th></tr></thead>
-                    <tbody id="metersBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== Панель Показания (с быстрым редактированием) ==================== -->
+    <!-- ==================== Панель Показания ==================== -->
     <div id="readings" class="tab-pane">
         <div class="card">
-            <div class="card-header bg-info text-white d-flex justify-content-between">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                 <span>Показания счётчиков</span>
-                <div>
+                <div class="d-flex gap-2">
+                    <select id="readingsMonthFilter" class="form-select form-select-sm w-auto">
+                        <option value="recent">Текущий + 2 предыдущих</option>
+                        <option value="all">Все</option>
+                        <option value="custom">Выбрать месяц</option>
+                    </select>
+                    <input type="month" id="customMonthInput" class="form-control form-control-sm w-auto" style="display:none;">
                     <button class="btn btn-sm btn-light" id="addReadingBtn"><i class="bi bi-plus"></i> Добавить</button>
                     <button class="btn btn-sm btn-light" id="exportReadingsBtn"><i class="bi bi-download"></i> Экспорт CSV</button>
                 </div>
             </div>
             <div class="card-body">
                 <table class="table table-bordered table-sm" id="readingsTable">
-                    <thead><tr><th>ID</th><th>Счётчик</th><th>Пользователь</th><th>Месяц</th><th>Показание</th><th>Предыдущее</th><th>Расход</th><th>Действия</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Счётчик</th><th>Пользователь</th><th>Месяц</th><th>Показание</th>
+                            <th>Предыдущее</th><th>Расход</th><th>Действия</th>
+                        </tr>
+                    </thead>
                     <tbody id="readingsBody"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- ==================== Панель Счета (с галочками) ==================== -->
+    <!-- ==================== Панель Счета ==================== -->
     <div id="invoices" class="tab-pane">
         <div class="card">
             <div class="card-header bg-warning text-dark d-flex justify-content-between">
@@ -109,7 +119,12 @@
                     </div>
                 </div>
                 <table class="table table-bordered table-sm" id="invoicesTable">
-                    <thead><tr><th>ID</th><th>Пользователь</th><th>Месяц</th><th>Электричество</th><th>Взнос (участок)</th><th>Взнос (сотки)</th><th>Итого</th><th>Оплачено</th><th>Действия</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Пользователь</th><th>Месяц</th><th>Электричество</th>
+                            <th>Взнос (участок)</th><th>Взнос (сотки)</th><th>Итого</th><th>Оплачено</th><th>Действия</th>
+                        </tr>
+                    </thead>
                     <tbody id="invoicesBody"></tbody>
                 </table>
             </div>
@@ -129,64 +144,184 @@
                     <tbody id="extraFeesBody"></tbody>
                 </table>
                 <hr>
-                <h5>Назначение сборов пользователям</h5>
-                <table class="table table-bordered table-sm" id="userExtraFeesTable">
-                    <thead><tr><th>Пользователь</th><th>Сбор</th><th>Сумма</th><th>Оплачено</th><th>Действия</th></tr></thead>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Долг (выборочное назначение)</h5>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-1" id="assignExtraFeeBtn"><i class="bi bi-person-plus"></i> Назначить выбранному</button>
+                        <button class="btn btn-sm btn-warning" id="assignExtraFeeToAllBtn"><i class="bi bi-people"></i> Назначить всем</button>
+                    </div>
+                </div>
+                <table class="table table-bordered table-sm mt-2" id="userExtraFeesTable">
+                    <thead>
+                        <tr>
+                            <th>Пользователь</th><th>Сбор</th><th>Сумма (₽)</th><th>Оплачено</th><th>Действия</th>
+                        </tr>
+                    </thead>
                     <tbody id="userExtraFeesBody"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- ==================== Панель Тарифы (история) ==================== -->
+    <!-- ==================== Панель Тарифы ==================== -->
     <div id="tariffs" class="tab-pane">
-        <div class="card">
-            <div class="card-header bg-dark text-white d-flex justify-content-between">
-                <span>История тарифов</span>
-                <button class="btn btn-sm btn-light" id="addTariffBtn"><i class="bi bi-plus"></i> Добавить новый тариф</button>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered table-sm">
-                    <thead><tr><th>Действует с</th><th>T1 (₽, до 100 кВт·ч)</th><th>T2 (₽, свыше)</th><th>T3 (₽, на весь объём)</th><th>Лимит T1</th><th>Действия</th></tr></thead>
-                    <tbody id="tariffHistoryBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== Панель Настройки ==================== -->
-    <div id="settings" class="tab-pane">
-        <div class="card">
-            <div class="card-header bg-dark text-white">Базовые ставки взносов</div>
-            <div class="card-body">
-                <form id="settingsForm">
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label>Взнос за участок (₽)</label>
-                            <input type="number" step="0.01" id="plot_fee_rate" class="form-control">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Взнос за сотку (₽)</label>
-                            <input type="number" step="0.01" id="area_fee_rate" class="form-control">
-                        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between">
+                        <span>История тарифов на электроэнергию</span>
+                        <button class="btn btn-sm btn-light" id="addTariffBtn"><i class="bi bi-plus"></i> Добавить</button>
                     </div>
-                    <button type="submit" class="btn btn-primary">Сохранить ставки</button>
-                </form>
+                    <div class="card-body">
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr><th>Действует с</th><th>T1 (₽)</th><th>T2 (₽)</th><th>T3 (₽)</th><th>Лимит T1</th><th></th></tr>
+                            </thead>
+                            <tbody id="tariffHistoryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                        <span>История ставок взносов</span>
+                        <button class="btn btn-sm btn-light" id="addFeeRateBtn"><i class="bi bi-plus"></i> Добавить</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered table-sm">
+                            <thead><tr><th>Действует с</th><th>За участок (₽)</th><th>За сотку (₽)</th><th></th></tr></thead>
+                            <tbody id="feeRatesHistoryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Модалки для редактирования -->
-<div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Редактировать пользователя</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editUserId"><input type="text" id="editFullName" placeholder="ФИО" class="form-control mb-2"><input type="text" id="editUsername" placeholder="Логин" class="form-control mb-2"><input type="text" id="editPassword" placeholder="Пароль" class="form-control mb-2"><input type="number" step="0.01" id="editPlotsCount" placeholder="Доля участка" class="form-control mb-2"><input type="number" step="0.01" id="editAreaSotok" placeholder="Соток" class="form-control mb-2"><select id="editRole" class="form-control mb-2"><option value="user">Житель</option><option value="admin">Админ</option></select><button class="btn btn-primary" id="saveUserBtn">Сохранить</button></div></div></div></div>
+<!-- ==================== Модальные окна ==================== -->
 
-<div class="modal fade" id="editMeterModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Счётчик</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editMeterId"><select id="editMeterUserId" class="form-control mb-2"></select><input type="text" id="editMeterName" placeholder="Название" class="form-control mb-2"><button class="btn btn-primary" id="saveMeterBtn">Сохранить</button></div></div></div></div>
+<!-- Редактирование пользователя (улучшено) -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Редактировать пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <label>Логин <span class="text-danger">*</span></label>
+                <input type="text" id="editUsername" class="form-control" placeholder="например, ivanov">
+                <label>Пароль <span class="text-danger">*</span></label>
+                <input type="text" id="editPassword" class="form-control" placeholder="не менее 4 символов">
+                <label>ФИО (полностью)</label>
+                <input type="text" id="editFullName" class="form-control" placeholder="Иванов Иван Иванович">
+                <label>Доля участка (число, например 1 или 0.5)</label>
+                <input type="number" step="0.01" id="editPlotsCount" class="form-control" value="1">
+                <label>Площадь в сотках</label>
+                <input type="number" step="0.01" id="editAreaSotok" class="form-control" value="0">
+                <label>Роль</label>
+                <select id="editRole" class="form-control">
+                    <option value="user">Житель</option>
+                    <option value="admin">Админ</option>
+                </select>
+                <button class="btn btn-primary w-100 mt-3" id="saveUserBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="modal fade" id="editReadingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Показание</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editReadingId"><select id="editReadingMeterId" class="form-control mb-2"></select><input type="month" id="editReadingDate" class="form-control mb-2"><input type="number" step="0.01" id="editReadingValue" placeholder="Показание" class="form-control mb-2"><button class="btn btn-primary" id="saveReadingBtn">Сохранить</button></div></div></div></div>
+<!-- Редактирование счётчика -->
+<div class="modal fade" id="editMeterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Счётчик</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editMeterId">
+                <input type="hidden" id="editMeterUserId">
+                <label>Название счётчика</label>
+                <input type="text" id="editMeterName" class="form-control" placeholder="например, Основной">
+                <button class="btn btn-primary w-100 mt-2" id="saveMeterBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="modal fade" id="editInvoiceModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Редактировать счёт</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editInvoiceId"><label>Электричество (₽)</label><input type="number" step="0.01" id="editElectricity" class="form-control mb-2"><label>Взнос за участок</label><input type="number" step="0.01" id="editPlotFee" class="form-control mb-2"><label>Взнос за сотки</label><input type="number" step="0.01" id="editAreaFee" class="form-control mb-2"><label>Оплачено</label><select id="editPaid" class="form-control mb-2"><option value="false">Нет</option><option value="true">Да</option></select><button class="btn btn-primary" id="saveInvoiceBtn">Сохранить</button></div></div></div></div>
+<!-- Редактирование показания -->
+<div class="modal fade" id="editReadingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Показание</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editReadingId">
+                <label>Счётчик</label>
+                <select id="editReadingMeterId" class="form-control"></select>
+                <label>Месяц</label>
+                <input type="month" id="editReadingDate" class="form-control">
+                <label>Показание (кВт·ч)</label>
+                <input type="number" step="0.01" id="editReadingValue" class="form-control" placeholder="например 1250.5">
+                <button class="btn btn-primary w-100 mt-2" id="saveReadingBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="modal fade" id="editExtraFeeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Дополнительный сбор</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editExtraFeeId"><input type="text" id="editExtraFeeName" placeholder="Название" class="form-control mb-2"><input type="number" step="0.01" id="editExtraFeeAmount" placeholder="Сумма (₽)" class="form-control mb-2"><input type="month" id="editExtraFeeMonth" class="form-control mb-2"><button class="btn btn-primary" id="saveExtraFeeBtn">Сохранить</button></div></div></div></div>
+<!-- Редактирование доп. сбора -->
+<div class="modal fade" id="editExtraFeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Дополнительный сбор</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editExtraFeeId">
+                <label>Название</label>
+                <input type="text" id="editExtraFeeName" class="form-control" placeholder="например, Ремонт дороги">
+                <label>Сумма (₽)</label>
+                <input type="number" step="0.01" id="editExtraFeeAmount" class="form-control">
+                <label>Месяц</label>
+                <input type="month" id="editExtraFeeMonth" class="form-control">
+                <button class="btn btn-primary w-100 mt-2" id="saveExtraFeeBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Назначение сбора выбранному пользователю -->
+<div class="modal fade" id="assignExtraFeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Назначить сбор пользователю</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <label>Пользователь</label>
+                <select id="assignUserId" class="form-control"></select>
+                <label>Сбор</label>
+                <select id="assignExtraFeeId" class="form-control"></select>
+                <label>Сумма (если отличается от базовой)</label>
+                <input type="number" step="0.01" id="assignAmount" class="form-control">
+                <button class="btn btn-primary w-100 mt-2" id="saveAssignExtraFeeBtn">Назначить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Новая ставка взносов -->
+<div class="modal fade" id="addFeeRateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Новая ставка взносов</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <label>Действует с даты</label>
+                <input type="date" id="feeRateValidFrom" class="form-control">
+                <label>Ставка за участок (₽)</label>
+                <input type="number" step="0.01" id="feeRatePlot" class="form-control">
+                <label>Ставка за сотку (₽)</label>
+                <input type="number" step="0.01" id="feeRateArea" class="form-control">
+                <button class="btn btn-primary w-100 mt-2" id="saveFeeRateBtn">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -195,6 +330,8 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentAdmin = null;
+    let selectedUserIdForMeters = null;
+    let allReadingsCache = []; // для фильтрации на клиенте
 
     // --- Проверка авторизации ---
     async function checkAuth() {
@@ -211,29 +348,48 @@
         else alert(msg);
     }
 
-    // --- Загрузка данных для таблиц ---
+    // --- Загрузка данных ---
     async function loadUsers() {
-        const { data, error } = await supabaseClient.from('users').select('*');
+        // Получаем пользователей и количество счётчиков для каждого
+        const { data: users, error } = await supabaseClient.from('users').select('*');
         if (error) return console.error(error);
+        const { data: meters } = await supabaseClient.from('meters').select('user_id');
+        
+        // Подсчёт счётчиков
+        const meterCountMap = new Map();
+        meters.forEach(m => meterCountMap.set(m.user_id, (meterCountMap.get(m.user_id) || 0) + 1));
+        
         const tbody = document.getElementById('usersBody');
-        tbody.innerHTML = data.map(u => `
+        tbody.innerHTML = users.map(u => {
+            const meterCount = meterCountMap.get(u.id) || 0;
+            return `
             <tr>
                 <td>${u.id}</td><td>${u.username}</td><td>${u.full_name || ''}</td>
-                <td>${u.plots_count ?? 1}</td><td>${u.area_sotok ?? 0}</td><td>${u.role}</td>
-                <td><button class="btn btn-sm btn-warning editUser" data-id="${u.id}"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-danger deleteUser" data-id="${u.id}"><i class="bi bi-trash"></i></button></td>
+                <td>${u.plots_count ?? 1}</td><td>${u.area_sotok ?? 0}</td>
+                <td>${meterCount}</td><td>${u.role}</td>
+                <td>
+                    <button class="btn btn-sm btn-info viewMeters" data-id="${u.id}" data-name="${u.full_name || u.username}"><i class="bi bi-speedometer2"></i> Счётчики</button>
+                    <button class="btn btn-sm btn-warning editUser" data-id="${u.id}"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-danger deleteUser" data-id="${u.id}"><i class="bi bi-trash"></i></button>
+                </td>
             </tr>
-        `).join('');
+        `}).join('');
         document.querySelectorAll('.editUser').forEach(btn => btn.addEventListener('click', () => editUser(btn.dataset.id)));
         document.querySelectorAll('.deleteUser').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.dataset.id)));
+        document.querySelectorAll('.viewMeters').forEach(btn => btn.addEventListener('click', () => {
+            selectedUserIdForMeters = btn.dataset.id;
+            document.getElementById('selectedUserName').innerText = btn.dataset.name;
+            document.getElementById('metersForUserSection').style.display = 'block';
+            loadUserMeters(selectedUserIdForMeters);
+        }));
     }
 
-    async function loadMeters() {
-        const { data, error } = await supabaseClient.from('meters').select('*, users(full_name)');
+    async function loadUserMeters(userId) {
+        const { data, error } = await supabaseClient.from('meters').select('*').eq('user_id', userId);
         if (error) return console.error(error);
-        const tbody = document.getElementById('metersBody');
+        const tbody = document.getElementById('userMetersBody');
         tbody.innerHTML = data.map(m => `
-            <tr><td>${m.id}</td><td>${m.users?.full_name || '?'}</td><td>${m.name}</td>
+            <tr><td>${m.id}</td><td>${m.name}</td>
             <td><button class="btn btn-sm btn-warning editMeter" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-danger deleteMeter" data-id="${m.id}"><i class="bi bi-trash"></i></button></td></tr>
         `).join('');
@@ -242,20 +398,40 @@
     }
 
     async function loadReadings() {
-        const { data, error } = await supabaseClient.from('readings').select('*, meters(id, name, users(id, full_name))').order('reading_date', { ascending: false });
+        const { data, error } = await supabaseClient.from('readings')
+            .select('*, meters(id, name, users(id, full_name))')
+            .order('reading_date', { ascending: false });
         if (error) return console.error(error);
+        allReadingsCache = data;
+        applyReadingsFilter();
+    }
+
+    function applyReadingsFilter() {
+        const filterType = document.getElementById('readingsMonthFilter').value;
+        const customMonth = document.getElementById('customMonthInput').value;
+        let filtered = [...allReadingsCache];
+        
+        if (filterType === 'recent') {
+            const today = new Date();
+            const currentMonth = today.toISOString().slice(0,7);
+            const prev1 = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().slice(0,7);
+            const prev2 = new Date(today.getFullYear(), today.getMonth() - 2, 1).toISOString().slice(0,7);
+            const allowedMonths = [currentMonth, prev1, prev2];
+            filtered = filtered.filter(r => allowedMonths.includes(r.reading_date.slice(0,7)));
+        } else if (filterType === 'custom' && customMonth) {
+            filtered = filtered.filter(r => r.reading_date.slice(0,7) === customMonth);
+        }
+        
+        renderReadingsTable(filtered);
+    }
+
+    async function renderReadingsTable(readings) {
         const tbody = document.getElementById('readingsBody');
         let html = '';
-        for (const r of data) {
+        for (const r of readings) {
             const meter = r.meters;
-            const userId = meter?.users?.id;
-            // Получаем предыдущее показание для этого же счётчика
             const { data: prev } = await supabaseClient.from('readings')
-                .select('value')
-                .eq('meter_id', r.meter_id)
-                .lt('reading_date', r.reading_date)
-                .order('reading_date', { ascending: false })
-                .limit(1);
+                .select('value').eq('meter_id', r.meter_id).lt('reading_date', r.reading_date).order('reading_date', { ascending: false }).limit(1);
             const prevValue = prev?.length ? prev[0].value : null;
             const consumption = prevValue !== null ? (r.value - prevValue).toFixed(2) : '—';
             html += `<tr>
@@ -266,15 +442,14 @@
                 <td><button class="btn btn-sm btn-danger deleteReading" data-id="${r.id}"><i class="bi bi-trash"></i></button></td>
             </tr>`;
         }
-        tbody.innerHTML = html;
-        // Обработчик быстрого редактирования
+        tbody.innerHTML = html || '<tr><td colspan="8" class="text-center">Нет показаний</td></tr>';
         document.querySelectorAll('.reading-val').forEach(el => {
             el.addEventListener('blur', async function() {
                 const id = this.dataset.id;
                 const newValue = parseFloat(this.innerText);
                 if (isNaN(newValue)) return;
                 await supabaseClient.from('readings').update({ value: newValue }).eq('id', id);
-                loadReadings(); // обновить таблицу
+                loadReadings();
             });
         });
         document.querySelectorAll('.deleteReading').forEach(btn => btn.addEventListener('click', () => deleteReading(btn.dataset.id)));
@@ -292,17 +467,16 @@
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td><td>${i.users?.full_name || '?'}</td><td>${i.year_month.slice(0,7)}</td>
-                <td>${i.electricity_amount}</td><td>${i.plot_fee}</td><td>${i.area_fee}</td><td>${i.total}</td>
+                <td>${i.electricity_amount.toFixed(2)}</td><td>${i.plot_fee.toFixed(2)}</td><td>${i.area_fee.toFixed(2)}</td><td>${i.total.toFixed(2)}</td>
                 <td><input type="checkbox" class="invoice-paid" data-id="${i.id}" ${i.paid ? 'checked' : ''}></td>
                 <td><button class="btn btn-sm btn-danger deleteInvoice" data-id="${i.id}"><i class="bi bi-trash"></i></button></td>
             </tr>
         `).join('');
-        // Обработчик чекбокса
         document.querySelectorAll('.invoice-paid').forEach(cb => {
             cb.addEventListener('change', async function() {
                 const id = this.dataset.id;
                 const paid = this.checked;
-                await supabaseClient.from('invoices').update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null }).eq('id', id);
+                await supabaseClient.from('invoices').update({ paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null }).eq('id', id);
                 loadInvoices();
             });
         });
@@ -319,18 +493,18 @@
         `).join('');
         document.querySelectorAll('.editExtraFee').forEach(btn => btn.addEventListener('click', () => editExtraFee(btn.dataset.id)));
         document.querySelectorAll('.deleteExtraFee').forEach(btn => btn.addEventListener('click', () => deleteExtraFee(btn.dataset.id)));
-        // Загрузить назначения
-        const { data: userFees } = await supabaseClient.from('user_extra_fees').select('*, users(full_name), extra_fees(name)');
+
+        const { data: userFees } = await supabaseClient.from('user_extra_fees').select('*, users(full_name), extra_fees(name, amount)');
         const tbody2 = document.getElementById('userExtraFeesBody');
         tbody2.innerHTML = userFees.map(uf => `
-            <tr><td>${uf.users?.full_name}</td><td>${uf.extra_fees?.name}</td><td>${uf.amount}</td>
+            <tr><td>${uf.users?.full_name}</td><td>${uf.extra_fees?.name}</td><td>${uf.amount ?? uf.extra_fees?.amount}</td>
             <td><input type="checkbox" class="user-fee-paid" data-id="${uf.id}" ${uf.paid ? 'checked' : ''}></td>
             <td><button class="btn btn-sm btn-danger deleteUserFee" data-id="${uf.id}"><i class="bi bi-trash"></i></button></td></tr>
         `).join('');
         document.querySelectorAll('.user-fee-paid').forEach(cb => cb.addEventListener('change', async function() {
             const id = this.dataset.id;
             const paid = this.checked;
-            await supabaseClient.from('user_extra_fees').update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null }).eq('id', id);
+            await supabaseClient.from('user_extra_fees').update({ paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null }).eq('id', id);
             loadExtraFees();
         }));
         document.querySelectorAll('.deleteUserFee').forEach(btn => btn.addEventListener('click', async () => {
@@ -353,15 +527,21 @@
         }));
     }
 
-    async function loadSettings() {
-        const { data, error } = await supabaseClient.from('settings').select('*');
-        if (error) return;
-        const settings = Object.fromEntries(data.map(s => [s.key, s.value]));
-        document.getElementById('plot_fee_rate').value = settings.plot_fee_rate || 939;
-        document.getElementById('area_fee_rate').value = settings.area_fee_rate || 44;
+    async function loadFeeRatesHistory() {
+        const { data, error } = await supabaseClient.from('fee_rates_history').select('*').order('valid_from', { ascending: false });
+        if (error) return console.error(error);
+        const tbody = document.getElementById('feeRatesHistoryBody');
+        tbody.innerHTML = data.map(f => `
+            <tr><td>${f.valid_from}</td><td>${f.plot_fee_rate}</td><td>${f.area_fee_rate}</td>
+            <td><button class="btn btn-sm btn-danger deleteFeeRate" data-id="${f.id}"><i class="bi bi-trash"></i></button></td></tr>
+        `).join('');
+        document.querySelectorAll('.deleteFeeRate').forEach(btn => btn.addEventListener('click', async () => {
+            if(confirm('Удалить ставку?')) await supabaseClient.from('fee_rates_history').delete().eq('id', btn.dataset.id);
+            loadFeeRatesHistory();
+        }));
     }
 
-    // --- CRUD ---
+    // --- CRUD Пользователи ---
     async function editUser(id) {
         const { data: u } = await supabaseClient.from('users').select('*').eq('id', id).single();
         document.getElementById('editUserId').value = u.id;
@@ -388,81 +568,33 @@
         bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
         loadUsers();
     }
-    async function deleteUser(id) { if(confirm('Удалить?')) { await supabaseClient.from('users').delete().eq('id', id); loadUsers(); } }
+    async function deleteUser(id) { if(confirm('Удалить пользователя?')) { await supabaseClient.from('users').delete().eq('id', id); loadUsers(); } }
 
+    // --- CRUD Счётчики ---
     async function editMeter(id) {
         const { data: m } = await supabaseClient.from('meters').select('*').eq('id', id).single();
         document.getElementById('editMeterId').value = m.id;
+        document.getElementById('editMeterUserId').value = m.user_id;
         document.getElementById('editMeterName').value = m.name;
-        const { data: users } = await supabaseClient.from('users').select('id, full_name');
-        const select = document.getElementById('editMeterUserId');
-        select.innerHTML = users.map(u => `<option value="${u.id}" ${u.id == m.user_id ? 'selected' : ''}>${u.full_name}</option>`).join('');
         new bootstrap.Modal(document.getElementById('editMeterModal')).show();
     }
     async function saveMeter() {
         const id = document.getElementById('editMeterId').value;
-        const data = { user_id: document.getElementById('editMeterUserId').value, name: document.getElementById('editMeterName').value };
+        const data = {
+            user_id: document.getElementById('editMeterUserId').value,
+            name: document.getElementById('editMeterName').value
+        };
         if (id) await supabaseClient.from('meters').update(data).eq('id', id);
         else await supabaseClient.from('meters').insert(data);
         bootstrap.Modal.getInstance(document.getElementById('editMeterModal')).hide();
-        loadMeters();
+        if (selectedUserIdForMeters) loadUserMeters(selectedUserIdForMeters);
     }
-    async function deleteMeter(id) { if(confirm('Удалить счётчик?')) { await supabaseClient.from('meters').delete().eq('id', id); loadMeters(); } }
+    async function deleteMeter(id) { if(confirm('Удалить счётчик?')) { await supabaseClient.from('meters').delete().eq('id', id); if (selectedUserIdForMeters) loadUserMeters(selectedUserIdForMeters); } }
 
-    async function editReading(id) {
-        const { data: r } = await supabaseClient.from('readings').select('*').eq('id', id).single();
-        document.getElementById('editReadingId').value = r.id;
-        document.getElementById('editReadingDate').value = r.reading_date.slice(0,7);
-        document.getElementById('editReadingValue').value = r.value;
-        const { data: meters } = await supabaseClient.from('meters').select('id, name');
-        const select = document.getElementById('editReadingMeterId');
-        select.innerHTML = meters.map(m => `<option value="${m.id}" ${m.id == r.meter_id ? 'selected' : ''}>${m.name}</option>`).join('');
-        new bootstrap.Modal(document.getElementById('editReadingModal')).show();
-    }
-    async function saveReading() {
-        const id = document.getElementById('editReadingId').value;
-        const data = {
-            meter_id: document.getElementById('editReadingMeterId').value,
-            reading_date: document.getElementById('editReadingDate').value + '-01',
-            value: parseFloat(document.getElementById('editReadingValue').value)
-        };
-        if (id) await supabaseClient.from('readings').update(data).eq('id', id);
-        else await supabaseClient.from('readings').insert(data);
-        bootstrap.Modal.getInstance(document.getElementById('editReadingModal')).hide();
-        loadReadings();
-    }
+    // --- CRUD Показания ---
     async function deleteReading(id) { if(confirm('Удалить показание?')) { await supabaseClient.from('readings').delete().eq('id', id); loadReadings(); } }
 
-    async function editInvoice(id) {
-        const { data: inv } = await supabaseClient.from('invoices').select('*').eq('id', id).single();
-        document.getElementById('editInvoiceId').value = inv.id;
-        document.getElementById('editElectricity').value = inv.electricity_amount;
-        document.getElementById('editPlotFee').value = inv.plot_fee;
-        document.getElementById('editAreaFee').value = inv.area_fee;
-        document.getElementById('editPaid').value = inv.paid;
-        new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
-    }
-    async function saveInvoice() {
-        const id = document.getElementById('editInvoiceId').value;
-        const paid = document.getElementById('editPaid').value === 'true';
-        const electricity = parseFloat(document.getElementById('editElectricity').value);
-        const plot = parseFloat(document.getElementById('editPlotFee').value);
-        const area = parseFloat(document.getElementById('editAreaFee').value);
-        const data = {
-            electricity_amount: electricity,
-            plot_fee: plot,
-            area_fee: area,
-            total: electricity + plot + area,
-            paid: paid,
-            paid_date: paid ? new Date().toISOString().slice(0,10) : null
-        };
-        if (id) await supabaseClient.from('invoices').update(data).eq('id', id);
-        else alert('Новые счета создаются через "Рассчитать"');
-        bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
-        loadInvoices();
-    }
-    async function deleteInvoice(id) { if(confirm('Удалить счёт?')) { await supabaseClient.from('invoices').delete().eq('id', id); loadInvoices(); } }
-
+    // --- CRUD Доп. сборы ---
     async function editExtraFee(id) {
         const { data: f } = await supabaseClient.from('extra_fees').select('*').eq('id', id).single();
         document.getElementById('editExtraFeeId').value = f.id;
@@ -485,72 +617,122 @@
     }
     async function deleteExtraFee(id) { if(confirm('Удалить сбор?')) { await supabaseClient.from('extra_fees').delete().eq('id', id); loadExtraFees(); } }
 
-    // --- Расчёт счетов за месяц (с учётом истории тарифов) ---
+    // --- Назначение доп. сбора ---
+    async function assignExtraFee() {
+        const { data: users } = await supabaseClient.from('users').select('id, full_name').neq('role', 'admin');
+        const { data: fees } = await supabaseClient.from('extra_fees').select('id, name, amount');
+        const userSelect = document.getElementById('assignUserId');
+        const feeSelect = document.getElementById('assignExtraFeeId');
+        userSelect.innerHTML = users.map(u => `<option value="${u.id}">${u.full_name}</option>`).join('');
+        feeSelect.innerHTML = fees.map(f => `<option value="${f.id}" data-amount="${f.amount}">${f.name} (${f.amount}₽)</option>`).join('');
+        feeSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            document.getElementById('assignAmount').value = selected.dataset.amount;
+        });
+        if (fees.length) feeSelect.dispatchEvent(new Event('change'));
+        new bootstrap.Modal(document.getElementById('assignExtraFeeModal')).show();
+    }
+    async function saveAssignExtraFee() {
+        const userId = document.getElementById('assignUserId').value;
+        const extraFeeId = document.getElementById('assignExtraFeeId').value;
+        let amount = parseFloat(document.getElementById('assignAmount').value);
+        if (!userId || !extraFeeId || isNaN(amount)) return alert('Заполните все поля');
+        await supabaseClient.from('user_extra_fees').insert({ user_id: userId, extra_fee_id: extraFeeId, amount });
+        bootstrap.Modal.getInstance(document.getElementById('assignExtraFeeModal')).hide();
+        loadExtraFees();
+    }
+
+    // Назначить сбор всем пользователям (кроме админов)
+async function assignExtraFeeToAll() {
+    const { data: fees } = await supabaseClient.from('extra_fees').select('id, name, amount');
+    if (!fees.length) return alert('Сначала создайте хотя бы один дополнительный сбор');
+    const feeNames = fees.map((f,i) => `${i+1}. ${f.name} (${f.amount}₽)`).join('\n');
+    const feeIndex = prompt(`Выберите номер сбора:\n${feeNames}`);
+    if (!feeIndex) return;
+    const selectedFee = fees[parseInt(feeIndex)-1];
+    if (!selectedFee) return alert('Неверный номер');
+    
+    const { data: users } = await supabaseClient.from('users').select('id').neq('role', 'admin');
+    if (!confirm(`Назначить сбор "${selectedFee.name}" всем ${users.length} пользователям?`)) return;
+    
+    // Получаем существующие назначения этого сбора
+    const { data: existingAssignments } = await supabaseClient
+        .from('user_extra_fees')
+        .select('user_id')
+        .eq('extra_fee_id', selectedFee.id);
+    
+    const existingUserIds = new Set(existingAssignments.map(a => a.user_id));
+    
+    // Формируем записи только для тех, у кого ещё нет этого сбора
+    const newRecords = users
+        .filter(u => !existingUserIds.has(u.id))
+        .map(u => ({ 
+            user_id: u.id, 
+            extra_fee_id: selectedFee.id, 
+            amount: selectedFee.amount,
+            paid: false
+        }));
+    
+    if (newRecords.length === 0) {
+        alert('У всех пользователей уже назначен этот сбор');
+        return;
+    }
+    
+    const { error } = await supabaseClient.from('user_extra_fees').insert(newRecords);
+    if (error) {
+        alert('Ошибка: ' + error.message);
+    } else {
+        alert(`Сбор назначен ${newRecords.length} пользователям`);
+        loadExtraFees();
+    }
+}
+
+    // --- Расчёт счетов ---
     async function calculateInvoicesForMonth(yearMonth) {
         const targetDate = new Date(yearMonth + '-01');
-        // Получить тариф, действующий на эту дату
-        const { data: tariff } = await supabaseClient
-            .from('tariff_history')
-            .select('*')
-            .lte('valid_from', targetDate.toISOString().slice(0,10))
-            .order('valid_from', { ascending: false })
-            .limit(1);
+        // Тариф на электроэнергию
+        const { data: tariff } = await supabaseClient.from('tariff_history')
+            .select('*').lte('valid_from', targetDate.toISOString().slice(0,10)).order('valid_from', { ascending: false }).limit(1);
         const t = tariff?.[0] || { t1_rate: 6.2, t2_rate: 7.42, t3_rate: 0.36, t1_limit: 100 };
-        // Получить текущие ставки взносов
-        const { data: settingsRows } = await supabaseClient.from('settings').select('*');
-        const settings = Object.fromEntries(settingsRows.map(s => [s.key, s.value]));
-        const plotFeeRate = settings.plot_fee_rate;
-        const areaFeeRate = settings.area_fee_rate;
-        // Получить всех пользователей (не админов)
-        const { data: users } = await supabaseClient.from('users').select('*').neq('role', 'admin');
+        // Ставки взносов
+        const { data: feeRates } = await supabaseClient.from('fee_rates_history')
+            .select('*').lte('valid_from', targetDate.toISOString().slice(0,10)).order('valid_from', { ascending: false }).limit(1);
+        const rates = feeRates?.[0] || { plot_fee_rate: 939, area_fee_rate: 44 };
 
+        const { data: users } = await supabaseClient.from('users').select('*').neq('role', 'admin');
         for (const user of users) {
-            // Получить все счётчики пользователя
             const { data: meters } = await supabaseClient.from('meters').select('id').eq('user_id', user.id);
             let totalConsumption = 0;
             for (const meter of meters) {
-                const { data: current } = await supabaseClient.from('readings')
-                    .select('value').eq('meter_id', meter.id).eq('reading_date', targetDate.toISOString().slice(0,10)).single();
+                const { data: current } = await supabaseClient.from('readings').select('value').eq('meter_id', meter.id).eq('reading_date', targetDate.toISOString().slice(0,10)).single();
                 if (!current) continue;
-                const prevDate = new Date(targetDate);
-                prevDate.setMonth(prevDate.getMonth() - 1);
-                const { data: prev } = await supabaseClient.from('readings')
-                    .select('value').eq('meter_id', meter.id).eq('reading_date', prevDate.toISOString().slice(0,10)).single();
+                const prevDate = new Date(targetDate); prevDate.setMonth(prevDate.getMonth() - 1);
+                const { data: prev } = await supabaseClient.from('readings').select('value').eq('meter_id', meter.id).eq('reading_date', prevDate.toISOString().slice(0,10)).single();
                 const prevValue = prev ? prev.value : 0;
                 const consumption = current.value - prevValue;
                 if (consumption > 0) totalConsumption += consumption;
             }
-            // Расчёт суммы за свет
             let electricityAmount = 0;
             if (totalConsumption > 0) {
                 const t3Part = totalConsumption * t.t3_rate;
                 let t1Part = 0, t2Part = 0;
-                if (totalConsumption <= t.t1_limit) {
-                    t1Part = totalConsumption * t.t1_rate;
-                } else {
-                    t1Part = t.t1_limit * t.t1_rate;
-                    t2Part = (totalConsumption - t.t1_limit) * t.t2_rate;
-                }
+                if (totalConsumption <= t.t1_limit) t1Part = totalConsumption * t.t1_rate;
+                else { t1Part = t.t1_limit * t.t1_rate; t2Part = (totalConsumption - t.t1_limit) * t.t2_rate; }
                 electricityAmount = t3Part + t1Part + t2Part;
             }
-            const plotFee = (user.plots_count || 1) * plotFeeRate;
-            const areaFee = (user.area_sotok || 0) * areaFeeRate;
+            const plotFee = (user.plots_count || 1) * rates.plot_fee_rate;
+            const areaFee = (user.area_sotok || 0) * rates.area_fee_rate;
             const total = electricityAmount + plotFee + areaFee;
             await supabaseClient.from('invoices').upsert({
-                user_id: user.id,
-                year_month: targetDate.toISOString().slice(0,10),
-                electricity_amount: electricityAmount,
-                plot_fee: plotFee,
-                area_fee: areaFee,
-                total: total,
-                paid: false
+                user_id: user.id, year_month: targetDate.toISOString().slice(0,10),
+                electricity_amount: electricityAmount, plot_fee: plotFee, area_fee: areaFee, total, paid: false
             }, { onConflict: 'user_id,year_month' });
         }
         alert(`Счета за ${yearMonth} рассчитаны!`);
         loadInvoices();
     }
 
-    // --- Добавление нового тарифа в историю ---
+    // --- Добавление тарифа на электроэнергию ---
     async function addTariff() {
         const valid_from = prompt('Дата начала действия (ГГГГ-ММ-ДД):', new Date().toISOString().slice(0,10));
         if (!valid_from) return;
@@ -558,103 +740,143 @@
         const t2 = parseFloat(prompt('T2 (₽ свыше 100):', '7.42'));
         const t3 = parseFloat(prompt('T3 (₽ на весь объём):', '0.36'));
         const limit = parseFloat(prompt('Лимит для T1 (кВт·ч):', '100'));
-        if (isNaN(t1) || isNaN(t2) || isNaN(t3) || isNaN(limit)) return;
+        if (isNaN(t1)||isNaN(t2)||isNaN(t3)||isNaN(limit)) return;
         await supabaseClient.from('tariff_history').insert({ valid_from, t1_rate: t1, t2_rate: t2, t3_rate: t3, t1_limit: limit });
         loadTariffHistory();
     }
 
-    // --- Сохранение настроек ---
-    async function saveSettings(e) {
-        e.preventDefault();
-        const settings = [
-            { key: 'plot_fee_rate', value: document.getElementById('plot_fee_rate').value },
-            { key: 'area_fee_rate', value: document.getElementById('area_fee_rate').value }
-        ];
-        for (const s of settings) {
-            await supabaseClient.from('settings').upsert({ key: s.key, value: parseFloat(s.value) });
-        }
-        alert('Настройки сохранены');
+    // --- Добавление ставки взносов ---
+    async function addFeeRate() {
+        document.getElementById('feeRateValidFrom').value = new Date().toISOString().slice(0,10);
+        document.getElementById('feeRatePlot').value = '';
+        document.getElementById('feeRateArea').value = '';
+        new bootstrap.Modal(document.getElementById('addFeeRateModal')).show();
+    }
+    async function saveFeeRate() {
+        const valid_from = document.getElementById('feeRateValidFrom').value;
+        const plot = parseFloat(document.getElementById('feeRatePlot').value);
+        const area = parseFloat(document.getElementById('feeRateArea').value);
+        if (!valid_from || isNaN(plot) || isNaN(area)) return alert('Заполните корректно');
+        await supabaseClient.from('fee_rates_history').insert({ valid_from, plot_fee_rate: plot, area_fee_rate: area });
+        bootstrap.Modal.getInstance(document.getElementById('addFeeRateModal')).hide();
+        loadFeeRatesHistory();
     }
 
     // --- Экспорт ---
     async function exportInvoices() {
         const { data } = await supabaseClient.from('invoices').select('*, users(full_name)');
-        const exportData = data.map(i => ({ ID: i.id, Пользователь: i.users?.full_name, Месяц: i.year_month, Электричество: i.electricity_amount, Взнос_участок: i.plot_fee, Взнос_сотки: i.area_fee, Итого: i.total, Оплачено: i.paid }));
-        exportToCSV(exportData, 'invoices.csv');
+        exportToCSV(data.map(i => ({ ID: i.id, Пользователь: i.users?.full_name, Месяц: i.year_month, Электричество: i.electricity_amount, Взнос_участок: i.plot_fee, Взнос_сотки: i.area_fee, Итого: i.total, Оплачено: i.paid })), 'invoices.csv');
     }
     async function exportReadings() {
         const { data } = await supabaseClient.from('readings').select('*, meters(name, users(full_name))');
-        const exportData = data.map(r => ({ ID: r.id, Счётчик: r.meters?.name, Пользователь: r.meters?.users?.full_name, Месяц: r.reading_date, Показание: r.value }));
-        exportToCSV(exportData, 'readings.csv');
+        exportToCSV(data.map(r => ({ ID: r.id, Счётчик: r.meters?.name, Пользователь: r.meters?.users?.full_name, Месяц: r.reading_date, Показание: r.value })), 'readings.csv');
     }
     function exportToCSV(data, filename) {
-        const replacer = (key, value) => value === null ? '' : value;
         const header = Object.keys(data[0]);
-        const csv = data.map(row => header.map(field => JSON.stringify(row[field], replacer)).join(',')).join('\n');
+        const csv = data.map(row => header.map(field => JSON.stringify(row[field] ?? '')).join(',')).join('\n');
         const blob = new Blob([header.join(',') + '\n' + csv], { type: 'text/csv' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
     }
 
-    // --- Инициализация вкладок ---
+    // --- Инициализация ---
     function initTabs() {
-        document.querySelectorAll('[data-tab]').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tabId = tab.dataset.tab;
-                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-                document.getElementById(tabId).classList.add('active');
-                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-                tab.classList.add('active');
-                // Перезагружаем данные активной вкладки
-                if (tabId === 'users') loadUsers();
-                if (tabId === 'meters') loadMeters();
-                if (tabId === 'readings') loadReadings();
-                if (tabId === 'invoices') loadInvoices();
-                if (tabId === 'extraFees') loadExtraFees();
-                if (tabId === 'tariffs') loadTariffHistory();
-                if (tabId === 'settings') loadSettings();
-            });
-        });
+        document.querySelectorAll('[data-tab]').forEach(tab => tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabId = tab.dataset.tab;
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            tab.classList.add('active');
+            if (tabId === 'usersMeters') loadUsers();
+            else if (tabId === 'readings') loadReadings();
+            else if (tabId === 'invoices') loadInvoices();
+            else if (tabId === 'extraFees') loadExtraFees();
+            else if (tabId === 'tariffs') { loadTariffHistory(); loadFeeRatesHistory(); }
+        }));
     }
 
-    // --- Заполнение фильтра пользователей ---
     async function populateUserFilter() {
         const { data } = await supabaseClient.from('users').select('id, full_name');
         const select = document.getElementById('filterUser');
         select.innerHTML = '<option value="">Все</option>' + data.map(u => `<option value="${u.id}">${u.full_name}</option>`).join('');
     }
 
-    // --- Обработчики кнопок ---
+    // --- Обработчики событий ---
     document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.href = 'index.html'; });
-    document.getElementById('calculateInvoicesBtn').addEventListener('click', () => {
-        let month = prompt('Введите месяц (ГГГГ-ММ)', new Date().toISOString().slice(0,7));
-        if (month) calculateInvoicesForMonth(month);
-    });
+    document.getElementById('calculateInvoicesBtn').addEventListener('click', () => { let m = prompt('Введите месяц (ГГГГ-ММ)'); if (m) calculateInvoicesForMonth(m); });
     document.getElementById('exportInvoicesBtn').addEventListener('click', exportInvoices);
     document.getElementById('exportReadingsBtn').addEventListener('click', exportReadings);
-    document.getElementById('addUserBtn').addEventListener('click', () => { document.getElementById('editUserId').value = ''; document.getElementById('editFullName').value = ''; document.getElementById('editUsername').value = ''; document.getElementById('editPassword').value = ''; document.getElementById('editPlotsCount').value = 1; document.getElementById('editAreaSotok').value = 0; document.getElementById('editRole').value = 'user'; new bootstrap.Modal(document.getElementById('editUserModal')).show(); });
-    document.getElementById('addMeterBtn').addEventListener('click', async () => { document.getElementById('editMeterId').value = ''; document.getElementById('editMeterName').value = ''; const { data: users } = await supabaseClient.from('users').select('id, full_name'); const select = document.getElementById('editMeterUserId'); select.innerHTML = users.map(u => `<option value="${u.id}">${u.full_name}</option>`).join(''); new bootstrap.Modal(document.getElementById('editMeterModal')).show(); });
-    document.getElementById('addReadingBtn').addEventListener('click', async () => { document.getElementById('editReadingId').value = ''; document.getElementById('editReadingValue').value = ''; document.getElementById('editReadingDate').value = new Date().toISOString().slice(0,7); const { data: meters } = await supabaseClient.from('meters').select('id, name'); const select = document.getElementById('editReadingMeterId'); select.innerHTML = meters.map(m => `<option value="${m.id}">${m.name}</option>`).join(''); new bootstrap.Modal(document.getElementById('editReadingModal')).show(); });
-    document.getElementById('addExtraFeeBtn').addEventListener('click', () => { document.getElementById('editExtraFeeId').value = ''; document.getElementById('editExtraFeeName').value = ''; document.getElementById('editExtraFeeAmount').value = ''; document.getElementById('editExtraFeeMonth').value = new Date().toISOString().slice(0,7); new bootstrap.Modal(document.getElementById('editExtraFeeModal')).show(); });
+    document.getElementById('addUserBtn').addEventListener('click', () => { 
+        document.getElementById('editUserId').value = ''; 
+        ['FullName','Username','Password'].forEach(f => document.getElementById('edit'+f).value = ''); 
+        document.getElementById('editPlotsCount').value = 1; 
+        document.getElementById('editAreaSotok').value = 0; 
+        document.getElementById('editRole').value = 'user'; 
+        new bootstrap.Modal(document.getElementById('editUserModal')).show(); 
+    });
+    document.getElementById('addMeterForUserBtn').addEventListener('click', () => { 
+        if (!selectedUserIdForMeters) return alert('Сначала выберите пользователя'); 
+        document.getElementById('editMeterId').value = ''; 
+        document.getElementById('editMeterUserId').value = selectedUserIdForMeters; 
+        document.getElementById('editMeterName').value = ''; 
+        new bootstrap.Modal(document.getElementById('editMeterModal')).show(); 
+    });
+    document.getElementById('addReadingBtn').addEventListener('click', async () => { 
+        document.getElementById('editReadingId').value = ''; 
+        document.getElementById('editReadingValue').value = ''; 
+        document.getElementById('editReadingDate').value = new Date().toISOString().slice(0,7); 
+        const { data: meters } = await supabaseClient.from('meters').select('id, name'); 
+        document.getElementById('editReadingMeterId').innerHTML = meters.map(m => `<option value="${m.id}">${m.name}</option>`).join(''); 
+        new bootstrap.Modal(document.getElementById('editReadingModal')).show(); 
+    });
+    document.getElementById('saveReadingBtn').addEventListener('click', async () => {
+        const id = document.getElementById('editReadingId').value;
+        const data = {
+            meter_id: document.getElementById('editReadingMeterId').value,
+            reading_date: document.getElementById('editReadingDate').value + '-01',
+            value: parseFloat(document.getElementById('editReadingValue').value)
+        };
+        if (id) await supabaseClient.from('readings').update(data).eq('id', id);
+        else await supabaseClient.from('readings').insert(data);
+        bootstrap.Modal.getInstance(document.getElementById('editReadingModal')).hide();
+        loadReadings();
+    });
+    document.getElementById('addExtraFeeBtn').addEventListener('click', () => { 
+        document.getElementById('editExtraFeeId').value = ''; 
+        ['Name','Amount'].forEach(f => document.getElementById('editExtraFee'+f).value = ''); 
+        document.getElementById('editExtraFeeMonth').value = new Date().toISOString().slice(0,7); 
+        new bootstrap.Modal(document.getElementById('editExtraFeeModal')).show(); 
+    });
+    document.getElementById('assignExtraFeeBtn').addEventListener('click', assignExtraFee);
+    document.getElementById('assignExtraFeeToAllBtn').addEventListener('click', assignExtraFeeToAll);
     document.getElementById('addTariffBtn').addEventListener('click', addTariff);
-    document.getElementById('settingsForm').addEventListener('submit', saveSettings);
-    document.getElementById('filterUser').addEventListener('change', () => loadInvoices());
-    document.getElementById('filterPaid').addEventListener('change', () => loadInvoices());
-
+    document.getElementById('addFeeRateBtn').addEventListener('click', addFeeRate);
+    document.getElementById('filterUser').addEventListener('change', loadInvoices);
+    document.getElementById('filterPaid').addEventListener('change', loadInvoices);
     document.getElementById('saveUserBtn').addEventListener('click', saveUser);
     document.getElementById('saveMeterBtn').addEventListener('click', saveMeter);
-    document.getElementById('saveReadingBtn').addEventListener('click', saveReading);
-    document.getElementById('saveInvoiceBtn').addEventListener('click', saveInvoice);
     document.getElementById('saveExtraFeeBtn').addEventListener('click', saveExtraFee);
+    document.getElementById('saveAssignExtraFeeBtn').addEventListener('click', saveAssignExtraFee);
+    document.getElementById('saveFeeRateBtn').addEventListener('click', saveFeeRate);
+    
+    // Фильтр показаний
+    document.getElementById('readingsMonthFilter').addEventListener('change', function() {
+        const customInput = document.getElementById('customMonthInput');
+        if (this.value === 'custom') {
+            customInput.style.display = 'inline-block';
+            customInput.value = new Date().toISOString().slice(0,7);
+        } else {
+            customInput.style.display = 'none';
+            applyReadingsFilter();
+        }
+    });
+    document.getElementById('customMonthInput').addEventListener('change', applyReadingsFilter);
 
     (async () => {
         await checkAuth();
         initTabs();
         await populateUserFilter();
-        loadUsers(); // активная вкладка
+        loadUsers();
     })();
 </script>
 </body>
