@@ -351,7 +351,6 @@
                     <td>${g.amount.toFixed(2)}</td>
                     <td class="text-center">
                         <input type="checkbox" class="elec-group-paid" data-month="${g.month}" ${g.paidAll?'checked':''}>
-                        ${g.paidAll?'✅':''}
                     </td>
                 </tr>`;
             }).join('');
@@ -381,7 +380,7 @@
         extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
     }
 
-    // Глобальное делегирование событий для всех чекбоксов
+    // Глобальное делегирование событий для чекбоксов
     document.addEventListener('change', async (e) => {
         const target = e.target;
         if (!target.matches('input[type="checkbox"]')) return;
@@ -393,23 +392,53 @@
             await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
             loadElectricityInvoices(); loadTotalDebt();
         }
-        // Электричество групповое
+        // Электричество групповое (оптимистичное обновление)
         else if (target.classList.contains('elec-group-paid')) {
             const month = target.dataset.month;
             const paid = target.checked;
+            
+            // 1. Оптимистично обновляем локальные данные
+            const updatedData = (window.electricityData || []).map(inv => {
+                if (inv.month === month) {
+                    return { ...inv, paid: paid, paid_by: paid ? 'user' : null };
+                }
+                return inv;
+            });
+            window.electricityData = updatedData;
+            
+            // 2. Перерисовываем таблицу немедленно
+            filterAndRender();
+            
+            // 3. Отправляем запрос на сервер
             const { data: invoicesToUpdate } = await supabaseClient
                 .from('meter_invoices')
                 .select('id')
                 .in('meter_id', userMeters.map(m=>m.id))
                 .filter('year_month', 'like', month+'%');
+                
             if (invoicesToUpdate && invoicesToUpdate.length > 0) {
                 const ids = invoicesToUpdate.map(inv => inv.id);
-                await supabaseClient
+                const { error } = await supabaseClient
                     .from('meter_invoices')
                     .update({ paid, paid_by: paid ? 'user' : null, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
                     .in('id', ids);
+                    
+                if (error) {
+                    // Откат изменений при ошибке
+                    const rolledBackData = window.electricityData.map(inv => {
+                        if (inv.month === month) {
+                            return { ...inv, paid: !paid, paid_by: !paid ? 'user' : null };
+                        }
+                        return inv;
+                    });
+                    window.electricityData = rolledBackData;
+                    filterAndRender();
+                    alert('Ошибка обновления: ' + error.message);
+                }
             }
-            loadElectricityInvoices(); loadTotalDebt();
+            
+            // Обновляем общую задолженность
+            loadTotalDebt();
         }
         // Взносы: участок
         else if (target.classList.contains('fee-plot-paid')) {
