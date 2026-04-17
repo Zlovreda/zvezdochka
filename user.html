@@ -12,6 +12,7 @@
         .section-card{margin-bottom:1.5rem;box-shadow:0 .125rem .25rem rgba(0,0,0,.075)}
         .meter-input-card{background:#f1f3f5;border-radius:.5rem;padding:1rem;margin-bottom:1rem}
         .table-responsive{font-size:.9rem}
+        .tariff-table td, .tariff-table th{padding:0.3rem}
     </style>
 </head>
 <body>
@@ -43,6 +44,32 @@
                     <a href="http://zvezdo-4-ka.ru/category/реквизиты-снт-звёздочка/" target="_blank" class="btn btn-outline-primary btn-sm">Реквизиты для оплаты</a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Блок действующих тарифов -->
+    <div class="card section-card">
+        <div class="card-header bg-secondary text-white">Действующие тарифы и ставки</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Электроэнергия <span class="text-muted small">(с <span id="tariffValidFrom"></span>)</span></h6>
+                    <table class="table table-sm table-bordered tariff-table">
+                        <tr><th>T1 (до <span id="t1Limit"></span> кВт·ч)</th><td><span id="t1Rate"></span> ₽/кВт·ч</td></tr>
+                        <tr><th>T2 (свыше лимита)</th><td><span id="t2Rate"></span> ₽/кВт·ч</td></tr>
+                        <tr><th>T3 (экологический сбор)</th><td><span id="t3Rate"></span> ₽/кВт·ч</td></tr>
+                        <tr class="table-light"><th>Пример расчёта:</th><td colspan="2"><small id="calcExample"></small></td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Членские взносы <span class="text-muted small">(с <span id="feeValidFrom"></span>)</span></h6>
+                    <table class="table table-sm table-bordered tariff-table">
+                        <tr><th>За участок</th><td><span id="plotFeeRate"></span> ₽</td></tr>
+                        <tr><th>За сотку</th><td><span id="areaFeeRate"></span> ₽/сотка</td></tr>
+                    </table>
+                </div>
+            </div>
+            <small class="text-muted">* Тарифы применяются к показаниям соответствующего месяца. При оплате вы можете увидеть детализацию в квитанции.</small>
         </div>
     </div>
 
@@ -97,18 +124,53 @@
     
     let currentUser = null, userMeters = [], previousMap = new Map();
 
-    // Функция форматирования месяца (принимает "2026-03-01" или "2026-03")
+    // Форматирование месяца
     function formatMonth(dateStr) {
+        if (!dateStr) return '';
         let year, month;
         if (dateStr.includes('-')) {
             const parts = dateStr.split('-');
             year = parts[0];
             month = parts[1];
-        } else {
-            return dateStr;
-        }
+        } else return dateStr;
         const date = new Date(year, month-1, 1);
         return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
+    }
+
+    // Загрузка текущих тарифов (на сегодня)
+    async function loadCurrentTariffs() {
+        const today = new Date().toISOString().slice(0,10);
+        // Тариф на электричество
+        const { data: tariff } = await supabaseClient
+            .from('tariff_history')
+            .select('*')
+            .lte('valid_from', today)
+            .order('valid_from', { ascending: false })
+            .limit(1);
+        const t = tariff?.[0] || { valid_from: '2025-01-01', t1_rate: 6.2, t2_rate: 7.42, t3_rate: 0.36, t1_limit: 100 };
+        document.getElementById('tariffValidFrom').innerText = formatMonth(t.valid_from);
+        document.getElementById('t1Rate').innerText = t.t1_rate;
+        document.getElementById('t2Rate').innerText = t.t2_rate;
+        document.getElementById('t3Rate').innerText = t.t3_rate;
+        document.getElementById('t1Limit').innerText = t.t1_limit;
+        // Пример расчёта для 150 кВт·ч
+        const exampleConsumption = 150;
+        let exampleAmount = exampleConsumption * t.t3_rate;
+        if (exampleConsumption <= t.t1_limit) exampleAmount += exampleConsumption * t.t1_rate;
+        else exampleAmount += t.t1_limit * t.t1_rate + (exampleConsumption - t.t1_limit) * t.t2_rate;
+        document.getElementById('calcExample').innerHTML = `При расходе 150 кВт·ч: ≈ ${exampleAmount.toFixed(2)} ₽ (с учётом T1, T2, T3)`;
+
+        // Ставки взносов
+        const { data: feeRates } = await supabaseClient
+            .from('fee_rates_history')
+            .select('*')
+            .lte('valid_from', today)
+            .order('valid_from', { ascending: false })
+            .limit(1);
+        const fr = feeRates?.[0] || { valid_from: '2025-01-01', plot_fee_rate: 939, area_fee_rate: 44 };
+        document.getElementById('feeValidFrom').innerText = formatMonth(fr.valid_from);
+        document.getElementById('plotFeeRate').innerText = fr.plot_fee_rate;
+        document.getElementById('areaFeeRate').innerText = fr.area_fee_rate;
     }
 
     async function checkAuth() {
@@ -203,7 +265,7 @@
         // Электричество
         let filtered = showUnpaid ? (window.electricityData||[]).filter(r=>!r.paid) : (window.electricityData||[]);
         const elecBody = document.getElementById('electricityInvoicesBody');
-        elecBody.innerHTML = filtered.map(r=>`<tr><td>${formatMonth(r.month)}</td><td>${r.meter_name}</td><td>${r.consumption.toFixed(2)}</td><td>${r.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="elec-paid-checkbox" data-id="${r.id}" ${r.paid?'checked':''}> ${r.paid?(r.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        elecBody.innerHTML = filtered.map(r=>`<td>${formatMonth(r.month)}</td><td>${r.meter_name}</td><td>${r.consumption.toFixed(2)}</td><td>${r.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="elec-paid-checkbox" data-id="${r.id}" ${r.paid?'checked':''}> ${r.paid?(r.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
         // Взносы
         let feeFiltered = showUnpaid ? (window.feeData||[]).filter(f=>!f.plot_paid || !f.area_paid) : (window.feeData||[]);
         const feeBody = document.getElementById('feeInvoicesBody');
@@ -211,7 +273,7 @@
         // Доп. сборы
         let extraFiltered = showUnpaid ? (window.extraData||[]).filter(e=>!e.paid) : (window.extraData||[]);
         const extraBody = document.getElementById('extraFeesBody');
-        extraBody.innerHTML = extraFiltered.map(e=>`<td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
         attachCheckboxEvents();
     }
 
@@ -272,7 +334,7 @@
     async function loadLastReadings() {
         const {data}=await supabaseClient.from('readings').select('reading_date, value, meters(name)').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:false}).limit(5);
         const tbody = document.getElementById('lastReadingsBody');
-        tbody.innerHTML = (data||[]).map(r=>`<tr><td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
+        tbody.innerHTML = (data||[]).map(r=>`<td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
     }
 
     function showMsg(el,msg,type){ const d=document.getElementById(el); d.innerHTML=`<div class="alert alert-${type}">${msg}</div>`; setTimeout(()=>d.innerHTML='',5000); }
@@ -283,6 +345,7 @@
 
     (async()=>{
         await checkAuth();
+        await loadCurrentTariffs();
         await loadUserMeters();
         await loadElectricityInvoices();
         await loadFeeInvoices();
