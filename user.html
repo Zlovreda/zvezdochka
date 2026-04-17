@@ -21,7 +21,7 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
-        .password-section {
+        .password-section, .settings-section {
             margin-top: 15px;
             border-top: 1px dashed #ccc;
             padding-top: 15px;
@@ -42,7 +42,7 @@
                     <h5>Общая задолженность</h5>
                     <h2 id="totalDebt">0 ₽</h2>
                     <small>Электричество + взносы + доп. сборы</small>
-                    <hr class="bg-white">
+                    <hr class="bg-white opacity-50">
                     <a href="http://zvezdo-4-ka.ru/category/реквизиты-снт-звёздочка/" target="_blank" class="btn btn-light btn-sm">Реквизиты для оплаты</a>
                 </div>
             </div>
@@ -102,20 +102,29 @@
             </div>
         </div>
         <div class="col-lg-7">
-            <div class="d-flex justify-content-end mb-2 gap-3 flex-wrap">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> 
-                    <label>Только неоплаченные</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="groupElectricity"> 
-                    <label>Группировать счета за электричество</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="groupFeePayment"> 
-                    <label>Группировать оплату взносов</label>
+            <!-- Настройки отображения (сворачиваемые) -->
+            <div class="mb-3">
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#displaySettingsCollapse" aria-expanded="false" aria-controls="displaySettingsCollapse">
+                    <i class="bi bi-sliders2"></i> Настройки отображения
+                </button>
+                <div class="collapse mt-2" id="displaySettingsCollapse">
+                    <div class="card card-body bg-light">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> 
+                            <label>Только неоплаченные</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="groupElectricity"> 
+                            <label>Группировать счета за электричество</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="groupFeePayment"> 
+                            <label>Группировать оплату взносов</label>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="card section-card">
                 <div class="card-header bg-warning text-dark">Счета за электричество (по счётчикам)</div>
                 <div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Месяц</th><th>Счётчик</th><th>Расход (кВт·ч)</th><th>Сумма (₽)</th><th>Оплачено</th></tr></thead><tbody id="electricityInvoicesBody"></tbody></table></div>
@@ -160,7 +169,7 @@
     </div>
 </div>
 
-<!-- Bootstrap JS для collapse -->
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
@@ -323,7 +332,6 @@
         const elecBody = document.getElementById('electricityInvoicesBody');
         
         if (groupElectricity) {
-            // Группировка по месяцу и meter_id? Нет, группируем по месяцу (все счётчики вместе)
             const grouped = new Map();
             for (const r of filtered) {
                 const key = r.month;
@@ -334,7 +342,7 @@
                         amount: 0, 
                         paidAll: true, 
                         ids: [],
-                        year_month: r.year_month // для обновления
+                        year_month: r.year_month
                     });
                 }
                 const g = grouped.get(key);
@@ -345,7 +353,6 @@
             }
             const groupedArray = Array.from(grouped.values()).sort((a,b)=>b.month.localeCompare(a.month));
             elecBody.innerHTML = groupedArray.map(g=>{
-                // Для групповой оплаты добавим чекбокс
                 return `<tr>
                     <td>${formatMonth(g.month)}</td>
                     <td>Все счётчики</td>
@@ -381,77 +388,69 @@
         let extraFiltered = showUnpaid ? (window.extraData||[]).filter(e=>!e.paid) : (window.extraData||[]);
         const extraBody = document.getElementById('extraFeesBody');
         extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
-        
-        attachCheckboxEvents();
     }
 
-    function attachCheckboxEvents() {
-        // Индивидуальные чекбоксы электричества (только если не группировка)
-        if (!groupElectricity) {
-            document.querySelectorAll('.elec-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
-                const id=cb.dataset.id, paid=e.target.checked;
+    // Делегирование событий для чекбоксов (один раз при загрузке)
+    function setupCheckboxDelegation() {
+        // Электричество
+        document.getElementById('electricityInvoicesBody').addEventListener('change', async (e) => {
+            const target = e.target;
+            if (target.classList.contains('elec-paid-checkbox')) {
+                const id = target.dataset.id;
+                const paid = target.checked;
                 await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
                 loadElectricityInvoices(); loadTotalDebt();
-            }));
-        } else {
-            // Групповые чекбоксы электричества
-            document.querySelectorAll('.elec-group-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-                const month = cb.dataset.month;
-                const paid = e.target.checked;
-                // Получить все счета за этот месяц для пользователя
+            } else if (target.classList.contains('elec-group-paid')) {
+                const month = target.dataset.month;
+                const paid = target.checked;
                 const { data: invoicesToUpdate } = await supabaseClient
                     .from('meter_invoices')
                     .select('id')
                     .in('meter_id', userMeters.map(m=>m.id))
                     .filter('year_month', 'like', month+'%');
-                
                 if (invoicesToUpdate && invoicesToUpdate.length > 0) {
                     const ids = invoicesToUpdate.map(inv => inv.id);
                     await supabaseClient
                         .from('meter_invoices')
-                        .update({
-                            paid: paid,
-                            paid_by: paid ? 'user' : null,
-                            paid_date: paid ? new Date().toISOString().slice(0,10) : null
-                        })
+                        .update({ paid, paid_by: paid ? 'user' : null, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
                         .in('id', ids);
                 }
                 loadElectricityInvoices(); loadTotalDebt();
-            }));
-        }
+            }
+        });
 
         // Взносы
-        if (groupFeePayment) {
-            document.querySelectorAll('.fee-full-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-                const month=cb.dataset.month, paid=e.target.checked;
-                await supabaseClient.from('invoices').update({
-                    plot_fee_paid: paid,
-                    plot_fee_paid_by: paid?'user':null,
-                    plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null,
-                    area_fee_paid: paid,
-                    area_fee_paid_by: paid?'user':null,
-                    area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
-                }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
-                loadFeeInvoices(); loadTotalDebt();
-            }));
-        } else {
-            document.querySelectorAll('.fee-plot-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-                const month=cb.dataset.month, paid=e.target.checked;
+        document.getElementById('feeInvoicesBody').addEventListener('change', async (e) => {
+            const target = e.target;
+            const month = target.dataset.month;
+            if (target.classList.contains('fee-plot-paid')) {
+                const paid = target.checked;
                 await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
                 loadFeeInvoices(); loadTotalDebt();
-            }));
-            document.querySelectorAll('.fee-area-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
-                const month=cb.dataset.month, paid=e.target.checked;
+            } else if (target.classList.contains('fee-area-paid')) {
+                const paid = target.checked;
                 await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
                 loadFeeInvoices(); loadTotalDebt();
-            }));
-        }
+            } else if (target.classList.contains('fee-full-paid')) {
+                const paid = target.checked;
+                await supabaseClient.from('invoices').update({
+                    plot_fee_paid: paid, plot_fee_paid_by: paid?'user':null, plot_fee_paid_date: paid?new Date().toISOString().slice(0,10):null,
+                    area_fee_paid: paid, area_fee_paid_by: paid?'user':null, area_fee_paid_date: paid?new Date().toISOString().slice(0,10):null
+                }).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+                loadFeeInvoices(); loadTotalDebt();
+            }
+        });
 
-        document.querySelectorAll('.extra-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
-            const id=cb.dataset.id, paid=e.target.checked;
-            await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
-            loadExtraFees(); loadTotalDebt();
-        }));
+        // Доп. сборы
+        document.getElementById('extraFeesBody').addEventListener('change', async (e) => {
+            const target = e.target;
+            if (target.classList.contains('extra-paid-checkbox')) {
+                const id = target.dataset.id;
+                const paid = target.checked;
+                await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+                loadExtraFees(); loadTotalDebt();
+            }
+        });
     }
 
     async function submitReadings() {
@@ -504,7 +503,7 @@
         document.getElementById('readingMonth').value = `${year}-${month}`;
     }
 
-    // --- Смена пароля ---
+    // Смена пароля
     async function changePassword() {
         const currentPass = document.getElementById('currentPassword').value.trim();
         const newPass = document.getElementById('newPassword').value.trim();
@@ -553,15 +552,16 @@
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('confirmPassword').value = '';
-                // Закрыть collapse после успеха
-                bootstrap.Collapse.getInstance(document.getElementById('passwordCollapse'))?.hide();
+                const collapseEl = document.getElementById('passwordCollapse');
+                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) bsCollapse.hide();
             }
         } catch (err) {
             showMsg('passwordMsg', 'Неизвестная ошибка', 'danger');
         }
     }
 
-    // Привязка событий
+    // Инициализация
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
     document.getElementById('submitReadingsBtn').addEventListener('click',submitReadings);
     document.getElementById('showOnlyUnpaid').addEventListener('change',filterAndRender);
@@ -574,6 +574,9 @@
         filterAndRender();
     });
     document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
+
+    // Настройка делегирования событий для таблиц
+    setupCheckboxDelegation();
 
     (async()=>{
         await checkAuth();
