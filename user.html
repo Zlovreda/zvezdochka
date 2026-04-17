@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- Блок объявлений перенесён сюда -->
+    <!-- Блок объявлений -->
     <div class="card section-card mb-4">
         <div class="card-header bg-light"><i class="bi bi-megaphone"></i> Объявления от Правления</div>
         <div class="card-body" id="announcementsContainer">Загрузка...</div>
@@ -96,6 +96,20 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     let currentUser = null, userMeters = [], previousMap = new Map();
+
+    // Функция форматирования месяца (принимает "2026-03-01" или "2026-03")
+    function formatMonth(dateStr) {
+        let year, month;
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            year = parts[0];
+            month = parts[1];
+        } else {
+            return dateStr;
+        }
+        const date = new Date(year, month-1, 1);
+        return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
+    }
 
     async function checkAuth() {
         const u = localStorage.getItem('currentUser');
@@ -184,8 +198,6 @@
         document.getElementById('totalDebt').innerText=debt.toFixed(2)+' ₽';
     }
 
-    function formatMonth(monthStr){ const d=new Date(monthStr+'-01'); return d.toLocaleString('ru',{month:'long',year:'numeric'}); }
-
     function filterAndRender() {
         const showUnpaid = document.getElementById('showOnlyUnpaid').checked;
         // Электричество
@@ -199,7 +211,7 @@
         // Доп. сборы
         let extraFiltered = showUnpaid ? (window.extraData||[]).filter(e=>!e.paid) : (window.extraData||[]);
         const extraBody = document.getElementById('extraFeesBody');
-        extraBody.innerHTML = extraFiltered.map(e=>`<tr><td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
+        extraBody.innerHTML = extraFiltered.map(e=>`<td>${e.name}</td><td>${formatMonth(e.month)}</td><td>${e.amount.toFixed(2)}</td><td class="text-center"><input type="checkbox" class="extra-paid-checkbox" data-id="${e.id}" ${e.paid?'checked':''}> ${e.paid?(e.paid_by==='user'?'👤':'👑'):''}</td></tr>`).join('');
         attachCheckboxEvents();
     }
 
@@ -237,14 +249,11 @@
             if(!input) continue;
             const newVal = parseFloat(input.value);
             if(isNaN(newVal)) continue;
-            // Проверка: если есть показание за этот месяц, то новое не может быть меньше
             const {data:existing}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',readingDate).single();
             if(existing && newVal < existing.value){ errors.push(`${meter.name}: новое меньше уже переданного`); continue; }
-            // Проверка: если есть показание за следующий месяц, то новое не может быть больше его
             const nextMonth = new Date(readingDate); nextMonth.setMonth(nextMonth.getMonth()+1);
             const {data:nextReading}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',nextMonth.toISOString().slice(0,10)).single();
             if(nextReading && newVal > nextReading.value){ errors.push(`${meter.name}: показание не может быть больше показания за следующий месяц`); continue; }
-            // Проверка на предыдущее значение (если нет, то считаем 0)
             const {data:prevReading}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).lt('reading_date',readingDate).order('reading_date',{ascending:false}).limit(1);
             const prevVal = prevReading?.[0]?.value ?? 0;
             if(newVal < prevVal){ errors.push(`${meter.name}: новое меньше последнего переданного (${prevVal})`); continue; }
@@ -262,7 +271,8 @@
 
     async function loadLastReadings() {
         const {data}=await supabaseClient.from('readings').select('reading_date, value, meters(name)').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:false}).limit(5);
-        document.getElementById('lastReadingsBody').innerHTML = (data||[]).map(r=>`<tr><td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
+        const tbody = document.getElementById('lastReadingsBody');
+        tbody.innerHTML = (data||[]).map(r=>`<tr><td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
     }
 
     function showMsg(el,msg,type){ const d=document.getElementById(el); d.innerHTML=`<div class="alert alert-${type}">${msg}</div>`; setTimeout(()=>d.innerHTML='',5000); }
