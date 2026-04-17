@@ -73,7 +73,6 @@
             <div class="d-flex justify-content-end mb-2">
                 <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> <label>Только неоплаченные</label></div>
             </div>
-            <!-- Счета за электричество: теперь по каждому счётчику отдельная строка -->
             <div class="card section-card">
                 <div class="card-header bg-warning text-dark">Счета за электричество (по счётчикам)</div>
                 <div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th>Месяц</th><th>Счётчик</th><th>Расход (кВт·ч)</th><th>Сумма (₽)</th><th>Оплачено</th></tr></thead><tbody id="electricityInvoicesBody"></tbody></table></div>
@@ -94,7 +93,8 @@
 <script>
     const SUPABASE_URL = 'https://ihydjzxctlguvflswzhg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloeWRqenhjdGxndXZmbHN3emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjU0NDIsImV4cCI6MjA4NDc0MTQ0Mn0.CLxFjGzqoiH9ixThVj9LMR-UrsPPMSPCla8uhpz6HCo';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
     let currentUser = null, userMeters = [], previousMap = new Map();
 
     async function checkAuth() {
@@ -109,10 +109,10 @@
     }
 
     async function loadUserMeters() {
-        const {data} = await supabase.from('meters').select('id,name').eq('user_id',currentUser.id);
+        const {data} = await supabaseClient.from('meters').select('id,name').eq('user_id',currentUser.id);
         userMeters = data||[];
         for(const m of userMeters){
-            const {data:last}=await supabase.from('readings').select('value').eq('meter_id',m.id).order('reading_date',{ascending:false}).limit(1);
+            const {data:last}=await supabaseClient.from('readings').select('value').eq('meter_id',m.id).order('reading_date',{ascending:false}).limit(1);
             previousMap.set(m.id, last?.[0]?.value ?? 0);
         }
         renderMeterInputs();
@@ -129,10 +129,9 @@
     }
 
     async function loadElectricityInvoices() {
-        const {data: meterInvoices} = await supabase.from('meter_invoices').select('*, meters(name)').in('meter_id', userMeters.map(m=>m.id)).order('year_month',{ascending:false});
-        const {data: readings}=await supabase.from('readings').select('meter_id, reading_date, value').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:true});
-        // Рассчитываем расход для каждого счётчика и месяца
-        const consumptionMap = new Map(); // key "meter_id|year_month"
+        const {data: meterInvoices} = await supabaseClient.from('meter_invoices').select('*, meters(name)').in('meter_id', userMeters.map(m=>m.id)).order('year_month',{ascending:false});
+        const {data: readings}=await supabaseClient.from('readings').select('meter_id, reading_date, value').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:true});
+        const consumptionMap = new Map();
         for(const meter of userMeters){
             const meterReadings = readings.filter(r=>r.meter_id===meter.id).sort((a,b)=>new Date(a.reading_date)-new Date(b.reading_date));
             for(let i=1;i<meterReadings.length;i++){
@@ -153,19 +152,19 @@
     }
 
     async function loadFeeInvoices() {
-        const {data}=await supabase.from('invoices').select('year_month, plot_fee, area_fee, plot_fee_paid, area_fee_paid').eq('user_id',currentUser.id).order('year_month',{ascending:false});
+        const {data}=await supabaseClient.from('invoices').select('year_month, plot_fee, area_fee, plot_fee_paid, area_fee_paid').eq('user_id',currentUser.id).order('year_month',{ascending:false});
         window.feeData = (data||[]).map(i=>({ month:i.year_month.slice(0,7), plot_fee:i.plot_fee, area_fee:i.area_fee, plot_paid:i.plot_fee_paid, area_paid:i.area_fee_paid }));
         filterAndRender();
     }
 
     async function loadExtraFees() {
-        const {data}=await supabase.from('user_extra_fees').select('id, amount, paid, extra_fees(name, year_month)').eq('user_id',currentUser.id);
+        const {data}=await supabaseClient.from('user_extra_fees').select('id, amount, paid, extra_fees(name, year_month)').eq('user_id',currentUser.id);
         window.extraData = (data||[]).map(f=>({ id:f.id, name:f.extra_fees?.name, month:f.extra_fees?.year_month?.slice(0,7), amount:f.amount, paid:f.paid }));
         filterAndRender();
     }
 
     async function loadAnnouncements() {
-        const {data}=await supabase.from('announcements').select('title,content,created_at').order('created_at',{ascending:false}).limit(10);
+        const {data}=await supabaseClient.from('announcements').select('title,content,created_at').order('created_at',{ascending:false}).limit(10);
         const container=document.getElementById('announcementsContainer');
         if(!data?.length) container.innerHTML='<p class="text-muted">Нет объявлений</p>';
         else container.innerHTML=data.map(a=>`<div class="announcement-item border-bottom pb-2 mb-2"><h6>${a.title||'Без названия'} <small>${new Date(a.created_at).toLocaleDateString()}</small></h6><p>${a.content}</p></div>`).join('');
@@ -173,17 +172,19 @@
 
     async function loadTotalDebt() {
         let debt=0;
-        const {data:meterInv}=await supabase.from('meter_invoices').select('amount,paid').in('meter_id',userMeters.map(m=>m.id));
+        const {data:meterInv}=await supabaseClient.from('meter_invoices').select('amount,paid').in('meter_id',userMeters.map(m=>m.id));
         debt += meterInv?.filter(i=>!i.paid).reduce((s,i)=>s+i.amount,0)||0;
-        const {data:feeInv}=await supabase.from('invoices').select('plot_fee,area_fee,plot_fee_paid,area_fee_paid').eq('user_id',currentUser.id);
+        const {data:feeInv}=await supabaseClient.from('invoices').select('plot_fee,area_fee,plot_fee_paid,area_fee_paid').eq('user_id',currentUser.id);
         for(const f of feeInv||[]){
             if(!f.plot_fee_paid) debt+=f.plot_fee;
             if(!f.area_fee_paid) debt+=f.area_fee;
         }
-        const {data:extra}=await supabase.from('user_extra_fees').select('amount').eq('user_id',currentUser.id).eq('paid',false);
+        const {data:extra}=await supabaseClient.from('user_extra_fees').select('amount').eq('user_id',currentUser.id).eq('paid',false);
         debt+=extra?.reduce((s,e)=>s+e.amount,0)||0;
         document.getElementById('totalDebt').innerText=debt.toFixed(2)+' ₽';
     }
+
+    function formatMonth(monthStr){ const d=new Date(monthStr+'-01'); return d.toLocaleString('ru',{month:'long',year:'numeric'}); }
 
     function filterAndRender() {
         const showUnpaid = document.getElementById('showOnlyUnpaid').checked;
@@ -205,27 +206,25 @@
     function attachCheckboxEvents() {
         document.querySelectorAll('.elec-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const id=cb.dataset.id, paid=e.target.checked;
-            await supabase.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+            await supabaseClient.from('meter_invoices').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
             loadElectricityInvoices(); loadTotalDebt();
         }));
         document.querySelectorAll('.fee-plot-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const month=cb.dataset.month, paid=e.target.checked;
-            await supabase.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            await supabaseClient.from('invoices').update({plot_fee_paid:paid, plot_fee_paid_by:paid?'user':null, plot_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
             loadFeeInvoices(); loadTotalDebt();
         }));
         document.querySelectorAll('.fee-area-paid').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const month=cb.dataset.month, paid=e.target.checked;
-            await supabase.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
+            await supabaseClient.from('invoices').update({area_fee_paid:paid, area_fee_paid_by:paid?'user':null, area_fee_paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('user_id',currentUser.id).eq('year_month',month+'-01');
             loadFeeInvoices(); loadTotalDebt();
         }));
         document.querySelectorAll('.extra-paid-checkbox').forEach(cb=>cb.addEventListener('change',async(e)=>{
             const id=cb.dataset.id, paid=e.target.checked;
-            await supabase.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
+            await supabaseClient.from('user_extra_fees').update({paid, paid_by:paid?'user':null, paid_date:paid?new Date().toISOString().slice(0,10):null}).eq('id',id);
             loadExtraFees(); loadTotalDebt();
         }));
     }
-
-    function formatMonth(monthStr){ const d=new Date(monthStr+'-01'); return d.toLocaleString('ru',{month:'long',year:'numeric'}); }
 
     async function submitReadings() {
         const month = document.getElementById('readingMonth').value;
@@ -239,20 +238,20 @@
             const newVal = parseFloat(input.value);
             if(isNaN(newVal)) continue;
             // Проверка: если есть показание за этот месяц, то новое не может быть меньше
-            const {data:existing}=await supabase.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',readingDate).single();
+            const {data:existing}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',readingDate).single();
             if(existing && newVal < existing.value){ errors.push(`${meter.name}: новое меньше уже переданного`); continue; }
             // Проверка: если есть показание за следующий месяц, то новое не может быть больше его
             const nextMonth = new Date(readingDate); nextMonth.setMonth(nextMonth.getMonth()+1);
-            const {data:nextReading}=await supabase.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',nextMonth.toISOString().slice(0,10)).single();
+            const {data:nextReading}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).eq('reading_date',nextMonth.toISOString().slice(0,10)).single();
             if(nextReading && newVal > nextReading.value){ errors.push(`${meter.name}: показание не может быть больше показания за следующий месяц`); continue; }
             // Проверка на предыдущее значение (если нет, то считаем 0)
-            const {data:prevReading}=await supabase.from('readings').select('value').eq('meter_id',meter.id).lt('reading_date',readingDate).order('reading_date',{ascending:false}).limit(1);
+            const {data:prevReading}=await supabaseClient.from('readings').select('value').eq('meter_id',meter.id).lt('reading_date',readingDate).order('reading_date',{ascending:false}).limit(1);
             const prevVal = prevReading?.[0]?.value ?? 0;
             if(newVal < prevVal){ errors.push(`${meter.name}: новое меньше последнего переданного (${prevVal})`); continue; }
             if(existing){
-                await supabase.from('readings').update({value:newVal}).eq('id',existing.id);
+                await supabaseClient.from('readings').update({value:newVal}).eq('id',existing.id);
             } else {
-                await supabase.from('readings').insert({meter_id:meter.id, reading_date:readingDate, value:newVal});
+                await supabaseClient.from('readings').insert({meter_id:meter.id, reading_date:readingDate, value:newVal});
             }
             success++;
         }
@@ -262,7 +261,7 @@
     }
 
     async function loadLastReadings() {
-        const {data}=await supabase.from('readings').select('reading_date, value, meters(name)').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:false}).limit(5);
+        const {data}=await supabaseClient.from('readings').select('reading_date, value, meters(name)').in('meter_id',userMeters.map(m=>m.id)).order('reading_date',{ascending:false}).limit(5);
         document.getElementById('lastReadingsBody').innerHTML = (data||[]).map(r=>`<tr><td>${r.meters?.name}</td><td>${formatMonth(r.reading_date)}</td><td>${r.value}</td></tr>`).join('');
     }
 
