@@ -10,7 +10,6 @@
         body { background-color: #f8f9fa; }
         .debt-card { background: linear-gradient(135deg, #ff6b6b, #c92a2a); color: white; }
         .section-card { margin-bottom: 1.5rem; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); }
-        .qr-block img { max-width: 150px; height: auto; }
         .announcement-item { border-bottom: 1px solid #eee; padding: 0.75rem 0; }
         .announcement-item:last-child { border-bottom: none; }
         .meter-input-card { background: #f1f3f5; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; }
@@ -20,6 +19,7 @@
             .container { padding-left: 10px; padding-right: 10px; }
             h2 { font-size: 1.5rem; }
         }
+        .filter-switch { cursor: pointer; user-select: none; }
     </style>
 </head>
 <body>
@@ -54,16 +54,23 @@
         </div>
         <div class="col-12 col-md-4">
             <div class="card h-100">
-                <div class="card-body text-center">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
                     <h5 class="card-title">Оплата</h5>
-                    <div class="qr-block mb-2">
-                        <img src="http://zvezdo-4-ka.ru/wp-content/uploads/2020/11/Счет-QR-300x300.png" alt="QR-код для оплаты" class="img-fluid">
-                    </div>
-                    <a href="http://zvezdo-4-ka.ru/category/реквизиты-снт-звёздочка/" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <a href="http://zvezdo-4-ka.ru/category/реквизиты-снт-звёздочка/" target="_blank" class="btn btn-outline-primary">
                         <i class="bi bi-bank"></i> Реквизиты для оплаты
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Фильтр неоплаченных счетов -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showUnpaidOnly" checked>
+            <label class="form-check-label filter-switch" for="showUnpaidOnly">
+                <i class="bi bi-funnel"></i> Показывать только неоплаченные счета
+            </label>
         </div>
     </div>
 
@@ -179,9 +186,14 @@
     
     let currentUser = null;
     let userMeters = [];
-    let previousReadingsMap = new Map(); // meterId -> последнее показание (value)
+    let previousReadingsMap = new Map();
+    
+    // Кеш данных счетов для фильтрации
+    let cachedElectricityRows = [];
+    let cachedFeeRows = [];
+    let cachedExtraRows = [];
 
-    // --- Проверка авторизации и загрузка базовых данных ---
+    // --- Проверка авторизации ---
     async function checkAuth() {
         const userStr = localStorage.getItem('currentUser');
         if (!userStr) return window.location.href = 'index.html';
@@ -194,7 +206,7 @@
         document.getElementById('userArea').innerText = currentUser.area_sotok ?? 0;
     }
 
-    // --- Расчёт суммы за свет по трёхсоставному тарифу ---
+    // --- Расчёт тарифа ---
     async function calculateElectricityBreakdown(consumption, readingDate) {
         const { data: tariff } = await supabaseClient
             .from('tariff_history')
@@ -217,7 +229,7 @@
         return { t1Amount, t2Amount, t3Amount, total };
     }
 
-    // --- Загрузка счетчиков и их последних показаний ---
+    // --- Загрузка счетчиков и последних показаний ---
     async function loadUserMeters() {
         const { data: meters, error } = await supabaseClient
             .from('meters')
@@ -229,7 +241,6 @@
         }
         userMeters = meters || [];
         
-        // Для каждого счетчика получаем последнее показание (самое свежее по дате)
         for (const meter of userMeters) {
             const { data: lastReading } = await supabaseClient
                 .from('readings')
@@ -244,7 +255,6 @@
         return userMeters;
     }
 
-    // --- Отрисовка полей ввода для каждого счетчика с отображением предыдущего показания ---
     function renderMeterInputs() {
         const container = document.getElementById('metersInputsContainer');
         if (!userMeters.length) {
@@ -270,10 +280,11 @@
         container.innerHTML = html;
     }
 
-    // --- Получение показаний и расчёт счетов за электричество по месяцам ---
+    // --- Загрузка данных для таблиц и кеширование ---
     async function loadElectricityInvoices() {
         if (!userMeters.length) {
-            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7" class="text-center">Нет счётчиков</td></tr>';
+            cachedElectricityRows = [];
+            applyFilters();
             return;
         }
         const meterIds = userMeters.map(m => m.id);
@@ -284,7 +295,8 @@
             .order('reading_date', { ascending: true });
         
         if (!readings || readings.length < 2) {
-            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7" class="text-center">Недостаточно данных для расчёта</td></tr>';
+            cachedElectricityRows = [];
+            applyFilters();
             return;
         }
         
@@ -306,7 +318,8 @@
         }
         
         if (monthlyData.size === 0) {
-            document.getElementById('electricityInvoicesBody').innerHTML = '<tr><td colspan="7" class="text-center">Нет расхода по месяцам</td></tr>';
+            cachedElectricityRows = [];
+            applyFilters();
             return;
         }
         
@@ -320,26 +333,28 @@
         const paidMap = new Map();
         invoices.forEach(inv => { paidMap.set(inv.year_month.slice(0,7), inv.paid); });
         
-        let html = '';
+        const rows = [];
         for (const m of months) {
             const { t1Amount, t2Amount, t3Amount, total } = await calculateElectricityBreakdown(m.consumption, m.date);
             const paid = paidMap.get(m.month) || false;
             const checkbox = `<input type="checkbox" class="invoice-paid-checkbox" data-month="${m.month}" ${paid ? 'checked' : ''}>`;
-            html += `<tr>
-                <td>${m.month}</td>
-                <td>${m.consumption.toFixed(2)}</td>
-                <td>${t1Amount.toFixed(2)}</td>
-                <td>${t2Amount.toFixed(2)}</td>
-                <td>${t3Amount.toFixed(2)}</td>
-                <td>${total.toFixed(2)}</td>
-                <td class="text-center">${checkbox}</td>
-            </tr>`;
+            rows.push({
+                month: m.month,
+                html: `<tr data-paid="${paid}">
+                    <td>${m.month}</td>
+                    <td>${m.consumption.toFixed(2)}</td>
+                    <td>${t1Amount.toFixed(2)}</td>
+                    <td>${t2Amount.toFixed(2)}</td>
+                    <td>${t3Amount.toFixed(2)}</td>
+                    <td>${total.toFixed(2)}</td>
+                    <td class="text-center">${checkbox}</td>
+                </tr>`
+            });
         }
-        document.getElementById('electricityInvoicesBody').innerHTML = html;
-        attachPaidCheckboxListeners();
+        cachedElectricityRows = rows;
+        applyFilters();
     }
 
-    // --- Членские взносы ---
     async function loadFeeInvoices() {
         const { data: invoices } = await supabaseClient
             .from('invoices')
@@ -348,27 +363,30 @@
             .order('year_month', { ascending: false });
         
         if (!invoices || invoices.length === 0) {
-            document.getElementById('feeInvoicesBody').innerHTML = '<tr><td colspan="5" class="text-center">Нет данных</td></tr>';
+            cachedFeeRows = [];
+            applyFilters();
             return;
         }
         
-        let html = '';
+        const rows = [];
         for (const inv of invoices) {
             const totalFee = (inv.plot_fee || 0) + (inv.area_fee || 0);
             const checkbox = `<input type="checkbox" class="fee-paid-checkbox" data-month="${inv.year_month.slice(0,7)}" ${inv.paid ? 'checked' : ''}>`;
-            html += `<tr>
-                <td>${inv.year_month.slice(0,7)}</td>
-                <td>${(inv.plot_fee || 0).toFixed(2)}</td>
-                <td>${(inv.area_fee || 0).toFixed(2)}</td>
-                <td>${totalFee.toFixed(2)}</td>
-                <td class="text-center">${checkbox}</td>
-            </tr>`;
+            rows.push({
+                paid: inv.paid,
+                html: `<tr data-paid="${inv.paid}">
+                    <td>${inv.year_month.slice(0,7)}</td>
+                    <td>${(inv.plot_fee || 0).toFixed(2)}</td>
+                    <td>${(inv.area_fee || 0).toFixed(2)}</td>
+                    <td>${totalFee.toFixed(2)}</td>
+                    <td class="text-center">${checkbox}</td>
+                </tr>`
+            });
         }
-        document.getElementById('feeInvoicesBody').innerHTML = html;
-        attachPaidCheckboxListeners();
+        cachedFeeRows = rows;
+        applyFilters();
     }
 
-    // --- Дополнительные сборы ---
     async function loadExtraFees() {
         const { data: extraFees } = await supabaseClient
             .from('user_extra_fees')
@@ -377,54 +395,89 @@
             .order('id', { ascending: false });
         
         if (!extraFees || extraFees.length === 0) {
-            document.getElementById('extraFeesBody').innerHTML = '<tr><td colspan="4" class="text-center">Нет дополнительных сборов</td></tr>';
+            cachedExtraRows = [];
+            applyFilters();
             return;
         }
         
-        let html = '';
+        const rows = [];
         for (const fee of extraFees) {
             const checkbox = `<input type="checkbox" class="extra-paid-checkbox" data-id="${fee.id}" ${fee.paid ? 'checked' : ''}>`;
-            html += `<tr>
-                <td>${fee.extra_fees?.name || 'Сбор'}</td>
-                <td>${fee.extra_fees?.year_month?.slice(0,7) || ''}</td>
-                <td>${(fee.amount || 0).toFixed(2)}</td>
-                <td class="text-center">${checkbox}</td>
-            </tr>`;
+            rows.push({
+                paid: fee.paid,
+                html: `<tr data-paid="${fee.paid}">
+                    <td>${fee.extra_fees?.name || 'Сбор'}</td>
+                    <td>${fee.extra_fees?.year_month?.slice(0,7) || ''}</td>
+                    <td>${(fee.amount || 0).toFixed(2)}</td>
+                    <td class="text-center">${checkbox}</td>
+                </tr>`
+            });
         }
-        document.getElementById('extraFeesBody').innerHTML = html;
+        cachedExtraRows = rows;
+        applyFilters();
+    }
+
+    // --- Применение фильтра неоплаченных ---
+    function applyFilters() {
+        const showUnpaidOnly = document.getElementById('showUnpaidOnly').checked;
+        
+        const filterRows = (rows) => {
+            if (!showUnpaidOnly) return rows.map(r => r.html);
+            return rows.filter(r => !r.paid).map(r => r.html);
+        };
+        
+        document.getElementById('electricityInvoicesBody').innerHTML = 
+            filterRows(cachedElectricityRows).join('') || '<tr><td colspan="7" class="text-center">Нет данных</td></tr>';
+        document.getElementById('feeInvoicesBody').innerHTML = 
+            filterRows(cachedFeeRows).join('') || '<tr><td colspan="5" class="text-center">Нет данных</td></tr>';
+        document.getElementById('extraFeesBody').innerHTML = 
+            filterRows(cachedExtraRows).join('') || '<tr><td colspan="4" class="text-center">Нет данных</td></tr>';
+        
         attachPaidCheckboxListeners();
     }
 
     // --- Обработчики чекбоксов оплаты ---
     function attachPaidCheckboxListeners() {
         document.querySelectorAll('.invoice-paid-checkbox, .fee-paid-checkbox').forEach(cb => {
-            cb.addEventListener('change', async function() {
-                const month = this.dataset.month;
-                const paid = this.checked;
-                const yearMonth = month + '-01';
-                await supabaseClient
-                    .from('invoices')
-                    .update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
-                    .eq('user_id', currentUser.id)
-                    .eq('year_month', yearMonth);
-                loadTotalDebt();
-            });
+            cb.removeEventListener('change', handleInvoicePaidChange);
+            cb.addEventListener('change', handleInvoicePaidChange);
         });
         
         document.querySelectorAll('.extra-paid-checkbox').forEach(cb => {
-            cb.addEventListener('change', async function() {
-                const id = this.dataset.id;
-                const paid = this.checked;
-                await supabaseClient
-                    .from('user_extra_fees')
-                    .update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
-                    .eq('id', id);
-                loadTotalDebt();
-            });
+            cb.removeEventListener('change', handleExtraPaidChange);
+            cb.addEventListener('change', handleExtraPaidChange);
         });
     }
 
-    // --- Общая задолженность ---
+    async function handleInvoicePaidChange(e) {
+        const month = e.target.dataset.month;
+        const paid = e.target.checked;
+        const yearMonth = month + '-01';
+        await supabaseClient
+            .from('invoices')
+            .update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
+            .eq('user_id', currentUser.id)
+            .eq('year_month', yearMonth);
+        
+        // Обновить кеш и задолженность
+        await loadElectricityInvoices();
+        await loadFeeInvoices();
+        await loadTotalDebt();
+    }
+
+    async function handleExtraPaidChange(e) {
+        const id = e.target.dataset.id;
+        const paid = e.target.checked;
+        await supabaseClient
+            .from('user_extra_fees')
+            .update({ paid: paid, paid_date: paid ? new Date().toISOString().slice(0,10) : null })
+            .eq('id', id);
+        
+        await loadExtraFees();
+        await loadTotalDebt();
+    }
+
+    // --- Общая задолженность (корректно учитывает все неоплаченные счета) ---
     async function loadTotalDebt() {
         let debt = 0;
         const { data: invoices } = await supabaseClient
@@ -444,7 +497,7 @@
         document.getElementById('totalDebt').innerText = debt.toFixed(2) + ' ₽';
     }
 
-    // --- Последние показания (для таблицы) ---
+    // --- Последние показания ---
     async function loadLastReadings() {
         if (!userMeters.length) return;
         const meterIds = userMeters.map(m => m.id);
@@ -461,7 +514,7 @@
         `).join('');
     }
 
-    // --- Отправка показаний (по всем счётчикам) ---
+    // --- Отправка показаний ---
     async function submitReadings() {
         const month = document.getElementById('readingMonth').value;
         if (!month) {
@@ -482,9 +535,8 @@
             const input = document.getElementById(`meter_${meter.id}`);
             if (!input) continue;
             const newValue = parseFloat(input.value);
-            if (isNaN(newValue)) continue; // пропускаем пустые поля
+            if (isNaN(newValue)) continue;
 
-            // Проверяем существующее показание за этот месяц
             const { data: existing } = await supabaseClient
                 .from('readings')
                 .select('id, value')
@@ -504,7 +556,6 @@
                 if (error) errorMessages.push(`${meter.name}: ${error.message}`);
                 else successCount++;
             } else {
-                // Проверка на неуменьшение относительно последнего показания
                 const { data: lastReading } = await supabaseClient
                     .from('readings')
                     .select('value')
@@ -530,7 +581,6 @@
         if (successCount > 0) {
             showMsg('readingMsg', `Успешно отправлено показаний: ${successCount}`, 'success');
             document.querySelectorAll('.meter-value').forEach(inp => inp.value = '');
-            // Обновляем карту предыдущих показаний и перерисовываем поля
             await loadUserMeters();
             await loadLastReadings();
             await loadElectricityInvoices();
@@ -578,6 +628,7 @@
         window.location.href = 'index.html';
     });
     document.getElementById('submitReadingsBtn').addEventListener('click', submitReadings);
+    document.getElementById('showUnpaidOnly').addEventListener('change', applyFilters);
 
     (async () => {
         await checkAuth();
