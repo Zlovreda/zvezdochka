@@ -117,7 +117,7 @@
                 <div class="collapse mt-2 w-100" id="displaySettingsCollapse">
                     <div class="card card-body bg-light">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="showOnlyUnpaid" checked> 
+                            <input class="form-check-input" type="checkbox" id="showOnlyUnpaid"> 
                             <label>Только неоплаченные</label>
                         </div>
                         <div class="form-check form-switch">
@@ -187,6 +187,9 @@
     let groupElectricity = false;
     let groupFeePayment = false;
 
+    // Ключи для localStorage
+    const SETTINGS_KEY = 'user_display_settings';
+
     function formatMonth(dateStr) {
         if (!dateStr) return '';
         let year, month;
@@ -197,6 +200,45 @@
         } else return dateStr;
         const date = new Date(year, month-1, 1);
         return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
+    }
+
+    // Сохранение настроек в localStorage
+    function saveSettings() {
+        const settings = {
+            showOnlyUnpaid: document.getElementById('showOnlyUnpaid').checked,
+            groupElectricity: document.getElementById('groupElectricity').checked,
+            groupFeePayment: document.getElementById('groupFeePayment').checked
+        };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    // Загрузка настроек из localStorage
+    function loadSettings() {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        if (saved) {
+            try {
+                const settings = JSON.parse(saved);
+                document.getElementById('showOnlyUnpaid').checked = settings.showOnlyUnpaid !== false; // по умолчанию true
+                document.getElementById('groupElectricity').checked = settings.groupElectricity || false;
+                document.getElementById('groupFeePayment').checked = settings.groupFeePayment || false;
+                groupElectricity = settings.groupElectricity || false;
+                groupFeePayment = settings.groupFeePayment || false;
+            } catch (e) {
+                // Если ошибка парсинга, оставляем значения по умолчанию
+                document.getElementById('showOnlyUnpaid').checked = true;
+                document.getElementById('groupElectricity').checked = false;
+                document.getElementById('groupFeePayment').checked = false;
+                groupElectricity = false;
+                groupFeePayment = false;
+            }
+        } else {
+            // Значения по умолчанию при первом заходе
+            document.getElementById('showOnlyUnpaid').checked = true;
+            document.getElementById('groupElectricity').checked = false;
+            document.getElementById('groupFeePayment').checked = false;
+            groupElectricity = false;
+            groupFeePayment = false;
+        }
     }
 
     async function loadCurrentTariffs() {
@@ -423,6 +465,15 @@
         const target = e.target;
         if (!target.matches('input[type="checkbox"]')) return;
 
+        // Сохраняем настройки, если это чекбоксы настроек
+        if (target.id === 'showOnlyUnpaid' || target.id === 'groupElectricity' || target.id === 'groupFeePayment') {
+            saveSettings();
+            if (target.id === 'groupElectricity') groupElectricity = target.checked;
+            if (target.id === 'groupFeePayment') groupFeePayment = target.checked;
+            filterAndRender();
+            return;
+        }
+
         // Электричество индивидуальное
         if (target.classList.contains('elec-paid-checkbox')) {
             const id = target.dataset.id;
@@ -624,19 +675,28 @@
     // Привязка событий
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
     document.getElementById('submitReadingsBtn').addEventListener('click',submitReadings);
-    document.getElementById('showOnlyUnpaid').addEventListener('change',filterAndRender);
-    document.getElementById('groupElectricity').addEventListener('change',(e)=>{
+    
+    // Обработчики для настроек уже в глобальном делегировании, но нужно также обновлять переменные
+    document.getElementById('groupElectricity').addEventListener('change', (e) => {
         groupElectricity = e.target.checked;
+        saveSettings();
         filterAndRender();
     });
-    document.getElementById('groupFeePayment').addEventListener('change',(e)=>{
+    document.getElementById('groupFeePayment').addEventListener('change', (e) => {
         groupFeePayment = e.target.checked;
+        saveSettings();
         filterAndRender();
     });
+    document.getElementById('showOnlyUnpaid').addEventListener('change', (e) => {
+        saveSettings();
+        filterAndRender();
+    });
+
     document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
 
     (async()=>{
         await checkAuth();
+        loadSettings(); // Загружаем настройки из localStorage перед рендерингом
         setCurrentMonth();
         await loadCurrentTariffs();
         await loadUserMeters();
@@ -646,6 +706,7 @@
         await loadTotalDebt();
         await loadLastReadings();
         await loadAnnouncements();
+        filterAndRender(); // Применяем настройки после загрузки данных
     })();
 </script>
 </body>
