@@ -235,7 +235,7 @@
     </div>
 </div>
 
-<!-- Модальные окна (без изменений) -->
+<!-- Модальные окна -->
 <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Редактировать пользователя</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editUserId"><label>Логин *</label><input type="text" id="editUsername" class="form-control"><label>Пароль *</label><input type="text" id="editPassword" class="form-control"><label>ФИО</label><input type="text" id="editFullName" class="form-control"><label>Номер участка</label><input type="text" id="editPlotNumber" class="form-control"><label>Доля участка</label><input type="number" step="0.01" id="editPlotsCount" class="form-control" value="1"><label>Площадь в сотках</label><input type="number" step="0.01" id="editAreaSotok" class="form-control" value="0"><label>Роль</label><select id="editRole" class="form-control"><option value="user">Житель</option><option value="admin">Админ</option></select><button class="btn btn-primary w-100 mt-3" id="saveUserBtn">Сохранить</button></div></div></div></div>
 <div class="modal fade" id="editMeterModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Счётчик</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editMeterId"><input type="hidden" id="editMeterUserId"><label>Название</label><input type="text" id="editMeterName" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveMeterBtn">Сохранить</button></div></div></div></div>
 <div class="modal fade" id="editReadingModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Показание</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="editReadingId"><label>Счётчик</label><select id="editReadingMeterId" class="form-control"></select><label>Месяц</label><input type="month" id="editReadingDate" class="form-control"><label>Показание</label><input type="number" step="0.01" id="editReadingValue" class="form-control"><button class="btn btn-primary w-100 mt-2" id="saveReadingBtn">Сохранить</button></div></div></div></div>
@@ -277,7 +277,106 @@
         await loadUsers(); await loadReadings(); await loadMeterInvoices(); await loadFeeInvoices(); await loadExtraFeeTemplates(); await loadExtraFees(); await loadTariffHistory(); await loadFeeRatesHistory(); await loadAnnouncements();
     }
 
-    // === Пользователи ===
+    // ======================== РАСЧЁТ ЭЛЕКТРИЧЕСТВА С УЧЁТОМ T1, T2, T3 ========================
+    async function getTariffForDate(date) {
+        const targetDate = new Date(date);
+        let best = null;
+        for(const t of tariffHistory) {
+            const validFrom = new Date(t.valid_from);
+            if(validFrom <= targetDate) {
+                if(!best || new Date(best.valid_from) < validFrom) best = t;
+            }
+        }
+        return best;
+    }
+
+    async function getFeeRatesForDate(date) {
+        const targetDate = new Date(date);
+        let best = null;
+        for(const f of feeRatesHistory) {
+            const validFrom = new Date(f.valid_from);
+            if(validFrom <= targetDate) {
+                if(!best || new Date(best.valid_from) < validFrom) best = f;
+            }
+        }
+        return best;
+    }
+
+    // Расчёт суммы за электричество по многотарифной схеме
+    function calculateElectricityAmount(consumption, tariff) {
+        if (!tariff || consumption <= 0) return 0;
+        const t1_limit = tariff.t1_limit;
+        const t1_rate = tariff.t1_rate;
+        const t2_rate = tariff.t2_rate;
+        const t3_rate = tariff.t3_rate;
+        // Экологический сбор на весь объём
+        let amount = consumption * t3_rate;
+        if (consumption <= t1_limit) {
+            amount += consumption * t1_rate;
+        } else {
+            amount += t1_limit * t1_rate + (consumption - t1_limit) * t2_rate;
+        }
+        return amount;
+    }
+
+    async function calculateInvoicesForMonth(yearMonth) {
+        if (!yearMonth) return;
+        const lastDay = new Date(yearMonth + '-01');
+        lastDay.setMonth(lastDay.getMonth() + 1);
+        lastDay.setDate(lastDay.getDate() - 1);
+        const tariff = await getTariffForDate(lastDay);
+        const feeRates = await getFeeRatesForDate(lastDay);
+        const users = allUsers.filter(u => u.role !== 'admin');
+        
+        for(const user of users) {
+            // Электричество: перебираем счётчики пользователя
+            const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id', user.id);
+            for(const meter of meters) {
+                // Найти показание за этот месяц (ближайшее к концу месяца)
+                const {data: reading} = await supabaseClient.from('readings')
+                    .select('value, reading_date')
+                    .eq('meter_id', meter.id)
+                    .lte('reading_date', lastDay.toISOString().slice(0,10))
+                    .order('reading_date', {ascending: false})
+                    .limit(1);
+                if(!reading || reading.length === 0) continue;
+                const currentReading = reading[0].value;
+                // Предыдущее показание (до этого месяца)
+                const {data: prevReading} = await supabaseClient.from('readings')
+                    .select('value')
+                    .eq('meter_id', meter.id)
+                    .lt('reading_date', yearMonth + '-01')
+                    .order('reading_date', {ascending: false})
+                    .limit(1);
+                const prevValue = prevReading && prevReading[0] ? prevReading[0].value : 0;
+                const consumption = Math.max(0, currentReading - prevValue);
+                let elecAmount = calculateElectricityAmount(consumption, tariff);
+                // Обновить или создать meter_invoice
+                const {data: existingInv} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id', meter.id).eq('year_month', yearMonth+'-01').limit(1);
+                if(existingInv && existingInv[0]) {
+                    await supabaseClient.from('meter_invoices').update({amount: elecAmount}).eq('id', existingInv[0].id);
+                } else {
+                    await supabaseClient.from('meter_invoices').insert({meter_id: meter.id, year_month: yearMonth+'-01', amount: elecAmount, paid: false});
+                }
+            }
+            // Взносы
+            let plotFee = 0, areaFee = 0;
+            if(feeRates) {
+                plotFee = feeRates.plot_fee_rate * (user.plots_count || 1);
+                areaFee = feeRates.area_fee_rate * (user.area_sotok || 0);
+            }
+            const {data: existingFee} = await supabaseClient.from('invoices').select('id').eq('user_id', user.id).eq('year_month', yearMonth+'-01').limit(1);
+            if(existingFee && existingFee[0]) {
+                await supabaseClient.from('invoices').update({plot_fee: plotFee, area_fee: areaFee}).eq('id', existingFee[0].id);
+            } else {
+                await supabaseClient.from('invoices').insert({user_id: user.id, year_month: yearMonth+'-01', plot_fee: plotFee, area_fee: areaFee, plot_fee_paid: false, area_fee_paid: false});
+            }
+        }
+        await loadMeterInvoices();
+        await loadFeeInvoices();
+    }
+
+    // ======================== ОСТАЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ, КРОМЕ НЕОБХОДИМЫХ ВЫЗОВОВ) ========================
     async function loadUsers() {
         const {data}=await supabaseClient.from('users').select('*');
         allUsers=data||[];
@@ -317,7 +416,6 @@
         document.querySelectorAll('.deleteMeter').forEach(btn=>btn.addEventListener('click',()=>deleteMeter(btn.dataset.id)));
     }
 
-    // === Показания ===
     async function loadReadings() {
         const {data}=await supabaseClient.from('readings').select('*, meters(id,name,users(id,full_name,plot_number))').order('reading_date',{ascending:false});
         allReadings=data||[];
@@ -356,7 +454,7 @@
                 <td><button class="btn btn-sm btn-danger deleteReading" data-id="${r.id}">Удалить</button></td>
             </tr>`;
         }
-        tbody.innerHTML=html||'<tr><td colspan="10">Нет данных</td>' + '</tr>';
+        tbody.innerHTML=html||'<tr><td colspan="10">Нет данных</td></tr>';
         document.querySelectorAll('.reading-val').forEach(el=>el.addEventListener('blur',async function(){ const id=this.dataset.id, newVal=parseFloat(this.innerText); if(!isNaN(newVal)) { await supabaseClient.from('readings').update({value:newVal}).eq('id',id); await loadReadings(); await recalcMonthForReading(id); } }));
         document.querySelectorAll('.deleteReading').forEach(btn=>btn.addEventListener('click',()=>deleteReading(btn.dataset.id)));
         document.querySelectorAll('.reading-paid-check').forEach(cb=>cb.addEventListener('change',async(e)=>{
@@ -383,112 +481,10 @@
         }
     }
 
-    // === Счета с автоматическим расчётом ===
     async function loadTariffHistory() { const {data}=await supabaseClient.from('tariff_history').select('*').order('valid_from',{ascending:false}); tariffHistory=data||[]; document.getElementById('tariffHistoryBody').innerHTML=tariffHistory.map(t=>`<tr><td>${t.valid_from}</td><td>${t.t1_rate}</td><td>${t.t2_rate}</td><td>${t.t3_rate}</td><td>${t.t1_limit}</td><td><button class="btn btn-sm btn-danger deleteTariff" data-id="${t.id}">Удалить</button></td></tr>`).join(''); attachDeleteTariff(); }
     async function loadFeeRatesHistory() { const {data}=await supabaseClient.from('fee_rates_history').select('*').order('valid_from',{ascending:false}); feeRatesHistory=data||[]; document.getElementById('feeRatesHistoryBody').innerHTML=feeRatesHistory.map(f=>`<tr><td>${f.valid_from}</td><td>${f.plot_fee_rate}</td><td>${f.area_fee_rate}</td><td><button class="btn btn-sm btn-danger deleteFeeRate" data-id="${f.id}">Удалить</button></td></tr>`).join(''); attachDeleteFeeRate(); }
     async function loadMeterInvoices() { const {data}=await supabaseClient.from('meter_invoices').select('*, meters(id,name,users(id,full_name,plot_number))'); allMeterInvoices=data||[]; renderCombinedInvoices(); }
     async function loadFeeInvoices() { const {data}=await supabaseClient.from('invoices').select('*, users(full_name,plot_number)'); allFeeInvoices=data||[]; renderCombinedInvoices(); }
-
-    async function getTariffForDate(date) {
-        // date - объект Date или строка YYYY-MM-DD
-        const targetDate = new Date(date);
-        let best = null;
-        for(const t of tariffHistory) {
-            const validFrom = new Date(t.valid_from);
-            if(validFrom <= targetDate) {
-                if(!best || new Date(best.valid_from) < validFrom) best = t;
-            }
-        }
-        return best;
-    }
-    async function getFeeRatesForDate(date) {
-        const targetDate = new Date(date);
-        let best = null;
-        for(const f of feeRatesHistory) {
-            const validFrom = new Date(f.valid_from);
-            if(validFrom <= targetDate) {
-                if(!best || new Date(best.valid_from) < validFrom) best = f;
-            }
-        }
-        return best;
-    }
-
-    async function calculateInvoicesForMonth(yearMonth) {
-        // yearMonth в формате YYYY-MM
-        if(!yearMonth) return;
-        // Последний день месяца для определения тарифов
-        const lastDay = new Date(yearMonth + '-01');
-        lastDay.setMonth(lastDay.getMonth() + 1);
-        lastDay.setDate(lastDay.getDate() - 1);
-        const tariff = await getTariffForDate(lastDay);
-        const feeRates = await getFeeRatesForDate(lastDay);
-        const users = allUsers.filter(u => u.role !== 'admin');
-        for(const user of users) {
-            // Электричество: перебираем счётчики пользователя
-            const {data: meters} = await supabaseClient.from('meters').select('id').eq('user_id', user.id);
-            for(const meter of meters) {
-                // Найти показание за этот месяц (ближайшее к концу месяца, но не позже)
-                const {data: reading} = await supabaseClient.from('readings')
-                    .select('value, reading_date')
-                    .eq('meter_id', meter.id)
-                    .lte('reading_date', lastDay.toISOString().slice(0,10))
-                    .order('reading_date', {ascending: false})
-                    .limit(1);
-                if(!reading || reading.length === 0) continue;
-                const currentReading = reading[0].value;
-                // Предыдущее показание (до этого месяца)
-                const {data: prevReading} = await supabaseClient.from('readings')
-                    .select('value')
-                    .eq('meter_id', meter.id)
-                    .lt('reading_date', yearMonth + '-01')
-                    .order('reading_date', {ascending: false})
-                    .limit(1);
-                const prevValue = prevReading && prevReading[0] ? prevReading[0].value : 0;
-                const consumption = Math.max(0, currentReading - prevValue);
-                let elecAmount = 0;
-                if(tariff && consumption > 0) {
-                    // Упрощённо: используем T1 (дневной тариф). Можно расширить до многотарифного.
-                    elecAmount = consumption * tariff.t1_rate;
-                }
-                // Обновить или создать meter_invoice
-                const {data: existingInv} = await supabaseClient.from('meter_invoices').select('id').eq('meter_id', meter.id).eq('year_month', yearMonth+'-01').limit(1);
-                if(existingInv && existingInv[0]) {
-                    await supabaseClient.from('meter_invoices').update({amount: elecAmount}).eq('id', existingInv[0].id);
-                } else {
-                    await supabaseClient.from('meter_invoices').insert({meter_id: meter.id, year_month: yearMonth+'-01', amount: elecAmount, paid: false});
-                }
-            }
-            // Взносы
-            let plotFee = 0, areaFee = 0;
-            if(feeRates) {
-                plotFee = feeRates.plot_fee_rate * (user.plots_count || 1);
-                areaFee = feeRates.area_fee_rate * (user.area_sotok || 0);
-            }
-            const {data: existingFee} = await supabaseClient.from('invoices').select('id').eq('user_id', user.id).eq('year_month', yearMonth+'-01').limit(1);
-            if(existingFee && existingFee[0]) {
-                await supabaseClient.from('invoices').update({plot_fee: plotFee, area_fee: areaFee}).eq('id', existingFee[0].id);
-            } else {
-                await supabaseClient.from('invoices').insert({user_id: user.id, year_month: yearMonth+'-01', plot_fee: plotFee, area_fee: areaFee, plot_fee_paid: false, area_fee_paid: false});
-            }
-        }
-        await loadMeterInvoices();
-        await loadFeeInvoices();
-    }
-
-    async function refreshInvoices() {
-        const filterVal = document.getElementById('invoiceMonthFilter').value;
-        let selectedMonth = null;
-        if (filterVal === 'current') {
-            const now = new Date();
-            selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            await calculateInvoicesForMonth(selectedMonth);
-        } else if (filterVal === 'custom') {
-            selectedMonth = document.getElementById('customInvoiceMonth').value;
-            if (selectedMonth) await calculateInvoicesForMonth(selectedMonth);
-        }
-        await loadMeterInvoices();
-        await loadFeeInvoices();
-    }
 
     function renderCombinedInvoices() {
         const feeMap = new Map();
@@ -553,7 +549,7 @@
                 <td class="text-center"><input type="checkbox" class="invoice-paid-check" data-type="area" data-user-id="${r.user_id}" data-month="${r.month}" ${r.area_fee_paid?'checked':''}> ${r.area_fee_paid?(r.area_fee_paid_by==='user'?'👤':'👑'):''}</td>
                 <td>${r.total.toFixed(2)}</td>
                 <td><button class="btn btn-sm btn-danger deleteCombinedInvoice" data-meter-id="${r.meter_id}" data-user-id="${r.user_id}" data-month="${r.month}">Удалить счёт</button></td>
-            </table>
+            </tr>
         `).join('');
         attachInvoiceCheckboxEvents();
         attachDeleteCombinedInvoice();
@@ -595,7 +591,6 @@
         }));
     }
 
-    // === Шаблоны доп. сборов ===
     async function loadExtraFeeTemplates() {
         const {data}=await supabaseClient.from('extra_fees').select('*').order('year_month',{ascending:false});
         allExtraFees=data||[];
@@ -627,7 +622,6 @@
         }
     }
 
-    // === Назначенные сборы ===
     async function loadExtraFees() {
         const {data: userFees}=await supabaseClient.from('user_extra_fees').select('*, users(full_name,plot_number), extra_fees(name, amount, year_month)');
         allUserExtraFees = userFees||[];
@@ -768,6 +762,19 @@
     document.getElementById('customExtraMonth').addEventListener('change',applyExtraFeesFilter);
 
     function initTabs() { document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',(e)=>{ e.preventDefault(); const tabId=tab.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); tab.classList.add('active'); if(tabId==='usersMeters') loadUsers(); else if(tabId==='readings') loadReadings(); else if(tabId==='invoices'){ refreshInvoices(); } else if(tabId==='extraFees'){ loadExtraFeeTemplates(); loadExtraFees(); } else if(tabId==='tariffs'){ loadTariffHistory(); loadFeeRatesHistory(); } else if(tabId==='announcements') loadAnnouncements(); })); }
+    async function refreshInvoices() {
+        const filterVal = document.getElementById('invoiceMonthFilter').value;
+        let selectedMonth = null;
+        if (filterVal === 'current') {
+            const now = new Date();
+            selectedMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        } else if (filterVal === 'custom') {
+            selectedMonth = document.getElementById('customInvoiceMonth').value;
+        }
+        if (selectedMonth) await calculateInvoicesForMonth(selectedMonth);
+        await loadMeterInvoices();
+        await loadFeeInvoices();
+    }
 
     document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('currentUser'); location.href='index.html'; });
     document.getElementById('addUserBtn').addEventListener('click',()=>{ document.getElementById('editUserId').value=''; document.getElementById('editUsername').value=''; document.getElementById('editPassword').value=''; document.getElementById('editFullName').value=''; document.getElementById('editPlotNumber').value=''; document.getElementById('editPlotsCount').value=1; document.getElementById('editAreaSotok').value=0; document.getElementById('editRole').value='user'; new bootstrap.Modal(document.getElementById('editUserModal')).show(); });
