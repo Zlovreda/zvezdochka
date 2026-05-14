@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+    <title>СНТ «Звёздочка» — Калькулятор взносов и электроэнергии</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        /* ----- базовые стили ----- */
+        .snt-calc-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 0.9rem;
+        }
+        /* уменьшенный отступ между рядами на больших экранах */
+        .row-custom-gap {
+            row-gap: 0.75rem !important;
+        }
+        @media (min-width: 768px) {
+            .row-custom-gap {
+                row-gap: 0.5rem !important;
+            }
+        }
+        /* карточки */
+        .snt-card {
+            border: none;
+            border-radius: 1.5rem;
+            background: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s;
+            height: 100%;
+        }
+        .snt-card-body {
+            padding: 1.2rem;
+        }
+        @media (min-width: 768px) {
+            .snt-card-body {
+                padding: 1.3rem;
+            }
+        }
+        /* тарифная сетка */
+        .tariff-grid {
+            background: #fef7e6;
+            border-radius: 1.2rem;
+            padding: 0.8rem;
+        }
+        .tariff-badge {
+            background: white;
+            border-radius: 2rem;
+            padding: 0.3rem 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+        .form-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #2c4e6e;
+            margin-bottom: 0.2rem;
+        }
+        .form-control {
+            border-radius: 0.9rem;
+            border: 1px solid #e2e8f0;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        .meter-group {
+            background: #f8f9fc;
+            border-radius: 1.2rem;
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 1rem;
+            border: 1px solid #edf2f7;
+        }
+        .consumption-field {
+            background-color: #f5f9ff;
+            font-weight: 600;
+            color: #1a6685;
+        }
+        /* результаты */
+        .result-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.75rem;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+        .result-row.total-row {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            font-weight: 700;
+        }
+        .result-row .value {
+            font-weight: 600;
+            color: #1a3e50;
+            white-space: nowrap;
+        }
+        .result-row .value-large {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #155f7c;
+        }
+        .result-block {
+            border-radius: 1.2rem;
+            padding: 1rem;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .electricity-block { background: #eef4fc; border-left: 4px solid #2c7cb6; }
+        .fees-block { background: #edf6ea; border-left: 4px solid #5f8b4c; }
+        .tariffs-block { background: #fef4e8; border-left: 4px solid #e0a878; }
+        .params-block { background: #f1eef9; border-left: 4px solid #9b7bc9; }
+        .meters-block { background: #f1f5f8; border-left: 4px solid #6c8e9b; }
+        .results-block { background: #ffffff; border-left: 4px solid #2c7cb6; }
+        .total-amount {
+            background: linear-gradient(105deg, #d9a13b, #bc7a2c);
+            border-radius: 1.3rem;
+            padding: 0.9rem 1.2rem;
+            color: white;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.25rem;
+        }
+        .badge-soft {
+            background: #eef2fa;
+            border-radius: 2rem;
+            padding: 0.25rem 1rem;
+            font-weight: 500;
+            color: #1c5d7c;
+        }
+        /* кнопка переноса */
+        .transfer-btn {
+            background: #e9ecef;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.25rem 0.9rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .transfer-btn:hover {
+            background: #dee2e6;
+        }
+        /* спойлер для мобильных */
+        .spoiler-btn {
+            width: 100%;
+            text-align: center;
+            background: none;
+            border: none;
+            color: #2c7cb6;
+            font-weight: 500;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .extra-meters {
+            display: none;
+        }
+        .extra-meters.show {
+            display: block;
+        }
+        @media (max-width: 767.98px) {
+            .order-1-mobile { order: 1; }
+            .order-2-mobile { order: 2; }
+            .order-3-mobile { order: 3; }
+            .order-4-mobile { order: 4; }
+            .snt-calc-wrapper .row {
+                display: flex;
+                flex-direction: column;
+            }
+            .snt-calc-wrapper .row > [class*="col-"] {
+                width: 100%;
+            }
+        }
+        @media (min-width: 768px) {
+            .snt-calc-wrapper .row {
+                display: flex;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="snt-calc-wrapper container py-3">
+    <div class="row g-3 row-custom-gap">
+        <!-- Параметры участка -->
+        <div class="col-12 col-md-6 order-1-mobile">
+            <div class="snt-card params-block">
+                <div class="snt-card-body">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-pencil-square fs-5 text-electric"></i>
+                        <h5 class="mb-0 fw-semibold">Параметры участка</h5>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label"><i class="bi bi-pin-map-fill"></i> Кол-во участков</label>
+                            <input type="number" id="plotsCount" class="form-control" value="1" min="0" step="0.5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label"><i class="bi bi-flower2"></i> Площадь (соток)</label>
+                            <input type="number" id="areaSotok" class="form-control" value="6.00" min="0" step="0.5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Действующие тарифы -->
+        <div class="col-12 col-md-6 order-4-mobile">
+            <div class="snt-card tariffs-block">
+                <div class="snt-card-body">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-tags fs-5 text-electric"></i>
+                        <h5 class="mb-0 fw-semibold">Действующие тарифы</h5>
+                    </div>
+                    <div class="tariff-grid">
+                        <div class="mb-3">
+                            <div class="fw-semibold mb-2"><i class="bi bi-bolt"></i> Электроэнергия</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="tariff-badge">T1 (до <span id="t1LimitDisplay">100</span> кВт·ч): <strong><span id="t1RateDisplay">6.20</span> ₽</strong></span>
+                                <span class="tariff-badge">T2 (сверх): <strong><span id="t2RateDisplay">7.42</span> ₽</strong></span>
+                                <span class="tariff-badge">T3 (потери): <strong><span id="t3RateDisplay">0.36</span> ₽</strong></span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold mb-2"><i class="bi bi-house-check"></i> Членские взносы</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="tariff-badge">📋 Зарплата за участок: <strong><span id="plotFeeDisplay">939</span> ₽</strong></span>
+                                <span class="tariff-badge">🌿 Содержание за сотку: <strong><span id="areaFeeDisplay">44</span> ₽</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-100 d-none d-md-block"></div>
+
+        <!-- Показания счётчиков -->
+        <div class="col-12 col-md-6 order-2-mobile">
+            <div class="snt-card meters-block">
+                <div class="snt-card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-speedometer2 fs-5 text-electric"></i>
+                            <h5 class="mb-0 fw-semibold">Показания счётчиков (до 5 шт.)</h5>
+                        </div>
+                        <button id="transferBtn" class="transfer-btn" type="button">
+                            <i class="bi bi-arrow-repeat"></i> Перенести текущие в прошлые
+                        </button>
+                    </div>
+                    <div id="metersContainer">
+                        <!-- 5 счётчиков будут добавлены динамически -->
+                    </div>
+                    <div class="text-muted mt-2 text-center" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle-fill"></i> Введите прошлые и текущие показания
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Детали начислений -->
+        <div class="col-12 col-md-6 order-3-mobile">
+            <div class="snt-card results-block">
+                <div class="snt-card-body">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-calculator-fill fs-5 text-electric"></i>
+                        <h5 class="mb-0 fw-semibold">Детали начислений</h5>
+                    </div>
+                    <div class="result-block electricity-block mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-lightning-charge-fill text-electric"></i>
+                            <span class="fw-semibold">Электроэнергия</span>
+                        </div>
+                        <div class="result-row">
+                            <span>Суммарный расход:</span>
+                            <span class="value"><span id="totalConsumption">0.00</span> кВт·ч</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="result-row">
+                            <span>T1 📊 (до <span id="t1LimitResult">100</span> кВт·ч):</span>
+                            <span class="value"><span id="t1Cost">0.00</span> ₽</span>
+                        </div>
+                        <div class="result-row">
+                            <span>T2 ⚡ (сверх лимита):</span>
+                            <span class="value"><span id="t2Cost">0.00</span> ₽</span>
+                        </div>
+                        <div class="result-row">
+                            <span>T3 🔥 (потери):</span>
+                            <span class="value"><span id="t3Cost">0.00</span> ₽</span>
+                        </div>
+                        <div class="result-row total-row">
+                            <span class="fw-bold">Итого за свет:</span>
+                            <span class="value value-large"><span id="electricityTotal">0.00</span> ₽</span>
+                        </div>
+                    </div>
+                    <div class="result-block fees-block mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-cash-stack text-electric"></i>
+                            <span class="fw-semibold">Членские взносы</span>
+                        </div>
+                        <div class="result-row">
+                            <span><i class="bi bi-person-badge"></i> Зарплата за участок (<span id="plotsResult">0</span> шт.):</span>
+                            <span class="value"><span id="plotFeeResult">0.00</span> ₽</span>
+                        </div>
+                        <div class="result-row">
+                            <span><i class="bi bi-tree"></i> Содержание за сотку (<span id="areaResult">0</span> сот.):</span>
+                            <span class="value"><span id="areaFeeResult">0.00</span> ₽</span>
+                        </div>
+                        <div class="result-row total-row">
+                            <span class="fw-bold">Итого взносы:</span>
+                            <span class="value value-large"><span id="feesTotal">0.00</span> ₽</span>
+                        </div>
+                    </div>
+                    <div class="total-amount">
+                        <span class="fs-6 fw-normal opacity-75"><i class="bi bi-receipt"></i> Общая сумма к оплате:</span>
+                        <span id="totalAmount" class="fw-bold fs-1">0.00</span>
+                        <span class="fw-semibold">₽</span>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="http://zvezdo-4-ka.ru/category/реквизиты-снт-звёздочка/" target="_blank" class="text-decoration-none small" style="color: #2c7cb6;">
+                            <i class="bi bi-credit-card-2-front"></i> Реквизиты СНТ «Звёздочка»
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ТАРИФЫ
+    const TARIFF = {
+        t1_rate: 6.20, t2_rate: 7.42, t3_rate: 0.36, t1_limit: 100,
+        plot_fee_rate: 939, area_fee_rate: 44
+    };
+    document.getElementById('t1RateDisplay').innerText = TARIFF.t1_rate.toFixed(2);
+    document.getElementById('t2RateDisplay').innerText = TARIFF.t2_rate.toFixed(2);
+    document.getElementById('t3RateDisplay').innerText = TARIFF.t3_rate.toFixed(2);
+    document.getElementById('t1LimitDisplay').innerText = TARIFF.t1_limit;
+    document.getElementById('plotFeeDisplay').innerText = TARIFF.plot_fee_rate;
+    document.getElementById('areaFeeDisplay').innerText = TARIFF.area_fee_rate;
+
+    // ГЕНЕРАЦИЯ 5 СЧЁТЧИКОВ
+    const metersContainer = document.getElementById('metersContainer');
+    const metersCount = 5;
+    let prevInputs = [], currInputs = [];
+
+    for (let i = 0; i < metersCount; i++) {
+        const div = document.createElement('div');
+        div.className = 'meter-group';
+        if (i >= 1) div.classList.add('extra-meter', 'extra-meters'); // для спойлера
+        div.innerHTML = `
+            <div class="row g-2 align-items-end">
+                <div class="col-4">
+                    <label class="form-label">Счётчик ${i+1} / прошлое</label>
+                    <input type="number" class="form-control prev-reading" placeholder="кВт·ч" step="0.01" value="0">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">текущее</label>
+                    <input type="number" class="form-control curr-reading" placeholder="кВт·ч" step="0.01" value="0">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">расход (кВт·ч)</label>
+                    <input type="text" class="form-control consumption-field" placeholder="0.00" disabled readonly>
+                </div>
+            </div>
+        `;
+        metersContainer.appendChild(div);
+        prevInputs.push(div.querySelector('.prev-reading'));
+        currInputs.push(div.querySelector('.curr-reading'));
+    }
+
+    // Добавляем кнопку-спойлер для мобильных (только если ширина <768px)
+    const spoilerContainer = document.createElement('div');
+    spoilerContainer.className = 'text-center mt-2 d-md-none';
+    const spoilerBtn = document.createElement('button');
+    spoilerBtn.className = 'spoiler-btn';
+    spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
+    spoilerBtn.addEventListener('click', () => {
+        const extraMeters = document.querySelectorAll('.extra-meter');
+        const isHidden = extraMeters[0]?.classList.contains('extra-meters');
+        if (isHidden) {
+            extraMeters.forEach(el => el.classList.remove('extra-meters'));
+            spoilerBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Скрыть дополнительные счётчики';
+        } else {
+            extraMeters.forEach(el => el.classList.add('extra-meters'));
+            spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
+        }
+    });
+    metersContainer.after(spoilerContainer);
+    spoilerContainer.appendChild(spoilerBtn);
+    // По умолчанию на мобильных скрываем счётчики 2-5 (проверка ширины при загрузке)
+    function adjustSpoiler() {
+        if (window.innerWidth < 768) {
+            document.querySelectorAll('.extra-meter').forEach(el => el.classList.add('extra-meters'));
+            spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
+        } else {
+            document.querySelectorAll('.extra-meter').forEach(el => el.classList.remove('extra-meters'));
+        }
+    }
+    window.addEventListener('resize', adjustSpoiler);
+    
+    // Сохранение в localStorage (только текущие показания и параметры участка, прошлые не трогаем)
+    const plotsInput = document.getElementById('plotsCount');
+    const areaInput = document.getElementById('areaSotok');
+    
+    function saveToLocalStorage() {
+        const plotsCount = parseFloat(plotsInput.value) || 0;
+        const areaSotok = parseFloat(areaInput.value) || 0;
+        const currReadings = currInputs.map(inp => parseFloat(inp.value) || 0);
+        const data = { plotsCount, areaSotok, currReadings };
+        localStorage.setItem('sntCalculatorData', JSON.stringify(data));
+    }
+    
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('sntCalculatorData');
+        if (!saved) return false;
+        try {
+            const data = JSON.parse(saved);
+            if (data.plotsCount !== undefined) plotsInput.value = data.plotsCount;
+            if (data.areaSotok !== undefined) areaInput.value = data.areaSotok;
+            if (Array.isArray(data.currReadings) && data.currReadings.length === metersCount) {
+                for (let i = 0; i < metersCount; i++) {
+                    currInputs[i].value = data.currReadings[i];
+                }
+            }
+            return true;
+        } catch(e) { return false; }
+    }
+    
+    // Функция переноса текущих в прошлые
+    function transferCurrentToPrev() {
+        for (let i = 0; i < metersCount; i++) {
+            const currVal = parseFloat(currInputs[i].value) || 0;
+            prevInputs[i].value = currVal;
+            currInputs[i].value = 0;
+        }
+        fullRefresh();
+        saveToLocalStorage(); // сохраняем новое состояние (текущие обнулились)
+    }
+    
+    // Основной расчёт
+    function fullRefresh() {
+        let totalConsumption = 0;
+        for (let i = 0; i < metersCount; i++) {
+            let prevVal = parseFloat(prevInputs[i].value) || 0;
+            let currVal = parseFloat(currInputs[i].value) || 0;
+            let consumption = Math.max(0, currVal - prevVal);
+            consumption = Math.round(consumption * 100) / 100;
+            const consumptionField = prevInputs[i].closest('.meter-group').querySelector('.consumption-field');
+            if (consumptionField) consumptionField.value = consumption.toFixed(2);
+            totalConsumption += consumption;
+        }
+        totalConsumption = parseFloat(totalConsumption.toFixed(2));
+        let plotsCount = parseFloat(plotsInput.value) || 0;
+        let areaSotok = parseFloat(areaInput.value) || 0;
+        if (plotsCount < 0) plotsCount = 0;
+        if (areaSotok < 0) areaSotok = 0;
+        
+        const limit = TARIFF.t1_limit;
+        let t1Amount = 0, t2Amount = 0, t3Amount = 0;
+        if (totalConsumption > 0) {
+            t3Amount = totalConsumption * TARIFF.t3_rate;
+            if (totalConsumption <= limit) t1Amount = totalConsumption * TARIFF.t1_rate;
+            else { t1Amount = limit * TARIFF.t1_rate; t2Amount = (totalConsumption - limit) * TARIFF.t2_rate; }
+        }
+        const electricityTotal = t1Amount + t2Amount + t3Amount;
+        const plotFee = plotsCount * TARIFF.plot_fee_rate;
+        const areaFee = areaSotok * TARIFF.area_fee_rate;
+        const feesTotal = plotFee + areaFee;
+        const totalAmount = electricityTotal + feesTotal;
+        
+        document.getElementById('totalConsumption').innerText = totalConsumption.toFixed(2);
+        document.getElementById('t1LimitResult').innerText = limit;
+        document.getElementById('t1Cost').innerText = t1Amount.toFixed(2);
+        document.getElementById('t2Cost').innerText = t2Amount.toFixed(2);
+        document.getElementById('t3Cost').innerText = t3Amount.toFixed(2);
+        document.getElementById('electricityTotal').innerText = electricityTotal.toFixed(2);
+        const plotsFormatted = plotsCount % 1 === 0 ? plotsCount : plotsCount.toFixed(2);
+        const areaFormatted = areaSotok % 1 === 0 ? areaSotok : areaSotok.toFixed(2);
+        document.getElementById('plotsResult').innerText = plotsFormatted;
+        document.getElementById('plotFeeResult').innerText = plotFee.toFixed(2);
+        document.getElementById('areaResult').innerText = areaFormatted;
+        document.getElementById('areaFeeResult').innerText = areaFee.toFixed(2);
+        document.getElementById('feesTotal').innerText = feesTotal.toFixed(2);
+        document.getElementById('totalAmount').innerText = totalAmount.toFixed(2);
+    }
+    
+    // Автосохранение при любых изменениях
+    function bindEvents() {
+        const saveAndRefresh = () => { fullRefresh(); saveToLocalStorage(); };
+        plotsInput.addEventListener('input', saveAndRefresh);
+        areaInput.addEventListener('input', saveAndRefresh);
+        for (let i = 0; i < metersCount; i++) {
+            prevInputs[i].addEventListener('input', saveAndRefresh);
+            currInputs[i].addEventListener('input', saveAndRefresh);
+        }
+        document.getElementById('transferBtn').addEventListener('click', transferCurrentToPrev);
+    }
+    
+    // Инициализация
+    function init() {
+        loadFromLocalStorage(); // восстанавливаем параметры участка и текущие показания
+        fullRefresh();
+        bindEvents();
+        adjustSpoiler();
+    }
+    window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
