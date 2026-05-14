@@ -135,7 +135,6 @@
         .transfer-btn:hover {
             background: #dee2e6;
         }
-        /* спойлер */
         .spoiler-btn {
             width: 100%;
             text-align: center;
@@ -367,13 +366,12 @@
     spoilerContainer.appendChild(spoilerBtn);
     metersContainer.after(spoilerContainer);
     
-    let userSpoilerOpen = false;   // запоминаем, открыл ли пользователь спойлер вручную
+    let userSpoilerOpen = false;
     let lastWidth = window.innerWidth;
     
     function updateSpoilerUI() {
         const isMobile = window.innerWidth < 768;
         if (!isMobile) {
-            // на широких экранах показываем все счётчики и убираем кнопку
             document.querySelectorAll('.extra-meter').forEach(el => el.classList.remove('extra-meters'));
             spoilerContainer.style.display = 'none';
             return;
@@ -398,13 +396,8 @@
         const wasMobile = lastWidth < 768;
         const isMobile = newWidth < 768;
         lastWidth = newWidth;
-        // Если перешли через границу 768px, сбрасываем ручное состояние на дефолтное (закрыто на мобильных)
         if (wasMobile !== isMobile) {
-            if (isMobile) {
-                userSpoilerOpen = false;
-            } else {
-                userSpoilerOpen = false; // на десктопе неактуально
-            }
+            if (isMobile) userSpoilerOpen = false;
         }
         updateSpoilerUI();
     }
@@ -412,15 +405,16 @@
     spoilerBtn.addEventListener('click', handleSpoilerToggle);
     window.addEventListener('resize', handleResize);
     
-    // Сохранение в localStorage
+    // Сохранение в localStorage (теперь сохраняем и прошлые, и текущие показания)
     const plotsInput = document.getElementById('plotsCount');
     const areaInput = document.getElementById('areaSotok');
     
     function saveToLocalStorage() {
         const plotsCount = parseFloat(plotsInput.value) || 0;
         const areaSotok = parseFloat(areaInput.value) || 0;
+        const prevReadings = prevInputs.map(inp => parseFloat(inp.value) || 0);
         const currReadings = currInputs.map(inp => parseFloat(inp.value) || 0);
-        const data = { plotsCount, areaSotok, currReadings };
+        const data = { plotsCount, areaSotok, prevReadings, currReadings };
         localStorage.setItem('sntCalculatorData', JSON.stringify(data));
     }
     
@@ -431,6 +425,11 @@
             const data = JSON.parse(saved);
             if (data.plotsCount !== undefined) plotsInput.value = data.plotsCount;
             if (data.areaSotok !== undefined) areaInput.value = data.areaSotok;
+            if (Array.isArray(data.prevReadings) && data.prevReadings.length === metersCount) {
+                for (let i = 0; i < metersCount; i++) {
+                    prevInputs[i].value = data.prevReadings[i];
+                }
+            }
             if (Array.isArray(data.currReadings) && data.currReadings.length === metersCount) {
                 for (let i = 0; i < metersCount; i++) {
                     currInputs[i].value = data.currReadings[i];
@@ -440,7 +439,7 @@
         } catch(e) { return false; }
     }
     
-    // Перенос текущих в прошлые
+    // Перенос текущих в прошлые с сохранением
     function transferCurrentToPrev() {
         for (let i = 0; i < metersCount; i++) {
             const currVal = parseFloat(currInputs[i].value) || 0;
@@ -498,7 +497,7 @@
         document.getElementById('totalAmount').innerText = totalAmount.toFixed(2);
     }
     
-    // Привязка событий
+    // Привязка событий: при любом изменении — пересчёт и сохранение
     function bindEvents() {
         const saveAndRefresh = () => { fullRefresh(); saveToLocalStorage(); };
         plotsInput.addEventListener('input', saveAndRefresh);
@@ -512,7 +511,7 @@
     
     // Инициализация
     function init() {
-        loadFromLocalStorage();
+        loadFromLocalStorage();   // восстанавливаем и прошлые, и текущие
         fullRefresh();
         bindEvents();
         lastWidth = window.innerWidth;
