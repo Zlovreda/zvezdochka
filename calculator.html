@@ -7,14 +7,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
-        /* ----- базовые стили ----- */
         .snt-calc-wrapper {
             max-width: 1400px;
             margin: 0 auto;
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             font-size: 0.9rem;
         }
-        /* уменьшенный отступ между рядами на больших экранах */
         .row-custom-gap {
             row-gap: 0.75rem !important;
         }
@@ -23,7 +21,6 @@
                 row-gap: 0.5rem !important;
             }
         }
-        /* карточки */
         .snt-card {
             border: none;
             border-radius: 1.5rem;
@@ -40,7 +37,6 @@
                 padding: 1.3rem;
             }
         }
-        /* тарифная сетка */
         .tariff-grid {
             background: #fef7e6;
             border-radius: 1.2rem;
@@ -82,7 +78,6 @@
             font-weight: 600;
             color: #1a6685;
         }
-        /* результаты */
         .result-row {
             display: grid;
             grid-template-columns: 1fr auto;
@@ -128,14 +123,6 @@
             align-items: center;
             margin-top: 0.25rem;
         }
-        .badge-soft {
-            background: #eef2fa;
-            border-radius: 2rem;
-            padding: 0.25rem 1rem;
-            font-weight: 500;
-            color: #1c5d7c;
-        }
-        /* кнопка переноса */
         .transfer-btn {
             background: #e9ecef;
             border: none;
@@ -148,7 +135,7 @@
         .transfer-btn:hover {
             background: #dee2e6;
         }
-        /* спойлер для мобильных */
+        /* спойлер */
         .spoiler-btn {
             width: 100%;
             text-align: center;
@@ -161,9 +148,6 @@
         }
         .extra-meters {
             display: none;
-        }
-        .extra-meters.show {
-            display: block;
         }
         @media (max-width: 767.98px) {
             .order-1-mobile { order: 1; }
@@ -255,9 +239,7 @@
                             <i class="bi bi-arrow-repeat"></i> Перенести текущие в прошлые
                         </button>
                     </div>
-                    <div id="metersContainer">
-                        <!-- 5 счётчиков будут добавлены динамически -->
-                    </div>
+                    <div id="metersContainer"></div>
                     <div class="text-muted mt-2 text-center" style="font-size: 0.75rem;">
                         <i class="bi bi-info-circle-fill"></i> Введите прошлые и текущие показания
                     </div>
@@ -355,7 +337,7 @@
     for (let i = 0; i < metersCount; i++) {
         const div = document.createElement('div');
         div.className = 'meter-group';
-        if (i >= 1) div.classList.add('extra-meter', 'extra-meters'); // для спойлера
+        if (i >= 1) div.classList.add('extra-meter');
         div.innerHTML = `
             <div class="row g-2 align-items-end">
                 <div class="col-4">
@@ -377,37 +359,60 @@
         currInputs.push(div.querySelector('.curr-reading'));
     }
 
-    // Добавляем кнопку-спойлер для мобильных (только если ширина <768px)
+    // Элементы спойлера
     const spoilerContainer = document.createElement('div');
     spoilerContainer.className = 'text-center mt-2 d-md-none';
     const spoilerBtn = document.createElement('button');
     spoilerBtn.className = 'spoiler-btn';
-    spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
-    spoilerBtn.addEventListener('click', () => {
-        const extraMeters = document.querySelectorAll('.extra-meter');
-        const isHidden = extraMeters[0]?.classList.contains('extra-meters');
-        if (isHidden) {
-            extraMeters.forEach(el => el.classList.remove('extra-meters'));
+    spoilerContainer.appendChild(spoilerBtn);
+    metersContainer.after(spoilerContainer);
+    
+    let userSpoilerOpen = false;   // запоминаем, открыл ли пользователь спойлер вручную
+    let lastWidth = window.innerWidth;
+    
+    function updateSpoilerUI() {
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile) {
+            // на широких экранах показываем все счётчики и убираем кнопку
+            document.querySelectorAll('.extra-meter').forEach(el => el.classList.remove('extra-meters'));
+            spoilerContainer.style.display = 'none';
+            return;
+        }
+        spoilerContainer.style.display = 'block';
+        if (userSpoilerOpen) {
+            document.querySelectorAll('.extra-meter').forEach(el => el.classList.remove('extra-meters'));
             spoilerBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Скрыть дополнительные счётчики';
         } else {
-            extraMeters.forEach(el => el.classList.add('extra-meters'));
-            spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
-        }
-    });
-    metersContainer.after(spoilerContainer);
-    spoilerContainer.appendChild(spoilerBtn);
-    // По умолчанию на мобильных скрываем счётчики 2-5 (проверка ширины при загрузке)
-    function adjustSpoiler() {
-        if (window.innerWidth < 768) {
             document.querySelectorAll('.extra-meter').forEach(el => el.classList.add('extra-meters'));
             spoilerBtn.innerHTML = '<i class="bi bi-chevron-down"></i> Показать все счётчики (2–5)';
-        } else {
-            document.querySelectorAll('.extra-meter').forEach(el => el.classList.remove('extra-meters'));
         }
     }
-    window.addEventListener('resize', adjustSpoiler);
     
-    // Сохранение в localStorage (только текущие показания и параметры участка, прошлые не трогаем)
+    function handleSpoilerToggle() {
+        userSpoilerOpen = !userSpoilerOpen;
+        updateSpoilerUI();
+    }
+    
+    function handleResize() {
+        const newWidth = window.innerWidth;
+        const wasMobile = lastWidth < 768;
+        const isMobile = newWidth < 768;
+        lastWidth = newWidth;
+        // Если перешли через границу 768px, сбрасываем ручное состояние на дефолтное (закрыто на мобильных)
+        if (wasMobile !== isMobile) {
+            if (isMobile) {
+                userSpoilerOpen = false;
+            } else {
+                userSpoilerOpen = false; // на десктопе неактуально
+            }
+        }
+        updateSpoilerUI();
+    }
+    
+    spoilerBtn.addEventListener('click', handleSpoilerToggle);
+    window.addEventListener('resize', handleResize);
+    
+    // Сохранение в localStorage
     const plotsInput = document.getElementById('plotsCount');
     const areaInput = document.getElementById('areaSotok');
     
@@ -435,7 +440,7 @@
         } catch(e) { return false; }
     }
     
-    // Функция переноса текущих в прошлые
+    // Перенос текущих в прошлые
     function transferCurrentToPrev() {
         for (let i = 0; i < metersCount; i++) {
             const currVal = parseFloat(currInputs[i].value) || 0;
@@ -443,7 +448,7 @@
             currInputs[i].value = 0;
         }
         fullRefresh();
-        saveToLocalStorage(); // сохраняем новое состояние (текущие обнулились)
+        saveToLocalStorage();
     }
     
     // Основной расчёт
@@ -493,7 +498,7 @@
         document.getElementById('totalAmount').innerText = totalAmount.toFixed(2);
     }
     
-    // Автосохранение при любых изменениях
+    // Привязка событий
     function bindEvents() {
         const saveAndRefresh = () => { fullRefresh(); saveToLocalStorage(); };
         plotsInput.addEventListener('input', saveAndRefresh);
@@ -507,11 +512,13 @@
     
     // Инициализация
     function init() {
-        loadFromLocalStorage(); // восстанавливаем параметры участка и текущие показания
+        loadFromLocalStorage();
         fullRefresh();
         bindEvents();
-        adjustSpoiler();
+        lastWidth = window.innerWidth;
+        updateSpoilerUI();
     }
+    
     window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
