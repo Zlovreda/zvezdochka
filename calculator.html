@@ -135,7 +135,7 @@
         .transfer-btn:hover {
             background: #dee2e6;
         }
-        .spoiler-btn {
+        .spoiler-btn, .instruction-spoiler-btn {
             width: 100%;
             text-align: center;
             background: none;
@@ -147,6 +147,16 @@
         }
         .extra-meters {
             display: none;
+        }
+        .instruction-content {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+        .instruction-content.show {
+            display: block;
         }
         @media (max-width: 767.98px) {
             .order-1-mobile { order: 1; }
@@ -313,6 +323,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Блок инструкции (спойлер) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="snt-card">
+                <div class="snt-card-body">
+                    <button id="instructionSpoilerBtn" class="instruction-spoiler-btn" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <span><i class="bi bi-question-circle"></i> Инструкция по работе с калькулятором</span>
+                        <i class="bi bi-chevron-down" id="instructionIcon"></i>
+                    </button>
+                    <div id="instructionContent" class="instruction-content mt-2">
+                        <h6>📋 Возможности калькулятора</h6>
+                        <ul>
+                            <li><strong>Расчёт членских взносов</strong> на основе количества участков и площади (в сотках).</li>
+                            <li><strong>Расчёт платы за электроэнергию</strong> по трёхставочному тарифу: T1 (до 100 кВт·ч) — 6,20 ₽/кВт·ч, T2 (сверх лимита) — 7,42 ₽/кВт·ч, T3 (потери) — 0,36 ₽/кВт·ч.</li>
+                            <li><strong>Ввод показаний до 5 счётчиков</strong>. Для каждого укажите прошлое и текущее значение – расход рассчитается автоматически.</li>
+                            <li><strong>Кнопка «Перенести текущие в прошлые»</strong> — удобно для нового расчётного периода: текущие показания становятся прошлыми, а поля текущих обнуляются.</li>
+                            <li><strong>Автосохранение в браузере</strong> – все введённые данные (параметры участка, прошлые и текущие показания) сохраняются в памяти вашего устройства. При повторном открытии страницы вы увидите те же цифры.</li>
+                            <li><strong>Адаптивный дизайн</strong> – на мобильных телефонах счётчики со 2 по 5 скрыты под кнопкой «Показать все счётчики», чтобы не загромождать экран.</li>
+                        </ul>
+                        <div class="alert alert-warning mt-2 py-2 small">
+                            <i class="bi bi-exclamation-triangle-fill"></i> <strong>Важно!</strong> Данные сохраняются <strong>только в том браузере и на том устройстве</strong>, где вы работаете. Если вы откроете калькулятор в другом браузере, на другом компьютере или телефоне, а также после очистки кэша и истории – сохранённые данные не восстановятся.
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">
+                            <i class="bi bi-info-circle"></i> Тарифы и формулы расчёта соответствуют действующим в СНТ «Звёздочка». При изменении тарифов свяжитесь с правлением.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -358,7 +399,7 @@
         currInputs.push(div.querySelector('.curr-reading'));
     }
 
-    // Элементы спойлера
+    // Спойлер для счётчиков на мобильных
     const spoilerContainer = document.createElement('div');
     spoilerContainer.className = 'text-center mt-2 d-md-none';
     const spoilerBtn = document.createElement('button');
@@ -405,7 +446,7 @@
     spoilerBtn.addEventListener('click', handleSpoilerToggle);
     window.addEventListener('resize', handleResize);
     
-    // Сохранение в localStorage (теперь сохраняем и прошлые, и текущие показания)
+    // Сохранение в localStorage (прошлые и текущие)
     const plotsInput = document.getElementById('plotsCount');
     const areaInput = document.getElementById('areaSotok');
     
@@ -426,20 +467,16 @@
             if (data.plotsCount !== undefined) plotsInput.value = data.plotsCount;
             if (data.areaSotok !== undefined) areaInput.value = data.areaSotok;
             if (Array.isArray(data.prevReadings) && data.prevReadings.length === metersCount) {
-                for (let i = 0; i < metersCount; i++) {
-                    prevInputs[i].value = data.prevReadings[i];
-                }
+                for (let i = 0; i < metersCount; i++) prevInputs[i].value = data.prevReadings[i];
             }
             if (Array.isArray(data.currReadings) && data.currReadings.length === metersCount) {
-                for (let i = 0; i < metersCount; i++) {
-                    currInputs[i].value = data.currReadings[i];
-                }
+                for (let i = 0; i < metersCount; i++) currInputs[i].value = data.currReadings[i];
             }
             return true;
         } catch(e) { return false; }
     }
     
-    // Перенос текущих в прошлые с сохранением
+    // Перенос текущих в прошлые
     function transferCurrentToPrev() {
         for (let i = 0; i < metersCount; i++) {
             const currVal = parseFloat(currInputs[i].value) || 0;
@@ -497,7 +534,7 @@
         document.getElementById('totalAmount').innerText = totalAmount.toFixed(2);
     }
     
-    // Привязка событий: при любом изменении — пересчёт и сохранение
+    // Автосохранение при любых изменениях
     function bindEvents() {
         const saveAndRefresh = () => { fullRefresh(); saveToLocalStorage(); };
         plotsInput.addEventListener('input', saveAndRefresh);
@@ -509,9 +546,27 @@
         document.getElementById('transferBtn').addEventListener('click', transferCurrentToPrev);
     }
     
+    // Инструкция: спойлер для текста
+    const instructionBtn = document.getElementById('instructionSpoilerBtn');
+    const instructionContent = document.getElementById('instructionContent');
+    const instructionIcon = document.getElementById('instructionIcon');
+    let instructionOpen = false;
+    instructionBtn.addEventListener('click', () => {
+        instructionOpen = !instructionOpen;
+        if (instructionOpen) {
+            instructionContent.classList.add('show');
+            instructionIcon.classList.remove('bi-chevron-down');
+            instructionIcon.classList.add('bi-chevron-up');
+        } else {
+            instructionContent.classList.remove('show');
+            instructionIcon.classList.remove('bi-chevron-up');
+            instructionIcon.classList.add('bi-chevron-down');
+        }
+    });
+    
     // Инициализация
     function init() {
-        loadFromLocalStorage();   // восстанавливаем и прошлые, и текущие
+        loadFromLocalStorage();
         fullRefresh();
         bindEvents();
         lastWidth = window.innerWidth;
